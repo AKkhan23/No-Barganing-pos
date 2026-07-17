@@ -1,3 +1,4 @@
+import path from 'path';
 import express from 'express';
 import cors from 'cors';
 import swaggerJsdoc from 'swagger-jsdoc';
@@ -66,6 +67,8 @@ import checkInOutRoutes from './routes/checkInOut.routes';
 import extraReportsRoutes from './routes/extraReports.routes';
 
 const app = express();
+const publicDir = path.join(__dirname, 'public');
+app.use(express.static(publicDir));
 
 const corsOrigins = env.CORS_ORIGINS === '*' ? true : env.CORS_ORIGINS.split(',');
 app.use(cors({ origin: corsOrigins, credentials: env.CORS_ORIGINS !== '*' }));
@@ -154,6 +157,11 @@ app.use('/api/deposits', depositsRoutes);
 app.use('/api/servicing', servicingRoutes);
 app.use('/api/check-in-out', checkInOutRoutes);
 app.use('/api/extra-reports', extraReportsRoutes);
+
+// Serve frontend SPA for all non-API routes
+app.get(/^\/(?!api\/).*/, (_req, res) => {
+  res.sendFile(path.join(publicDir, 'index.html'));
+});
 
 app.use(globalErrorHandler);
 

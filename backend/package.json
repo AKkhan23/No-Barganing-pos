@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "start": "tsc && node dist/server.js",
+    "start": "NODE_ENV=production node dist/server.js",
     "build": "tsc",
     "test": "jest --forceExit --detectOpenHandles",
     "lint": "eslint src/"
