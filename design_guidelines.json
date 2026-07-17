@@ -1,0 +1,128 @@
+{
+  "theme": "Light",
+  "archetype": "Archetype 4 (Swiss & High-Contrast)",
+  "brand_name": "No Bargaining",
+  "domain": "Supermarket POS & Admin Dashboard",
+  "colors": {
+    "background": "#F9FAFB",
+    "foreground": "#09090B",
+    "primary": {
+      "DEFAULT": "#E60000",
+      "foreground": "#FFFFFF"
+    },
+    "secondary": {
+      "DEFAULT": "#F4F4F5",
+      "foreground": "#18181B"
+    },
+    "muted": {
+      "DEFAULT": "#F4F4F5",
+      "foreground": "#71717A"
+    },
+    "accent": {
+      "DEFAULT": "#FDE047",
+      "foreground": "#09090B"
+    },
+    "destructive": {
+      "DEFAULT": "#7F1D1D",
+      "foreground": "#FEF2F2"
+    },
+    "border": "#E4E4E7",
+    "input": "#E4E4E7",
+    "ring": "#E60000"
+  },
+  "typography": {
+    "heading_font": "Cabinet Grotesk",
+    "heading_font_fallback": "Clash Display, sans-serif",
+    "body_font": "IBM Plex Sans",
+    "body_font_fallback": "Inter, sans-serif",
+    "mono_font": "JetBrains Mono",
+    "mono_font_fallback": "monospace",
+    "heading_scale": {
+      "h1": "text-4xl sm:text-5xl font-black tracking-tighter uppercase",
+      "h2": "text-2xl sm:text-3xl font-bold tracking-tight",
+      "h3": "text-xl sm:text-2xl font-bold",
+      "h4": "text-lg sm:text-xl font-semibold"
+    },
+    "body_scale": {
+      "base": "text-base font-medium",
+      "small": "text-sm text-muted-foreground",
+      "mono": "font-mono text-sm tracking-wide"
+    }
+  },
+  "spacing_and_layout": {
+    "philosophy": "Data-dense, rigid grid, brutalist efficiency.",
+    "container_padding": "p-4 md:p-6",
+    "pos_split_layout": "flex flex-col lg:flex-row h-screen overflow-hidden",
+    "pos_left_panel": "flex-1 bg-zinc-50 overflow-y-auto border-r border-border p-4",
+    "pos_right_panel": "w-full lg:w-96 xl:w-[400px] bg-white flex flex-col h-full flex-shrink-0",
+    "dashboard_grid": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4",
+    "border_radius": "0px (Sharp edges)",
+    "borders": "1px solid border-zinc-200, highly visible structural lines."
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-primary text-primary-foreground hover:bg-primary/90 font-bold uppercase tracking-widest rounded-none",
+      "secondary": "bg-secondary text-secondary-foreground hover:bg-secondary/80 font-bold rounded-none border border-border",
+      "outline": "border-2 border-primary text-primary hover:bg-primary/10 rounded-none",
+      "sizes": "h-12 px-6 for standard, h-16 text-xl for POS Checkout button"
+    },
+    "cards": {
+      "base": "bg-white border border-border rounded-none shadow-sm",
+      "hover": "hover:border-primary hover:shadow-md transition-all duration-200"
+    },
+    "tables": {
+      "style": "w-full text-sm text-left border-collapse",
+      "header": "bg-zinc-100 text-zinc-900 font-bold uppercase text-xs tracking-wider sticky top-0 p-3 border-y border-border",
+      "row": "border-b border-border hover:bg-zinc-50 transition-colors",
+      "cell": "p-3 font-mono"
+    },
+    "inputs": {
+      "style": "h-12 border-2 border-border rounded-none bg-white px-4 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
+    },
+    "product_grid_item": {
+      "style": "flex flex-col bg-white border border-border p-3 cursor-pointer hover:border-primary hover:shadow-sm active:scale-95 transition-all select-none rounded-none"
+    }
+  },
+  "icons": {
+    "library": "lucide-react",
+    "stroke_width": "2.5 (Bold)"
+  },
+  "motion": {
+    "interactions": "Snappy, instantaneous. Micro-interactions on Add-to-Cart (slight scale bounce).",
+    "transitions": "transition-all duration-150 ease-in-out",
+    "toast": "Slide in from bottom-right, red border for alerts, green border for success. Fast auto-dismiss."
+  },
+  "media": {
+    "images": [
+      {
+        "category": "login_background",
+        "url": "https://images.pexels.com/photos/5498233/pexels-photo-5498233.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Blurred supermarket aisle, gives retail context."
+      },
+      {
+        "category": "empty_state_scanner",
+        "url": "https://images.pexels.com/photos/34708254/pexels-photo-34708254.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Barcode scanner close up for empty cart or scan-to-start screen."
+      },
+      {
+        "category": "brand_logo_reference",
+        "url": "https://images.pexels.com/photos/11921719/pexels-photo-11921719.jpeg",
+        "description": "Example of bold, blocky retail signage."
+      }
+    ],
+    "placeholders": "DO NOT USE placeholders. Use provided images or lucide icons."
+  },
+  "testing": {
+    "attributes": "All interactive elements MUST have data-testid attributes (e.g., data-testid='checkout-button')"
+  },
+  "instructions_to_main_agent": [
+    "Strictly follow the color palette. Red (primary) should be used aggressively for key actions.",
+    "Implement the POS split layout using Flexbox, ensuring the right cart panel takes full height (h-screen) and doesn't scroll with the left product panel.",
+    "Use JetBrains Mono for prices, quantities, and receipt texts.",
+    "Override all Shadcn UI default border-radius to 0px (rounded-none).",
+    "Ensure the barcode scanning flow works (simulate if no actual camera, but provide the UI overlay for it).",
+    "Dashboard tables must be dense and look like an Excel sheet / data grid.",
+    "Use data-testid attributes on all interactive elements as per the testing rules.",
+    "Avoid generic 'Inter' fonts for headings - strictly use Cabinet Grotesk (from Google Fonts or bunny fonts)."
+  ]
+}

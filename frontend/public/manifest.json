@@ -1,0 +1,26 @@
+{
+  "short_name": "No Bargaining",
+  "name": "No Bargaining POS Terminal",
+  "description": "Industrial-grade retail point of sale system with barcode scanning, inventory & analytics.",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/pos",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#E60000",
+  "background_color": "#F9FAFB",
+  "categories": ["business", "productivity", "shopping"]
+}

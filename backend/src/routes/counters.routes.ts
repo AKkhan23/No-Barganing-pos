@@ -1,0 +1,53 @@
+import { Router, Request, Response } from 'express';
+import mongoose from 'mongoose';
+import { Counter } from '../models/Counter';
+import { generateId } from '../utils/invoice';
+import { verifyJWT, requireRoles } from '../middleware/auth';
+
+const router = Router();
+router.use(verifyJWT, requireRoles('admin', 'manager'));
+
+function buildFilter(id: string) {
+  const filter: any[] = [{ id }];
+  if (/^[0-9a-fA-F]{24}$/.test(id)) filter.push({ _id: new mongoose.Types.ObjectId(id) });
+  return { $or: filter };
+}
+
+router.get('/', async (_req: Request, res: Response) => {
+  const items = await Counter.find({}).lean();
+  const mapped = [];
+  for (const c of items) {
+    if (!c.id) {
+      c.id = generateId();
+      try { await Counter.updateOne({ _id: c._id }, { $set: { id: c.id } }); } catch {
+        try { await Counter.collection.updateOne({ _id: c._id as any }, { $set: { id: c.id } }); } catch {}
+      }
+    }
+    mapped.push({ _id: c._id, id: c.id, name: c.name, outlet_id: c.outlet_id, printer_id: c.printer_id, description: c.description, created_at: c.created_at, updated_at: c.updated_at });
+  }
+  res.json(mapped);
+});
+
+router.post('/', async (req: Request, res: Response) => {
+  const now = new Date().toISOString();
+  const item = new Counter({ id: generateId(), ...req.body, created_at: now });
+  await item.save();
+  res.status(201).json(item.toJSON());
+});
+
+router.patch('/:id', async (req: Request, res: Response) => {
+  const item = await Counter.findOneAndUpdate(buildFilter(req.params.id), { $set: req.body }, { new: true }).lean();
+  if (!item) { res.status(404).json({ detail: 'Counter not found' }); return; }
+  res.json({ id: item.id, name: item.name, outlet_id: item.outlet_id, printer_id: item.printer_id, description: item.description, created_at: item.created_at, updated_at: item.updated_at });
+});
+
+router.delete('/:id', async (req: Request, res: Response) => {
+  let r = await Counter.deleteOne(buildFilter(req.params.id));
+  if (r.deletedCount === 0) {
+    r = await Counter.collection.deleteOne({ $or: [{ _id: req.params.id as any }, { id: req.params.id }] });
+  }
+  if (r.deletedCount === 0) { res.status(404).json({ detail: 'Counter not found' }); return; }
+  res.json({ ok: true });
+});
+
+export default router;

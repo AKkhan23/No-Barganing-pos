@@ -1,0 +1,28 @@
+version: '3.8'
+services:
+  mongodb:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: no_bargaining_pos
+
+  backend:
+    build: .
+    ports:
+      - "8001:8001"
+    environment:
+      MONGO_URL: mongodb://mongodb:27017
+      DB_NAME: no_bargaining_pos
+      JWT_SECRET: change-this-in-production
+      ADMIN_EMAIL: admin@nobargaining.com
+      ADMIN_PASSWORD: admin123
+      CORS_ORIGINS: http://localhost:3000
+      PORT: "8001"
+    depends_on:
+      - mongodb
+
+volumes:
+  mongodb_data:

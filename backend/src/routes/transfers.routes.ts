@@ -1,0 +1,76 @@
+import { Router, Request, Response } from 'express';
+import { z } from 'zod';
+import { Transfer } from '../models/Transfer';
+import { LedgerEntry } from '../models/LedgerEntry';
+import { Account } from '../models/Account';
+import { generateId } from '../utils/invoice';
+import { verifyJWT, requireRoles } from '../middleware/auth';
+import { validate } from '../middleware/validate';
+
+const router = Router();
+router.use(verifyJWT, requireRoles('admin', 'manager'));
+
+const CreateTransferSchema = z.object({
+  from_account: z.string().min(1),
+  to_account: z.string().min(1),
+  amount: z.number().positive(),
+  note: z.string().optional(),
+});
+
+router.get('/', async (req: Request, res: Response) => {
+  const filter: any = {};
+  if (req.query.from_account) { filter.from_account = req.query.from_account; }
+  if (req.query.to_account) { filter.to_account = req.query.to_account; }
+  const transfers = await Transfer.find(filter).sort({ created_at: -1 }).lean();
+  res.json(transfers.map((t: any) => ({ id: t.id, outlet_id: t.outlet_id, from_account: t.from_account, to_account: t.to_account, amount: t.amount, note: t.note, created_at: t.created_at, created_by_id: t.created_by_id, created_by_name: t.created_by_name })));
+});
+
+router.post('/', validate(CreateTransferSchema), async (req: Request, res: Response) => {
+  const now = new Date().toISOString();
+
+  const fromAccount = await Account.findOne({ id: req.body.from_account });
+  if (!fromAccount) { res.status(404).json({ detail: 'From account not found' }); return; }
+  const toAccount = await Account.findOne({ id: req.body.to_account });
+  if (!toAccount) { res.status(404).json({ detail: 'To account not found' }); return; }
+  if (fromAccount.current_balance < req.body.amount) { res.status(400).json({ detail: 'Insufficient balance in from account' }); return; }
+
+  const transfer = new Transfer({
+    ...req.body,
+    id: generateId(),
+    created_at: now,
+  });
+  await transfer.save();
+
+  fromAccount.current_balance -= req.body.amount;
+  await fromAccount.save();
+  toAccount.current_balance += req.body.amount;
+  await toAccount.save();
+
+  const debitEntry = new LedgerEntry({
+    id: generateId(),
+    date: now,
+    account: fromAccount.name,
+    debit: 0,
+    credit: req.body.amount,
+    reference: `Transfer-${transfer.id}`,
+    note: req.body.note || `Transfer to ${toAccount.name}`,
+    created_at: now,
+  });
+  await debitEntry.save();
+
+  const creditEntry = new LedgerEntry({
+    id: generateId(),
+    date: now,
+    account: toAccount.name,
+    debit: req.body.amount,
+    credit: 0,
+    reference: `Transfer-${transfer.id}`,
+    note: req.body.note || `Transfer from ${fromAccount.name}`,
+    created_at: now,
+  });
+  await creditEntry.save();
+
+  res.status(201).json({ id: transfer.id, outlet_id: transfer.outlet_id, from_account: transfer.from_account, to_account: transfer.to_account, amount: transfer.amount, note: transfer.note, created_at: transfer.created_at, created_by_id: transfer.created_by_id, created_by_name: transfer.created_by_name });
+});
+
+export default router;

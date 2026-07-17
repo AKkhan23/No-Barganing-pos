@@ -1,0 +1,121 @@
+@import url('https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@800,700,500,400,600&f[]=clash-display@700,600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background: #F9FAFB;
+    color: #09090B;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.font-display {
+    font-family: 'Cabinet Grotesk', 'Clash Display', sans-serif;
+    letter-spacing: -0.02em;
+    font-weight: 800;
+}
+
+.font-mono, code, .mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9em;
+}
+
+@layer base {
+    :root {
+        --background: 220 14% 98%;
+        --foreground: 240 10% 3.9%;
+        --card: 0 0% 100%;
+        --card-foreground: 240 10% 3.9%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 240 10% 3.9%;
+        --primary: 0 100% 45%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 240 5% 96%;
+        --secondary-foreground: 240 6% 10%;
+        --muted: 240 5% 96%;
+        --muted-foreground: 240 4% 46%;
+        --accent: 51 96% 60%;
+        --accent-foreground: 240 10% 3.9%;
+        --destructive: 0 60% 30%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 240 6% 90%;
+        --input: 240 6% 90%;
+        --ring: 0 100% 45%;
+        --chart-1: 0 100% 45%;
+        --chart-2: 51 96% 60%;
+        --chart-3: 210 90% 45%;
+        --chart-4: 160 60% 40%;
+        --chart-5: 280 60% 50%;
+        --radius: 0px;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply bg-background text-foreground;
+    }
+    h1, h2, h3, h4, h5, h6 {
+        @apply font-display;
+    }
+}
+
+.rounded, .rounded-sm, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl, .rounded-full {
+    border-radius: 0 !important;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #18181b; }
+::-webkit-scrollbar-thumb { background: #E60000; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #E60000; }
+::-webkit-scrollbar-thumb:active { background: #E60000; }
+* { scrollbar-width: thin; scrollbar-color: #E60000 #18181b; }
+
+::selection { background: #FDE047; color: #09090B; }
+
+@keyframes cart-pop {
+    0% { transform: scale(0.95); opacity: 0; }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); opacity: 1; }
+}
+.cart-pop { animation: cart-pop 200ms ease-out; }
+
+@keyframes scan-line {
+    0% { transform: translateY(-50%); opacity: 0.9; }
+    100% { transform: translateY(50%); opacity: 0.9; }
+}
+.scan-line { animation: scan-line 1.4s ease-in-out infinite alternate; }
+
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+input[type=number] { -moz-appearance: textfield; }
+
+@layer base {
+    [data-debug-wrapper="true"] { display: contents !important; }
+}
+
+@layer components {
+    .btn { @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-bold uppercase tracking-wider transition-all duration-150; }
+    .btn-primary { @apply bg-[#E60000] text-white hover:bg-[#CC0000] disabled:opacity-40; }
+    .btn-ghost { @apply bg-transparent text-zinc-700 hover:bg-zinc-100; }
+    .btn-icon { @apply p-2 hover:bg-zinc-100 transition-colors; }
+    .input { @apply w-full h-11 px-3 text-sm border-2 border-zinc-300 bg-white text-zinc-900 placeholder-zinc-400 focus:outline-none focus:border-[#E60000]; }
+    .label { @apply block text-xs font-mono uppercase tracking-widest text-zinc-500 mb-1; }
+    .card { @apply bg-white border-2 border-zinc-200; }
+    .data-table { @apply w-full text-sm border-collapse; }
+    .data-table th { @apply bg-zinc-100 text-zinc-700 font-bold text-xs uppercase tracking-wider p-3.5 text-left; }
+    .data-table td { @apply p-3.5 border-t border-zinc-200 text-sm leading-relaxed; }
+    .data-table tr:hover td { @apply bg-zinc-50; }
+}
