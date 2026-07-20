@@ -61,6 +61,33 @@ const CreateProductWithVariantsSchema = CreateProductSchema.extend({
   variants: z.array(VariantItemSchema).optional(),
 });
 
+/**
+ * @openapi
+ * /products:
+ *   get:
+ *     tags: [Products]
+ *     summary: List products with optional filters
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         schema: { type: string }
+ *         description: Search by name, SKU, or barcode
+ *       - in: query
+ *         name: category
+ *         schema: { type: string }
+ *         description: Filter by category ID
+ *       - in: query
+ *         name: low_stock
+ *         schema: { type: string, enum: ["true"] }
+ *         description: Filter low stock products
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 200 }
+ *     responses:
+ *       200:
+ *         description: List of products with today's sales data
+ */
 router.get('/', verifyJWT, requireRoles('admin', 'manager', 'cashier'), async (req: Request, res: Response) => {
   const q = req.query.q as string | undefined;
   const category = req.query.category as string | undefined;
@@ -91,6 +118,25 @@ router.get('/', verifyJWT, requireRoles('admin', 'manager', 'cashier'), async (r
   })));
 });
 
+/**
+ * @openapi
+ * /products/barcode/{code}:
+ *   get:
+ *     tags: [Products]
+ *     summary: Lookup product by barcode or SKU
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: code
+ *         required: true
+ *         schema: { type: string }
+ *         description: Barcode or SKU to lookup
+ *     responses:
+ *       200:
+ *         description: Product found
+ *       404:
+ *         description: Product not found
+ */
 router.get('/barcode/:code', verifyJWT, requireRoles('admin', 'manager', 'cashier'), async (req: Request, res: Response) => {
   const code = req.params.code;
   let product = await Product.findOne({ $or: [{ barcode: code }, { sku: code }] }).select('-_id -__v').lean();
@@ -116,12 +162,46 @@ router.get('/barcode/:code', verifyJWT, requireRoles('admin', 'manager', 'cashie
   res.json(product);
 });
 
+/**
+ * @openapi
+ * /products/{id}:
+ *   get:
+ *     tags: [Products]
+ *     summary: Get a single product by ID
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Product data
+ *       404:
+ *         description: Product not found
+ */
 router.get('/:id', verifyJWT, requireRoles('admin', 'manager', 'cashier'), async (req: Request, res: Response) => {
   const product = await Product.findOne({ id: req.params.id }).select('-_id -__v').lean();
   if (!product) { res.status(404).json({ detail: 'Product not found' }); return; }
   res.json(product);
 });
 
+/**
+ * @openapi
+ * /products/{id}/variants:
+ *   get:
+ *     tags: [Products]
+ *     summary: Get all variants of a product
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: List of variant products
+ */
 router.get('/:id/variants', verifyJWT, requireRoles('admin', 'manager', 'cashier'), async (req: Request, res: Response) => {
   const product = await Product.findOne({ id: req.params.id }).select('variant_group_id').lean();
   if (!product || !product.variant_group_id) { res.json([]); return; }
@@ -129,6 +209,51 @@ router.get('/:id/variants', verifyJWT, requireRoles('admin', 'manager', 'cashier
   res.json(variants);
 });
 
+/**
+ * @openapi
+ * /products:
+ *   post:
+ *     tags: [Products]
+ *     summary: Create a new product with optional variants
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name, sku, price]
+ *             properties:
+ *               name: { type: string }
+ *               sku: { type: string }
+ *               barcode: { type: string }
+ *               category: { type: string }
+ *               price: { type: number }
+ *               cost: { type: number, default: 0 }
+ *               tax_rate: { type: number, default: 0 }
+ *               stock: { type: number, default: 0 }
+ *               low_stock_threshold: { type: number, default: 5 }
+ *               unit: { type: string, default: "pcs" }
+ *               sell_by: { type: string, default: "pcs" }
+ *               brand: { type: string }
+ *               rack: { type: string }
+ *               variants:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     variant_name: { type: string }
+ *                     sku: { type: string }
+ *                     price: { type: number }
+ *                     cost: { type: number }
+ *                     stock: { type: number }
+ *                     barcode: { type: string }
+ *     responses:
+ *       201:
+ *         description: Product created (with variants if any)
+ *       409:
+ *         description: SKU already exists
+ */
 router.post('/', verifyJWT, requireRoles('admin', 'manager'), validate(CreateProductWithVariantsSchema), async (req: Request, res: Response) => {
   const existing = await Product.findOne({ sku: req.body.sku });
   if (existing) { res.status(409).json({ detail: 'SKU already exists' }); return; }
@@ -184,6 +309,35 @@ router.post('/', verifyJWT, requireRoles('admin', 'manager'), validate(CreatePro
   res.status(201).json({ product: product.toJSON(), variants: createdVariants });
 });
 
+/**
+ * @openapi
+ * /products/bulk-update:
+ *   post:
+ *     tags: [Products]
+ *     summary: Bulk update products (admin only)
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [ids, updates]
+ *             properties:
+ *               ids:
+ *                 type: array
+ *                 items: { type: string }
+ *               updates:
+ *                 type: object
+ *                 properties:
+ *                   field: { type: string }
+ *                   value: {}
+ *     responses:
+ *       200:
+ *         description: Products updated
+ *       400:
+ *         description: Invalid request body
+ */
 router.post('/bulk-update', verifyJWT, requireRoles('admin'), async (req: Request, res: Response) => {
   const { ids, updates } = req.body;
   if (!Array.isArray(ids) || ids.length === 0) { res.status(400).json({ detail: 'ids must be a non-empty array' }); return; }
@@ -195,6 +349,45 @@ router.post('/bulk-update', verifyJWT, requireRoles('admin'), async (req: Reques
   res.json({ ok: true, modified: result.modifiedCount });
 });
 
+/**
+ * @openapi
+ * /products/{id}:
+ *   patch:
+ *     tags: [Products]
+ *     summary: Update a product
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name: { type: string }
+ *               sku: { type: string }
+ *               barcode: { type: string }
+ *               category: { type: string }
+ *               price: { type: number }
+ *               cost: { type: number }
+ *               tax_rate: { type: number }
+ *               stock: { type: number }
+ *               low_stock_threshold: { type: number }
+ *               unit: { type: string }
+ *               sell_by: { type: string }
+ *               brand: { type: string }
+ *               rack: { type: string }
+ *               active: { type: boolean }
+ *     responses:
+ *       200:
+ *         description: Product updated
+ *       404:
+ *         description: Product not found
+ */
 router.patch('/:id', verifyJWT, requireRoles('admin', 'manager'), validate(UpdateProductSchema), async (req: Request, res: Response) => {
   const update: any = { ...req.body, updated_at: new Date().toISOString() };
   if (!update.barcode) {
@@ -208,11 +401,55 @@ router.patch('/:id', verifyJWT, requireRoles('admin', 'manager'), validate(Updat
   res.json(product);
 });
 
+/**
+ * @openapi
+ * /products/{id}:
+ *   delete:
+ *     tags: [Products]
+ *     summary: Delete a product
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Product deleted
+ */
 router.delete('/:id', verifyJWT, requireRoles('admin', 'manager'), async (req: Request, res: Response) => {
   await Product.deleteOne({ id: req.params.id });
   res.json({ ok: true });
 });
 
+/**
+ * @openapi
+ * /products/{id}/adjust-stock:
+ *   post:
+ *     tags: [Products]
+ *     summary: Adjust stock quantity for a product
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               quantity: { type: number, description: "Can be positive or negative" }
+ *               note: { type: string }
+ *               type: { type: string, default: "adjustment" }
+ *     responses:
+ *       200:
+ *         description: Stock adjusted
+ *       404:
+ *         description: Product not found
+ */
 router.post('/:id/adjust-stock', verifyJWT, requireRoles('admin', 'manager'), async (req: Request, res: Response) => {
   const { quantity, note, type } = req.body;
   const product = await Product.findOne({ id: req.params.id });
@@ -230,6 +467,38 @@ router.post('/:id/adjust-stock', verifyJWT, requireRoles('admin', 'manager'), as
   res.json({ id: product.id, stock: product.stock });
 });
 
+/**
+ * @openapi
+ * /products/{id}/repack:
+ *   post:
+ *     tags: [Products]
+ *     summary: Repack a bulk product into smaller packets
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [packet_weight, packet_count]
+ *             properties:
+ *               packet_weight: { type: number }
+ *               packet_count: { type: number }
+ *               packet_name: { type: string }
+ *               packet_price: { type: number }
+ *     responses:
+ *       201:
+ *         description: Repack successful
+ *       400:
+ *         description: Insufficient stock
+ *       404:
+ *         description: Source product not found
+ */
 router.post('/:id/repack', verifyJWT, requireRoles('admin', 'manager'), async (req: Request, res: Response) => {
   const { packet_weight, packet_count, packet_name, packet_price } = req.body;
   const source = await Product.findOne({ id: req.params.id });
@@ -262,11 +531,38 @@ router.post('/:id/repack', verifyJWT, requireRoles('admin', 'manager'), async (r
   res.status(201).json({ source: { id: source.id, stock: source.stock }, packet: newProduct.toJSON() });
 });
 
+/**
+ * @openapi
+ * /products/{id}/repack-children:
+ *   get:
+ *     tags: [Products]
+ *     summary: Get all repack children of a product
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: List of repack children
+ */
 router.get('/:id/repack-children', verifyJWT, async (req: Request, res: Response) => {
   const children = await Product.find({ repack_parent_id: req.params.id }).sort({ created_at: -1 });
   res.json(children);
 });
 
+/**
+ * @openapi
+ * /products/backfill-repack-parents:
+ *   post:
+ *     tags: [Products]
+ *     summary: Backfill missing repack parent references (admin only)
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Backfill results
+ */
 router.post('/backfill-repack-parents', verifyJWT, requireRoles('admin'), async (_req: Request, res: Response) => {
   const orphans = await Product.find({ repack_parent_id: { $in: [null, '', undefined] }, sku: /-PKT$/ }).lean();
   let linked = 0; let barcoded = 0;
@@ -286,6 +582,17 @@ router.post('/backfill-repack-parents', verifyJWT, requireRoles('admin'), async 
   res.json({ ok: true, linked, barcoded });
 });
 
+/**
+ * @openapi
+ * /products/backfill-barcodes:
+ *   post:
+ *     tags: [Products]
+ *     summary: Backfill missing barcodes for all products (admin only)
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Number of products backfilled
+ */
 router.post('/backfill-barcodes', verifyJWT, requireRoles('admin'), async (_req: Request, res: Response) => {
   const products = await Product.find({ barcode: { $in: [null, '', undefined] } }).lean();
   let count = 0;

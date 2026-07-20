@@ -14,6 +14,28 @@ const SendSchema = z.object({
   invoice_no: z.string().optional(),
 });
 
+/**
+ * @openapi
+ * /whatsapp/send:
+ *   post:
+ *     tags: [WhatsApp]
+ *     summary: Send a WhatsApp message (stubbed)
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [phone, message]
+ *             properties:
+ *               phone: { type: string }
+ *               message: { type: string }
+ *               invoice_no: { type: string }
+ *     responses:
+ *       200:
+ *         description: Stubbed success
+ */
 router.post('/send', validate(SendSchema), async (req: Request, res: Response) => {
   const now = new Date().toISOString();
   const log = new WhatsAppLog({

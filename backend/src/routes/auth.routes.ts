@@ -14,6 +14,42 @@ const LoginSchema = z.object({
   password: z.string().min(1),
 });
 
+/**
+ * @openapi
+ * /auth/login:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Login with email/password
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email: { type: string, example: "admin@nobargaining.com" }
+ *               password: { type: string, example: "admin123" }
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token: { type: string }
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id: { type: string }
+ *                     email: { type: string }
+ *                     name: { type: string }
+ *                     role: { type: string }
+ *       401:
+ *         description: Invalid credentials
+ *       403:
+ *         description: Account is inactive
+ */
 router.post('/login', validate(LoginSchema), async (req: Request, res: Response) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email: email.toLowerCase() });
@@ -30,6 +66,26 @@ router.post('/login', validate(LoginSchema), async (req: Request, res: Response)
   res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
 });
 
+/**
+ * @openapi
+ * /auth/me:
+ *   get:
+ *     tags: [Auth]
+ *     summary: Get current user info
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Current user info
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id: { type: string }
+ *                 email: { type: string }
+ *                 name: { type: string }
+ *                 role: { type: string }
+ */
 router.get('/me', verifyJWT, (req: Request, res: Response) => {
   res.json({ id: req.user!.id, email: req.user!.email, name: req.user!.name, role: req.user!.role });
 });

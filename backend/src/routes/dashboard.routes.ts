@@ -7,6 +7,28 @@ import { verifyJWT, requireRoles } from '../middleware/auth';
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
 
+/**
+ * @openapi
+ * /dashboard/stats:
+ *   get:
+ *     tags: [Dashboard]
+ *     summary: Get dashboard statistics (totals, low stock, sales chart, top products)
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: date_from
+ *         schema:
+ *           type: string
+ *         description: Start date (ISO)
+ *       - in: query
+ *         name: date_to
+ *         schema:
+ *           type: string
+ *         description: End date (ISO)
+ *     responses:
+ *       200:
+ *         description: Dashboard stats
+ */
 router.get('/stats', async (req: Request, res: Response) => {
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();

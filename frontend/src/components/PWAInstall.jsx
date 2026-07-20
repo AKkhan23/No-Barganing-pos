@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Download, Wifi, WifiOff, Smartphone, X, Share, MoreVertical } from "lucide-react";
 
 /**
@@ -102,6 +102,9 @@ export function InstallAppButton() {
 }
 
 function InstallHelpModal({ onClose }) {
+  const [copied, setCopied] = useState(false);
+  const url = window.location.href.split('?')[0].split('#')[0];
+  const shareUrl = url.includes('localhost') ? 'https://pos.webimaticsolutions.com' : url;
   return (
     <div className="fixed inset-0 z-[70] bg-black/70 flex items-center justify-center p-4" data-testid="install-help-modal">
       <div className="w-full max-w-2xl bg-white border-2 border-zinc-900 max-h-[90vh] overflow-y-auto">
@@ -114,13 +117,25 @@ function InstallHelpModal({ onClose }) {
         </div>
 
         <div className="p-6 space-y-6">
+          <div className="bg-[#E60000]/5 border-2 border-[#E60000] p-4 rounded">
+            <div className="text-xs font-mono uppercase tracking-widest text-zinc-500 mb-1">Share this URL with your team:</div>
+            <div className="flex items-center gap-2">
+              <input readOnly value={shareUrl} onClick={(e) => e.target.select()}
+                className="flex-1 h-11 border-2 border-zinc-300 px-3 text-sm font-mono bg-white focus:outline-none focus:border-[#E60000]" />
+              <button onClick={() => { navigator.clipboard.writeText(shareUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+                className="h-11 px-4 bg-zinc-950 text-white text-xs font-bold uppercase tracking-widest hover:bg-black transition-colors">
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+          </div>
+
           <div className="text-sm text-zinc-600">
             Install this POS as an app on any device — works offline, opens fast, no browser bar. Follow the guide for your device:
           </div>
 
           <Section title="Android · Chrome / Edge">
             <ol className="list-decimal ml-5 space-y-1 text-sm">
-              <li>Open this website in <b>Chrome</b> on your phone.</li>
+              <li>Open <b>{shareUrl}</b> in <b>Chrome</b> on your phone.</li>
               <li>Tap the <b>⋮ menu</b> (top-right).</li>
               <li>Tap <b>"Install app"</b> or <b>"Add to Home Screen"</b>.</li>
               <li>Tap <b>Install</b> — done! App icon appears on home screen.</li>
@@ -129,7 +144,7 @@ function InstallHelpModal({ onClose }) {
 
           <Section title="iPhone / iPad · Safari">
             <ol className="list-decimal ml-5 space-y-1 text-sm">
-              <li>Open in <b>Safari</b> (not Chrome — Apple requires Safari).</li>
+              <li>Open <b>{shareUrl}</b> in <b>Safari</b> (not Chrome — Apple requires Safari).</li>
               <li>Tap the <b>Share button <Share className="inline w-3 h-3" /></b> at the bottom.</li>
               <li>Scroll down and tap <b>"Add to Home Screen"</b>.</li>
               <li>Tap <b>Add</b> — icon appears on home screen.</li>
@@ -138,6 +153,7 @@ function InstallHelpModal({ onClose }) {
 
           <Section title="Desktop · Chrome / Edge / Brave">
             <ol className="list-decimal ml-5 space-y-1 text-sm">
+              <li>Open <b>{shareUrl}</b> in your browser.</li>
               <li>Look for the <b>install icon</b> (⊕ / monitor icon) in the address bar.</li>
               <li>Click it → <b>"Install"</b> in the popup.</li>
               <li>App opens in its own window like native software.</li>
@@ -146,6 +162,8 @@ function InstallHelpModal({ onClose }) {
 
           <div className="bg-yellow-50 border-2 border-[#FDE047] p-3 text-xs">
             <b>Tip for store owners:</b> After installing on the cashier's tablet, you can rotate the tablet or use a USB barcode gun — the POS screen is optimized for both.
+            <br /><br />
+            <b>Note:</b> If you're on localhost, share the <b>deployed URL</b> (not localhost). Deploy your frontend to see it online.
           </div>
         </div>
       </div>

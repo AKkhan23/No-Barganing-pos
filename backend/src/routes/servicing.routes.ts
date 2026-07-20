@@ -6,11 +6,39 @@ import { verifyJWT, requireRoles } from '../middleware/auth';
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
 
+/**
+ * @openapi
+ * /servicing:
+ *   get:
+ *     tags: [Servicing]
+ *     summary: List servicing records
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Array of servicing records
+ */
 router.get('/', async (_req: Request, res: Response) => {
   const items = await Servicing.find({}).lean();
   res.json(items);
 });
 
+/**
+ * @openapi
+ * /servicing:
+ *   post:
+ *     tags: [Servicing]
+ *     summary: Create a servicing record
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       201:
+ *         description: Created servicing record
+ */
 router.post('/', async (req: Request, res: Response) => {
   const now = new Date().toISOString();
   const item = new Servicing({ id: generateId(), ...req.body, created_at: now });
@@ -18,6 +46,31 @@ router.post('/', async (req: Request, res: Response) => {
   res.status(201).json(item.toJSON());
 });
 
+/**
+ * @openapi
+ * /servicing/{id}:
+ *   patch:
+ *     tags: [Servicing]
+ *     summary: Update a servicing record
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Updated servicing record
+ *       404:
+ *         description: Servicing not found
+ */
 router.patch('/:id', async (req: Request, res: Response) => {
   const item = await Servicing.findOneAndUpdate(
     { id: req.params.id },
@@ -28,6 +81,37 @@ router.patch('/:id', async (req: Request, res: Response) => {
   res.json(item);
 });
 
+/**
+ * @openapi
+ * /servicing/{id}/status:
+ *   patch:
+ *     tags: [Servicing]
+ *     summary: Update servicing status
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [pending, in_progress, completed, delivered]
+ *     responses:
+ *       200:
+ *         description: Updated servicing status
+ *       400:
+ *         description: Invalid status
+ *       404:
+ *         description: Servicing not found
+ */
 router.patch('/:id/status', async (req: Request, res: Response) => {
   const { status } = req.body;
   if (!['pending', 'in_progress', 'completed', 'delivered'].includes(status)) {
@@ -43,6 +127,23 @@ router.patch('/:id/status', async (req: Request, res: Response) => {
   res.json(item);
 });
 
+/**
+ * @openapi
+ * /servicing/{id}:
+ *   delete:
+ *     tags: [Servicing]
+ *     summary: Delete a servicing record
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Servicing record deleted
+ */
 router.delete('/:id', async (req: Request, res: Response) => {
   await Servicing.deleteOne({ id: req.params.id });
   res.json({ ok: true });

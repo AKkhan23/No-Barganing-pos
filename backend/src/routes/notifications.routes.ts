@@ -17,6 +17,29 @@ const CreateNotificationSchema = z.object({
   ref: z.string().optional(),
 });
 
+/**
+ * @openapi
+ * /notifications:
+ *   post:
+ *     tags: [Notifications]
+ *     summary: Create a notification
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [type, title, message]
+ *             properties:
+ *               type: { type: string }
+ *               title: { type: string }
+ *               message: { type: string }
+ *               ref: { type: string }
+ *     responses:
+ *       201:
+ *         description: Created notification
+ */
 router.post('/', validate(CreateNotificationSchema), async (req: Request, res: Response) => {
   const now = new Date().toISOString();
   const notification = new Notification({ ...req.body, id: generateId(), read: false, created_at: now });
@@ -24,6 +47,22 @@ router.post('/', validate(CreateNotificationSchema), async (req: Request, res: R
   res.status(201).json({ id: notification.id, type: notification.type, title: notification.title, message: notification.message, ref: notification.ref, read: notification.read, created_at: notification.created_at });
 });
 
+/**
+ * @openapi
+ * /notifications:
+ *   get:
+ *     tags: [Notifications]
+ *     summary: List notifications
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: unread_only
+ *         schema: { type: string }
+ *         description: Filter by unread (true/false)
+ *     responses:
+ *       200:
+ *         description: Array of notifications
+ */
 router.get('/', async (req: Request, res: Response) => {
   const filter: any = {};
   if (req.query.unread_only === 'true') filter.read = false;
@@ -31,17 +70,63 @@ router.get('/', async (req: Request, res: Response) => {
   res.json(notifications.map((n: any) => ({ id: n.id, type: n.type, title: n.title, message: n.message, ref: n.ref, read: n.read, created_at: n.created_at })));
 });
 
+/**
+ * @openapi
+ * /notifications/unread-count:
+ *   get:
+ *     tags: [Notifications]
+ *     summary: Get unread notification count
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Object with count
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 count: { type: number }
+ */
 router.get('/unread-count', async (_req: Request, res: Response) => {
   const count = await Notification.countDocuments({ read: false });
   res.json({ count });
 });
 
+/**
+ * @openapi
+ * /notifications/{id}/read:
+ *   patch:
+ *     tags: [Notifications]
+ *     summary: Mark a notification as read
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Updated notification
+ *       404:
+ *         description: Notification not found
+ */
 router.patch('/:id/read', async (req: Request, res: Response) => {
   const notification = await Notification.findOneAndUpdate({ id: req.params.id }, { $set: { read: true } }, { new: true }).lean();
   if (!notification) { res.status(404).json({ detail: 'Notification not found' }); return; }
   res.json({ id: notification.id, type: notification.type, title: notification.title, message: notification.message, ref: notification.ref, read: notification.read, created_at: notification.created_at });
 });
 
+/**
+ * @openapi
+ * /notifications/generate:
+ *   post:
+ *     tags: [Notifications]
+ *     summary: Auto-generate low-stock and due payment notifications
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Generation result with count
+ */
 router.post('/generate', async (_req: Request, res: Response) => {
   const now = new Date().toISOString();
   const created: any[] = [];

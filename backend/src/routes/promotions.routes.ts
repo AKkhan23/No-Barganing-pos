@@ -36,6 +36,22 @@ const UpdatePromotionSchema = z.object({
   usage_limit: z.number().optional(),
 });
 
+/**
+ * @openapi
+ * /promotions:
+ *   get:
+ *     tags: [Promotions]
+ *     summary: List promotions
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: active_only
+ *         schema: { type: string }
+ *         description: Filter by active status (true/false)
+ *     responses:
+ *       200:
+ *         description: Array of promotions
+ */
 router.get('/', async (req: Request, res: Response) => {
   const { active_only } = req.query;
   const filter: any = {};
@@ -44,6 +60,35 @@ router.get('/', async (req: Request, res: Response) => {
   res.json(items.map((p: any) => ({ id: p.id, name: p.name, type: p.type, discount_value: p.discount_value, min_purchase: p.min_purchase, valid_from: p.valid_from, valid_to: p.valid_to, applicable_products: p.applicable_products, applicable_categories: p.applicable_categories, active: p.active, max_discount: p.max_discount, usage_limit: p.usage_limit, used_count: p.used_count, created_at: p.created_at })));
 });
 
+/**
+ * @openapi
+ * /promotions:
+ *   post:
+ *     tags: [Promotions]
+ *     summary: Create a promotion
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name: { type: string }
+ *               type: { type: string }
+ *               discount_value: { type: number }
+ *               min_purchase: { type: number }
+ *               valid_from: { type: string }
+ *               valid_to: { type: string }
+ *               applicable_products: { type: array, items: { type: string } }
+ *               applicable_categories: { type: array, items: { type: string } }
+ *               active: { type: boolean }
+ *               max_discount: { type: number }
+ *               usage_limit: { type: number }
+ *     responses:
+ *       201:
+ *         description: Promotion created
+ */
 router.post('/', validate(CreatePromotionSchema), async (req: Request, res: Response) => {
   const now = new Date().toISOString();
   const promo = new Promotion({ ...req.body, id: generateId(), created_at: now, created_by_id: req.user?.id });
@@ -51,12 +96,66 @@ router.post('/', validate(CreatePromotionSchema), async (req: Request, res: Resp
   res.status(201).json({ id: promo.id, name: promo.name, type: promo.type, discount_value: promo.discount_value, min_purchase: promo.min_purchase, valid_from: promo.valid_from, valid_to: promo.valid_to, applicable_products: promo.applicable_products, applicable_categories: promo.applicable_categories, active: promo.active, max_discount: promo.max_discount, usage_limit: promo.usage_limit, used_count: promo.used_count, created_at: promo.created_at });
 });
 
+/**
+ * @openapi
+ * /promotions/{id}:
+ *   patch:
+ *     tags: [Promotions]
+ *     summary: Update a promotion
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name: { type: string }
+ *               type: { type: string }
+ *               discount_value: { type: number }
+ *               min_purchase: { type: number }
+ *               valid_from: { type: string }
+ *               valid_to: { type: string }
+ *               applicable_products: { type: array, items: { type: string } }
+ *               applicable_categories: { type: array, items: { type: string } }
+ *               active: { type: boolean }
+ *               max_discount: { type: number }
+ *               usage_limit: { type: number }
+ *     responses:
+ *       200:
+ *         description: Promotion updated
+ *       404:
+ *         description: Promotion not found
+ */
 router.patch('/:id', validate(UpdatePromotionSchema), async (req: Request, res: Response) => {
   const promo = await Promotion.findOneAndUpdate({ id: req.params.id }, { $set: req.body }, { new: true }).lean();
   if (!promo) { res.status(404).json({ detail: 'Promotion not found' }); return; }
   res.json({ id: promo.id, name: promo.name, type: promo.type, discount_value: promo.discount_value, min_purchase: promo.min_purchase, valid_from: promo.valid_from, valid_to: promo.valid_to, applicable_products: promo.applicable_products, applicable_categories: promo.applicable_categories, active: promo.active, max_discount: promo.max_discount, usage_limit: promo.usage_limit, used_count: promo.used_count });
 });
 
+/**
+ * @openapi
+ * /promotions/{id}:
+ *   delete:
+ *     tags: [Promotions]
+ *     summary: Delete a promotion
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Promotion deleted
+ *       404:
+ *         description: Promotion not found
+ */
 router.delete('/:id', async (req: Request, res: Response) => {
   const promo = await Promotion.findOneAndDelete({ id: req.params.id });
   if (!promo) { res.status(404).json({ detail: 'Promotion not found' }); return; }

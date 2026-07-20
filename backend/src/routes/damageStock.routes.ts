@@ -18,6 +18,34 @@ const CreateDamageSchema = z.object({
   note: z.string().optional(),
 });
 
+/**
+ * @openapi
+ * /damage-stock:
+ *   post:
+ *     tags: [Damage Stock]
+ *     summary: Create a damage stock entry
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [product_id, product_name, quantity, reason]
+ *             properties:
+ *               product_id: { type: string }
+ *               product_name: { type: string }
+ *               quantity: { type: number }
+ *               reason: { type: string }
+ *               note: { type: string }
+ *     responses:
+ *       201:
+ *         description: Damage stock created
+ *       400:
+ *         description: Insufficient stock
+ *       404:
+ *         description: Product not found
+ */
 router.post('/', validate(CreateDamageSchema), async (req: Request, res: Response) => {
   const now = new Date().toISOString();
   const product = await Product.findOne({ id: req.body.product_id });
@@ -44,6 +72,21 @@ router.post('/', validate(CreateDamageSchema), async (req: Request, res: Respons
   res.status(201).json({ id: damage.id, product_id: damage.product_id, product_name: damage.product_name, quantity: damage.quantity, reason: damage.reason, note: damage.note, created_at: damage.created_at });
 });
 
+/**
+ * @openapi
+ * /damage-stock:
+ *   get:
+ *     tags: [Damage Stock]
+ *     summary: List damage stock entries
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: product_id
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Array of damage stock entries
+ */
 router.get('/', async (req: Request, res: Response) => {
   const filter: any = {};
   if (req.query.product_id) filter.product_id = req.query.product_id;

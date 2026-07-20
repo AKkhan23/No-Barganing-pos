@@ -171,20 +171,21 @@ export default function Products() {
         </button>
       }
     >
-      <div className="p-6 overflow-y-auto h-full">
-        <div className="mb-4 relative">
+      <div className="p-3 sm:p-6 overflow-y-auto h-full">
+        <div className="mb-3 sm:mb-4 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder={t("page.search_products")}
-            className="w-full h-11 border-2 border-zinc-300 pl-10 pr-4 focus:outline-none focus:border-[#E60000] font-mono text-sm"
+            className="w-full h-10 sm:h-11 border-2 border-zinc-300 pl-10 pr-4 focus:outline-none focus:border-[#E60000] font-mono text-xs sm:text-sm"
             data-testid="products-search"
           />
         </div>
 
-        <div className="bg-white border-2 border-zinc-200 overflow-x-auto">
-          <table className="w-full text-sm">
+        {/* Desktop: Table view */}
+        <div className="hidden md:block bg-white border-2 border-zinc-200 overflow-x-auto">
+          <table className="w-full text-sm min-w-[750px]">
             <thead className="bg-zinc-100 text-zinc-900 uppercase text-[10px] tracking-widest">
               <tr>
                 <th className="p-3 text-left">{t("common.name")}</th>
@@ -236,18 +237,15 @@ export default function Products() {
                           className="p-1.5 hover:bg-zinc-200 mr-1 rounded" title={t("page.manage_batches")}
                           data-testid={`batch-${p.sku}`}
                         ><Calendar className="w-4 h-4" /></button>
-                        <button
-                          onClick={() => setLabelFor(p)}
+                        <button onClick={() => setLabelFor(p)}
                           className="p-1.5 hover:bg-zinc-200 mr-1" title={t("page.print_barcode_labels")}
                           data-testid={`label-${p.sku}`}
                         ><Tag className="w-4 h-4" /></button>
-                        <button
-                          onClick={() => setRepackFor(p)}
+                        <button onClick={() => setRepackFor(p)}
                           className="p-1.5 hover:bg-zinc-200 mr-1" title={t("page.repack_title")}
                           data-testid={`repack-${p.sku}`}
                         ><Package2 className="w-4 h-4" /></button>
-                        <button
-                          onClick={() => setModal({ edit: p, form: { ...p, price: String(p.price), cost: String(p.cost), tax_rate: String(p.tax_rate), stock: String(p.stock), low_stock_threshold: String(p.low_stock_threshold), sell_by: p.sell_by || "pcs" } })}
+                        <button onClick={() => setModal({ edit: p, form: { ...p, price: String(p.price), cost: String(p.cost), tax_rate: String(p.tax_rate), stock: String(p.stock), low_stock_threshold: String(p.low_stock_threshold), sell_by: p.sell_by || "pcs" } })}
                           className="p-1.5 hover:bg-zinc-200 mr-1"
                           data-testid={`edit-${p.sku}`}
                         ><Edit3 className="w-4 h-4" /></button>
@@ -324,6 +322,98 @@ export default function Products() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile: Card view */}
+        <div className="md:hidden space-y-2">
+          {filtered.length === 0 ? (
+            <div className="p-8 text-center text-zinc-500 font-mono text-sm">{t("page.no_products")}</div>
+          ) : (
+            filtered.map((p) => {
+              const low = p.stock <= p.low_stock_threshold;
+              const rkids = repackChildren[p.id];
+              const vkids = variantChildren[p.id];
+              const rCount = rkids?.length || 0;
+              const vCount = vkids?.length || 0;
+              const isOpen = expandedParents[p.id];
+              return (
+                <div key={p.id} className="bg-white border-2 border-zinc-200">
+                  <div className="p-3 flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-semibold truncate flex items-center gap-1">
+                        {(rCount > 0 || p.variant_group_id) && (
+                          <button onClick={() => toggleExpand(p.id)} className="p-0.5 hover:bg-zinc-200 rounded shrink-0">
+                            {isOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                          </button>
+                        )}
+                        {p.name}
+                      </div>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {rCount > 0 && <span className="text-[9px] font-bold uppercase tracking-widest bg-zinc-100 text-zinc-600 px-1.5 py-0.5">{rCount} {t("page.packets")}</span>}
+                        {vCount > 0 && <span className="text-[9px] font-bold uppercase tracking-widest bg-zinc-100 text-zinc-600 px-1.5 py-0.5">{vCount} {t("page.variant")}</span>}
+                        <span className="text-[10px] font-mono text-zinc-400">{p.sku}</span>
+                        {p.barcode && <span className="text-[10px] font-mono text-zinc-400">· {p.barcode}</span>}
+                      </div>
+                      <div className="flex items-center gap-3 mt-2 text-xs">
+                        <span className="font-mono font-bold">{formatMoney(p.price)}</span>
+                        <span className={`font-mono ${low ? "text-[#E60000] font-bold" : "text-zinc-600"}`}>Stk {formatStock(p.stock, p.sell_by)}</span>
+                        <span className="font-mono text-zinc-500">{p.tax_rate}%</span>
+                      </div>
+                      {p.sold_today > 0 && (
+                        <div className="text-[10px] font-mono text-zinc-400 mt-0.5">
+                          {t("page.total")}: {formatStock(p.stock + p.sold_today, p.sell_by)} &minus; {t("page.sold")}: {formatStock(p.sold_today, p.sell_by)}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button onClick={() => setBatchFor(p)} className="p-1.5 hover:bg-zinc-200 rounded" title={t("page.manage_batches")}><Calendar className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => setLabelFor(p)} className="p-1.5 hover:bg-zinc-200" title={t("page.print_barcode_labels")}><Tag className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => setRepackFor(p)} className="p-1.5 hover:bg-zinc-200" title={t("page.repack_title")}><Package2 className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => setModal({ edit: p, form: { ...p, price: String(p.price), cost: String(p.cost), tax_rate: String(p.tax_rate), stock: String(p.stock), low_stock_threshold: String(p.low_stock_threshold), sell_by: p.sell_by || "pcs" } })}
+                        className="p-1.5 hover:bg-zinc-200"><Edit3 className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => onDelete(p)} className="p-1.5 hover:bg-red-100 text-[#E60000]"><Trash2 className="w-3.5 h-3.5" /></button>
+                    </div>
+                  </div>
+                  {isOpen && (rkids || []).map((kid) => (
+                    <div key={kid.id} className="border-t border-zinc-100 bg-zinc-50 px-3 py-2 pl-7 text-sm flex items-center justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-zinc-700 truncate">{kid.name}</div>
+                        <div className="flex items-center gap-2 text-[10px] font-mono text-zinc-500">
+                          <span>{kid.sku}</span>
+                          <span className={`${kid.stock <= kid.low_stock_threshold ? "text-[#E60000] font-bold" : ""}`}>Stk {formatStock(kid.stock, kid.sell_by)}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button onClick={() => setLabelFor(kid)} className="p-1 hover:bg-zinc-200"><Tag className="w-3 h-3" /></button>
+                        <button onClick={() => setModal({ edit: kid, form: { ...kid, price: String(kid.price), cost: String(kid.cost), tax_rate: String(kid.tax_rate), stock: String(kid.stock), low_stock_threshold: String(kid.low_stock_threshold), sell_by: kid.sell_by || "pcs" } })}
+                          className="p-1 hover:bg-zinc-200"><Edit3 className="w-3 h-3" /></button>
+                        <button onClick={() => onDelete(kid)} className="p-1 hover:bg-red-100 text-[#E60000]"><Trash2 className="w-3 h-3" /></button>
+                      </div>
+                    </div>
+                  ))}
+                  {isOpen && p.variant_group_id && (vkids || []).map((v) => (
+                    <div key={v.id} className="border-t border-zinc-100 bg-red-50/30 px-3 py-2 pl-7 text-sm flex items-center justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-zinc-700 truncate flex items-center gap-1">
+                          {v.name} <span className="text-[9px] font-bold uppercase bg-zinc-100 text-zinc-500 px-1 py-0.5">{v.variant_name}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-[10px] font-mono text-zinc-500">
+                          <span>{v.sku}</span>
+                          <span className={`${v.stock <= v.low_stock_threshold ? "text-[#E60000] font-bold" : ""}`}>Stk {formatStock(v.stock, v.sell_by)}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button onClick={() => setLabelFor(v)} className="p-1 hover:bg-zinc-200"><Tag className="w-3 h-3" /></button>
+                        <button onClick={() => setModal({ edit: v, form: { ...v, price: String(v.price), cost: String(v.cost), tax_rate: String(v.tax_rate), stock: String(v.stock), low_stock_threshold: String(v.low_stock_threshold), sell_by: v.sell_by || "pcs" } })}
+                          className="p-1 hover:bg-zinc-200"><Edit3 className="w-3 h-3" /></button>
+                        <button onClick={() => onDelete(v)} className="p-1 hover:bg-red-100 text-[#E60000]"><Trash2 className="w-3 h-3" /></button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
 
@@ -522,14 +612,14 @@ function ProductModal({ initial, edit, cats, units, brands, racks, variations, a
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-      <div className="w-full max-w-3xl bg-white border-2 border-zinc-900 max-h-[92vh] overflow-y-auto" data-testid="product-modal">
-        <div className="flex items-center justify-between px-5 py-4 bg-zinc-950 text-white sticky top-0 z-10">
-          <div className="font-display font-black uppercase text-xl">{edit ? t("page.edit_product") : t("page.new_product")}</div>
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-2 sm:p-4">
+      <div className="w-full max-w-3xl bg-white border-2 border-zinc-900 max-h-[95vh] sm:max-h-[92vh] overflow-y-auto" data-testid="product-modal">
+        <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 bg-zinc-950 text-white sticky top-0 z-10">
+          <div className="font-display font-black uppercase text-base sm:text-xl">{edit ? t("page.edit_product") : t("page.new_product")}</div>
           <button onClick={onClose} className="p-1 hover:bg-zinc-800"><X className="w-5 h-5" /></button>
         </div>
         {edit && variantGroup.length > 1 && (
-          <div className="mx-5 mt-4 relative">
+          <div className="mx-4 sm:mx-5 mt-3 sm:mt-4 relative">
             <label className="block text-[10px] font-mono uppercase tracking-widest text-zinc-500 mb-1">{t("page.variant")} / {t("page.parent")}</label>
             <div className="relative">
               <select value={selectedVariantId || initial.id || ""} onChange={(e) => {
@@ -549,7 +639,7 @@ function ProductModal({ initial, edit, cats, units, brands, racks, variations, a
           </div>
         )}
         {edit && variantGroup.length <= 1 && !initial.variant_group_id && allProducts?.length > 1 && (
-          <div className="mx-5 mt-4">
+          <div className="mx-4 sm:mx-5 mt-3 sm:mt-4">
             <label className="block text-[10px] font-mono uppercase tracking-widest text-zinc-500 mb-1">{t("common.name")}</label>
             <div className="relative">
               <select value={parentProductId} onChange={(e) => setParentProductId(e.target.value)}
@@ -563,7 +653,7 @@ function ProductModal({ initial, edit, cats, units, brands, racks, variations, a
             </div>
           </div>
         )}
-        <form className="p-5 grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4" onSubmit={handleSubmit}>
+        <form className="p-4 sm:p-5 grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-3 sm:gap-y-4" onSubmit={handleSubmit}>
           {[
             { k: "name", label: t("common.name"), req: true, span: 2 },
             { k: "sku", label: t("page.sku"), req: true },
@@ -601,7 +691,7 @@ function ProductModal({ initial, edit, cats, units, brands, racks, variations, a
           ))}
 
           {/* Price / Cost / Tax Rate — 3 in one row */}
-          <div className="md:col-span-2 grid grid-cols-3 gap-4">
+          <div className="md:col-span-2 grid grid-cols-3 gap-2 sm:gap-4">
             <div>
               <label className="block text-xs font-semibold text-zinc-600 mb-1">{t("page.price")} *</label>
               <input type="number" value={form.price || ""} onChange={(e) => upd("price", e.target.value)} required
@@ -623,7 +713,7 @@ function ProductModal({ initial, edit, cats, units, brands, racks, variations, a
           </div>
 
           {/* Stock / Low Stock Alert — 2 in one row */}
-          <div className="md:col-span-2 grid grid-cols-2 gap-4">
+          <div className="md:col-span-2 grid grid-cols-2 gap-2 sm:gap-4">
             <div>
               <label className="block text-xs font-semibold text-zinc-600 mb-1">{t("page.stock")}</label>
               <div className="relative">
@@ -707,8 +797,8 @@ function ProductModal({ initial, edit, cats, units, brands, racks, variations, a
                       className="text-xs text-[#E60000] font-bold uppercase tracking-widest hover:underline">{t("page.add_variant")}</button>
                   </div>
                   {variants.map((v, i) => (
-                    <div key={i} className="grid grid-cols-5 gap-2 items-end">
-                      <div>
+                    <div key={i} className="grid grid-cols-2 sm:grid-cols-5 gap-2 items-end">
+                      <div className="col-span-2 sm:col-span-1">
                         <label className="block text-[9px] font-mono uppercase text-zinc-400 mb-0.5">{t("page.variant_name")}</label>
                         <input value={v.variant_name} onChange={(e) => updVariant(i, "variant_name", e.target.value)} placeholder="250gm"
                           className="w-full h-9 text-sm border border-zinc-300 px-2 rounded focus:outline-none focus:border-[#E60000]" />

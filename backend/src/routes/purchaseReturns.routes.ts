@@ -25,6 +25,38 @@ const CreatePurchaseReturnSchema = z.object({
   note: z.string().optional(),
 });
 
+/**
+ * @openapi
+ * /purchase-returns:
+ *   post:
+ *     tags: [PurchaseReturns]
+ *     summary: Create a purchase return (reduces stock & supplier balance)
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               supplier_id: { type: string }
+ *               items:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     product_id: { type: string }
+ *                     quantity: { type: number }
+ *                     cost: { type: number }
+ *               purchase_order_id: { type: string }
+ *               reason: { type: string }
+ *               note: { type: string }
+ *     responses:
+ *       201:
+ *         description: Created purchase return
+ *       404:
+ *         description: Supplier not found
+ */
 router.post('/', validate(CreatePurchaseReturnSchema), async (req: Request, res: Response) => {
   const { supplier_id, items, purchase_order_id, reason, note } = req.body;
   const supplier = await Supplier.findOne({ id: supplier_id }).lean();
@@ -81,11 +113,40 @@ router.post('/', validate(CreatePurchaseReturnSchema), async (req: Request, res:
   res.status(201).json({ id: pr.id, supplier_id: pr.supplier_id, supplier_name: pr.supplier_name, purchase_order_id: pr.purchase_order_id, items: pr.items, subtotal: pr.subtotal, tax_total: pr.tax_total, total: pr.total, reason: pr.reason, note: pr.note, created_at: pr.created_at });
 });
 
+/**
+ * @openapi
+ * /purchase-returns:
+ *   get:
+ *     tags: [PurchaseReturns]
+ *     summary: List purchase returns
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Array of purchase returns
+ */
 router.get('/', async (req: Request, res: Response) => {
   const items = await PurchaseReturn.find().lean();
   res.json(items.map((pr: any) => ({ id: pr.id, supplier_id: pr.supplier_id, supplier_name: pr.supplier_name, purchase_order_id: pr.purchase_order_id, items: pr.items, subtotal: pr.subtotal, tax_total: pr.tax_total, total: pr.total, reason: pr.reason, note: pr.note, created_at: pr.created_at })));
 });
 
+/**
+ * @openapi
+ * /purchase-returns/{id}:
+ *   delete:
+ *     tags: [PurchaseReturns]
+ *     summary: Delete a purchase return
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Deletion confirmed
+ *       404:
+ *         description: Purchase return not found
+ */
 router.delete('/:id', async (req: Request, res: Response) => {
   const pr = await PurchaseReturn.findOne({ id: req.params.id }).lean();
   if (!pr) { res.status(404).json({ detail: 'Purchase return not found' }); return; }
@@ -93,6 +154,24 @@ router.delete('/:id', async (req: Request, res: Response) => {
   res.json({ ok: true });
 });
 
+/**
+ * @openapi
+ * /purchase-returns/{id}:
+ *   get:
+ *     tags: [PurchaseReturns]
+ *     summary: Get a purchase return by ID
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Purchase return details
+ *       404:
+ *         description: Purchase return not found
+ */
 router.get('/:id', async (req: Request, res: Response) => {
   const pr = await PurchaseReturn.findOne({ id: req.params.id }).lean();
   if (!pr) { res.status(404).json({ detail: 'Purchase return not found' }); return; }

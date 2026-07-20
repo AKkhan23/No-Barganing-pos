@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import JsBarcode from "jsbarcode";
 import ReactDOMServer from "react-dom/server";
 import { QRCodeSVG } from "qrcode.react";
-import { Printer, X, FileText, Receipt } from "lucide-react";
+import { Printer, X, FileText, Receipt, ArrowLeft } from "lucide-react";
 
 function computeEan13(seed) {
   if (!seed) return null;
@@ -200,32 +200,37 @@ body.mode-a4 .label-qr-wrap svg { width: 8mm; display: block; }
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 print:bg-white print:p-0">
       <div className="w-full max-w-4xl bg-white border-2 border-zinc-900 print:border-0 max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between p-4 bg-zinc-950 text-white print:hidden">
-          <div className="font-display font-black uppercase text-lg">Print Labels — {product.name}</div>
-          <div className="flex items-center gap-3">
+        <div className="p-3 sm:p-4 bg-zinc-950 text-white print:hidden">
+          <div className="flex items-center justify-between gap-2">
+            <button onClick={onClose} className="flex items-center gap-1.5 p-1.5 hover:bg-zinc-800 rounded text-xs font-bold uppercase tracking-widest">
+              <ArrowLeft className="w-4 h-4" /> Back
+            </button>
+            <div className="font-display font-black uppercase text-sm sm:text-lg truncate">{product.name}</div>
+            <button onClick={onClose} className="p-1.5 hover:bg-zinc-800 rounded"><X className="w-4 h-4 sm:w-5 sm:h-5" /></button>
+          </div>
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
             <div className="flex bg-zinc-800 rounded-lg p-0.5">
               {Object.entries(MODES).map(([key, cfg]) => {
                 const Icon = key === "thermal" ? Receipt : FileText;
                 const active = mode === key;
                 return (
                   <button key={key} onClick={() => setMode(key)}
-                    className={`h-8 px-2.5 rounded-md text-[10px] font-bold uppercase tracking-widest flex items-center gap-1 transition-colors ${active ? "bg-zinc-700 text-white" : "text-zinc-400 hover:text-zinc-200"}`}>
+                    className={`h-7 sm:h-8 px-2 sm:px-2.5 rounded-md text-[9px] sm:text-[10px] font-bold uppercase tracking-widest flex items-center gap-1 transition-colors ${active ? "bg-zinc-700 text-white" : "text-zinc-400 hover:text-zinc-200"}`}>
                     <Icon className="w-3 h-3" /> {cfg.cols === 1 ? "Thermal" : "A4"}
                   </button>
                 );
               })}
             </div>
-            <div className="flex items-center gap-2 text-xs font-mono">
+            <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-mono">
               <span className="text-zinc-400">Copies:</span>
               <input type="number" min={1} max={999} value={copies}
                 onChange={(e) => setCopies(Math.max(1, parseInt(e.target.value) || 1))}
-                className="w-16 h-8 px-2 bg-zinc-800 border border-zinc-600 text-white text-center rounded focus:outline-none focus:border-[#E60000]" />
+                className="w-14 sm:w-16 h-7 sm:h-8 px-1.5 sm:px-2 bg-zinc-800 border border-zinc-600 text-white text-center rounded focus:outline-none focus:border-[#E60000]" />
             </div>
             <button onClick={handlePrint}
-              className="h-10 px-4 bg-[#E60000] text-white text-xs font-bold uppercase tracking-widest flex items-center gap-2 rounded hover:bg-[#cc0000] transition-colors">
-              <Printer className="w-4 h-4" strokeWidth={2.5} /> Print
+              className="ml-auto h-8 sm:h-10 px-3 sm:px-4 bg-[#E60000] text-white text-[10px] sm:text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 rounded hover:bg-[#cc0000] transition-colors">
+              <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4" strokeWidth={2.5} /> Print
             </button>
-            <button onClick={onClose} className="p-2 hover:bg-zinc-800"><X className="w-5 h-5" /></button>
           </div>
         </div>
         <div className="p-6 overflow-y-auto bg-zinc-100 print:bg-white print:p-2">

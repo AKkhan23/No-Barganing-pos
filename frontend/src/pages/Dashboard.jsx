@@ -270,12 +270,12 @@ export function PageShell({ title, subtitle, right, children }) {
   const { t } = useTranslation();
   return (
     <div className="h-full flex flex-col bg-gradient-to-br from-zinc-50 via-white to-zinc-50">
-      <header className="bg-white/90 backdrop-blur-xl border-b border-zinc-200 px-6 py-4 flex items-center justify-between flex-shrink-0">
-        <div>
-          <h1 className="font-display font-black text-2xl text-zinc-900">{title}</h1>
-          {subtitle && <div className="text-sm text-zinc-500 mt-1">{subtitle}</div>}
+      <header className="bg-white/90 backdrop-blur-xl border-b border-zinc-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between flex-shrink-0 gap-2">
+        <div className="min-w-0">
+          <h1 className="font-display font-black text-lg sm:text-2xl text-zinc-900 truncate">{title}</h1>
+          {subtitle && <div className="text-xs sm:text-sm text-zinc-500 mt-0.5 sm:mt-1 truncate">{subtitle}</div>}
         </div>
-        {right}
+        <div className="flex-shrink-0">{right}</div>
       </header>
       <div className="flex-1 overflow-hidden">{children}</div>
     </div>

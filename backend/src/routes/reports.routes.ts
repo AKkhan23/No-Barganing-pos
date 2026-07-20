@@ -5,6 +5,38 @@ import { verifyJWT, requireRoles } from '../middleware/auth';
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
 
+/**
+ * @openapi
+ * /reports/sales:
+ *   get:
+ *     tags: [Reports]
+ *     summary: Get sales report with breakdown by payment mode, cashier, and top items
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: date_from
+ *         schema:
+ *           type: string
+ *         description: Start date (ISO)
+ *       - in: query
+ *         name: date_to
+ *         schema:
+ *           type: string
+ *         description: End date (ISO)
+ *       - in: query
+ *         name: start_date
+ *         schema:
+ *           type: string
+ *         description: Alternate start date
+ *       - in: query
+ *         name: end_date
+ *         schema:
+ *           type: string
+ *         description: Alternate end date
+ *     responses:
+ *       200:
+ *         description: Sales report data
+ */
 router.get('/sales', async (req: Request, res: Response) => {
   const { date_from, date_to, start_date, end_date } = req.query;
   const filter: any = {};

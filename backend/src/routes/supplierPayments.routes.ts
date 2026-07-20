@@ -18,6 +18,24 @@ const CreatePaymentSchema = z.object({
   note: z.string().optional(),
 });
 
+/**
+ * @openapi
+ * /supplier-payments:
+ *   get:
+ *     tags: [SupplierPayments]
+ *     summary: List supplier payments
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: supplier_id
+ *         schema: { type: string }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Array of supplier payments
+ */
 router.get('/', async (req: Request, res: Response) => {
   const filter: any = {};
   if (req.query.supplier_id) { filter.supplier_id = req.query.supplier_id; }
@@ -26,12 +44,54 @@ router.get('/', async (req: Request, res: Response) => {
   res.json(payments.map((p: any) => ({ id: p.id, outlet_id: p.outlet_id, supplier_id: p.supplier_id, supplier_name: p.supplier_name, amount: p.amount, mode: p.mode, note: p.note, created_at: p.created_at, created_by_id: p.created_by_id, created_by_name: p.created_by_name })));
 });
 
+/**
+ * @openapi
+ * /supplier-payments/{id}:
+ *   get:
+ *     tags: [SupplierPayments]
+ *     summary: Get a supplier payment by ID
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Supplier payment details
+ *       404:
+ *         description: Payment not found
+ */
 router.get('/:id', async (req: Request, res: Response) => {
   const payment = await SupplierPayment.findOne({ id: req.params.id }).lean();
   if (!payment) { res.status(404).json({ detail: 'Supplier payment not found' }); return; }
   res.json({ id: payment.id, outlet_id: payment.outlet_id, supplier_id: payment.supplier_id, supplier_name: payment.supplier_name, amount: payment.amount, mode: payment.mode, note: payment.note, created_at: payment.created_at, created_by_id: payment.created_by_id, created_by_name: payment.created_by_name });
 });
 
+/**
+ * @openapi
+ * /supplier-payments:
+ *   post:
+ *     tags: [SupplierPayments]
+ *     summary: Create a supplier payment
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               supplier_id: { type: string }
+ *               amount: { type: number }
+ *               mode: { type: string, enum: [cash, bank, upi, wallet] }
+ *               note: { type: string }
+ *     responses:
+ *       201:
+ *         description: Created payment
+ *       404:
+ *         description: Supplier not found
+ */
 router.post('/', validate(CreatePaymentSchema), async (req: Request, res: Response) => {
   const now = new Date().toISOString();
   const supplier = await Supplier.findOne({ id: req.body.supplier_id });
@@ -77,6 +137,24 @@ router.post('/', validate(CreatePaymentSchema), async (req: Request, res: Respon
   res.status(201).json({ id: payment.id, outlet_id: payment.outlet_id, supplier_id: payment.supplier_id, supplier_name: payment.supplier_name, amount: payment.amount, mode: payment.mode, note: payment.note, created_at: payment.created_at, created_by_id: payment.created_by_id, created_by_name: payment.created_by_name });
 });
 
+/**
+ * @openapi
+ * /supplier-payments/{id}:
+ *   delete:
+ *     tags: [SupplierPayments]
+ *     summary: Delete a supplier payment (reverses balance & ledger)
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Deletion confirmed
+ *       404:
+ *         description: Payment not found
+ */
 router.delete('/:id', async (req: Request, res: Response) => {
   const payment = await SupplierPayment.findOne({ id: req.params.id });
   if (!payment) { res.status(404).json({ detail: 'Payment not found' }); return; }

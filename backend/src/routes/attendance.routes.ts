@@ -17,6 +17,28 @@ const CheckOutSchema = z.object({
   longitude: z.number().optional(),
 });
 
+/**
+ * @openapi
+ * /attendance/check-in:
+ *   post:
+ *     tags: [Attendance]
+ *     summary: Check in for the day
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               latitude: { type: number }
+ *               longitude: { type: number }
+ *     responses:
+ *       201:
+ *         description: Check-in record created
+ *       400:
+ *         description: Already checked in today
+ */
 router.post('/check-in', verifyJWT, validate(CheckInSchema), async (req: Request, res: Response) => {
   try {
     const now = new Date();
@@ -40,6 +62,28 @@ router.post('/check-in', verifyJWT, validate(CheckInSchema), async (req: Request
   } catch (err: any) { res.status(500).json({ detail: err.message }); }
 });
 
+/**
+ * @openapi
+ * /attendance/check-out:
+ *   post:
+ *     tags: [Attendance]
+ *     summary: Check out for the day
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               latitude: { type: number }
+ *               longitude: { type: number }
+ *     responses:
+ *       200:
+ *         description: Check-out record updated
+ *       400:
+ *         description: No open check-in record found
+ */
 router.post('/check-out', verifyJWT, validate(CheckOutSchema), async (req: Request, res: Response) => {
   try {
     const now = new Date();
@@ -57,6 +101,26 @@ router.post('/check-out', verifyJWT, validate(CheckOutSchema), async (req: Reque
   } catch (err: any) { res.status(500).json({ detail: err.message }); }
 });
 
+/**
+ * @openapi
+ * /attendance:
+ *   get:
+ *     tags: [Attendance]
+ *     summary: List attendance records
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: date
+ *         schema: { type: string }
+ *         description: Filter by date (YYYY-MM-DD)
+ *       - in: query
+ *         name: user_id
+ *         schema: { type: string }
+ *         description: Filter by user ID
+ *     responses:
+ *       200:
+ *         description: Array of attendance records
+ */
 router.get('/', verifyJWT, requireRoles('admin', 'manager'), async (req: Request, res: Response) => {
   try {
     const filter: any = {};
@@ -67,6 +131,23 @@ router.get('/', verifyJWT, requireRoles('admin', 'manager'), async (req: Request
   } catch (err: any) { res.status(500).json({ detail: err.message }); }
 });
 
+/**
+ * @openapi
+ * /attendance/summary:
+ *   get:
+ *     tags: [Attendance]
+ *     summary: Get attendance summary for a month
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: month
+ *         required: true
+ *         schema: { type: string }
+ *         description: Month in YYYY-MM format (e.g. 2026-07)
+ *     responses:
+ *       200:
+ *         description: Array of user attendance summaries
+ */
 router.get('/summary', verifyJWT, requireRoles('admin', 'manager'), async (req: Request, res: Response) => {
   try {
     const month = req.query.month as string;

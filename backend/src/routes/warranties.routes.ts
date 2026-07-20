@@ -32,11 +32,39 @@ const UpdateWarrantySchema = z.object({
   notes: z.string().optional(),
 });
 
+/**
+ * @openapi
+ * /warranties:
+ *   get:
+ *     tags: [Warranties]
+ *     summary: List warranties
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Array of warranties
+ */
 router.get('/', async (_req: Request, res: Response) => {
   const warranties = await Warranty.find().sort({ created_at: -1 }).lean();
   res.json(warranties.map((w: any) => ({ id: w.id, order_id: w.order_id, product_id: w.product_id, product_name: w.product_name, customer_id: w.customer_id, customer_name: w.customer_name, sale_date: w.sale_date, warranty_period_days: w.warranty_period_days, expiry_date: w.expiry_date, service_status: w.service_status, notes: w.notes, created_at: w.created_at })));
 });
 
+/**
+ * @openapi
+ * /warranties:
+ *   post:
+ *     tags: [Warranties]
+ *     summary: Create a warranty
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       201:
+ *         description: Created warranty
+ */
 router.post('/', validate(CreateWarrantySchema), async (req: Request, res: Response) => {
   const now = new Date().toISOString();
   const saleDate = new Date(req.body.sale_date);
@@ -54,6 +82,31 @@ router.post('/', validate(CreateWarrantySchema), async (req: Request, res: Respo
   res.status(201).json({ id: warranty.id, order_id: warranty.order_id, product_id: warranty.product_id, product_name: warranty.product_name, customer_id: warranty.customer_id, customer_name: warranty.customer_name, sale_date: warranty.sale_date, warranty_period_days: warranty.warranty_period_days, expiry_date: warranty.expiry_date, service_status: warranty.service_status, notes: warranty.notes, created_at: warranty.created_at });
 });
 
+/**
+ * @openapi
+ * /warranties/{id}:
+ *   patch:
+ *     tags: [Warranties]
+ *     summary: Update a warranty
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Updated warranty
+ *       404:
+ *         description: Warranty not found
+ */
 router.patch('/:id', validate(UpdateWarrantySchema), async (req: Request, res: Response) => {
   const update: any = { ...req.body, updated_at: new Date().toISOString() };
   if (req.body.sale_date && req.body.warranty_period_days) {
@@ -65,6 +118,23 @@ router.patch('/:id', validate(UpdateWarrantySchema), async (req: Request, res: R
   res.json({ id: warranty.id, order_id: warranty.order_id, product_id: warranty.product_id, product_name: warranty.product_name, customer_id: warranty.customer_id, customer_name: warranty.customer_name, sale_date: warranty.sale_date, warranty_period_days: warranty.warranty_period_days, expiry_date: warranty.expiry_date, service_status: warranty.service_status, notes: warranty.notes, created_at: warranty.created_at });
 });
 
+/**
+ * @openapi
+ * /warranties/{id}:
+ *   delete:
+ *     tags: [Warranties]
+ *     summary: Delete a warranty
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Warranty deleted
+ */
 router.delete('/:id', async (req: Request, res: Response) => {
   await Warranty.deleteOne({ id: req.params.id });
   res.json({ ok: true });

@@ -1,82 +1,61 @@
-import React, { useEffect, useRef, useState } from "react";
-import { X, Camera, ScanLine, Image } from "lucide-react";
-import { Html5Qrcode } from "html5-qrcode";
+import React, { useState } from "react";
+import { X, Camera, ScanLine, Upload, RefreshCw } from "lucide-react";
 
 export default function BarcodeScanner({ onDetect, onClose }) {
-  const videoRef = useRef(null);
-  const streamRef = useRef(null);
-  const fileRef = useRef(null);
+  const fileRef = React.useRef(null);
+  const inputRef = React.useRef(null);
+  const videoRef = React.useRef(null);
+  const [mode, setMode] = useState("init");
   const [error, setError] = useState("");
   const [manual, setManual] = useState("");
-  const [mode, setMode] = useState("live");
 
-  useEffect(() => {
+  React.useEffect(() => {
+    let stream = null;
     let alive = true;
-    let scanner = null;
 
-    async function startCamera() {
+    async function openCam() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" },
-        });
-        if (!alive) { stopStream(stream); return; }
-        streamRef.current = stream;
-        if (videoRef.current) videoRef.current.srcObject = stream;
-        if ("BarcodeDetector" in window) {
-          startBarcodeLoop();
-        } else {
-          startHtml5Loop();
+        if (location.protocol !== "https:" && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
+          if (alive) setMode("manual");
+          return;
         }
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        if (!alive) { stream.getTracks().forEach(t => t.stop()); return; }
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+        }
+        if (alive) setMode("live");
       } catch {
-        if (alive) setMode("photo");
-      }
-    }
-
-    async function startBarcodeLoop() {
-      const detector = new BarcodeDetector({
-        formats: ["ean_13", "ean_8", "code_128", "code_39", "upc_a", "upc_e", "itf", "qr_code"],
-      });
-      while (true) {
-        if (!videoRef.current || videoRef.current.readyState < 2) { await sleep(300); continue; }
         try {
-          const codes = await detector.detect(videoRef.current);
-          if (codes.length > 0) { onDetect(codes[0].rawValue); return; }
-        } catch {}
-        await sleep(300);
+          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+          if (!alive) { stream.getTracks().forEach(t => t.stop()); return; }
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            await videoRef.current.play();
+          }
+          if (alive) setMode("live");
+        } catch {
+          if (alive) setMode("manual");
+        }
       }
     }
 
-    async function startHtml5Loop() {
-      scanner = new Html5Qrcode("qr-reader");
-      await scanner.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 280, height: 220 } },
-        (text) => { if (alive) onDetect(text); },
-        () => {}
-      );
-    }
-
-    startCamera();
+    openCam();
 
     return () => {
       alive = false;
-      if (scanner) scanner.stop().catch(() => {});
-      stopStream(streamRef.current);
+      if (stream) stream.getTracks().forEach(t => t.stop());
     };
   }, []);
-
-  function stopStream(stream) {
-    if (stream) stream.getTracks().forEach((t) => t.stop());
-  }
-
-  function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
   async function handleFile(e) {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      const scanner = new Html5Qrcode("qr-reader");
-      const result = await scanner.scanFile(file, true);
+      const { Html5Qrcode } = await import("html5-qrcode");
+      const s = new Html5Qrcode("qr-reader-file");
+      const result = await s.scanFile(file, true);
       onDetect(result);
     } catch {
       setError("Could not read barcode from image. Try typing it.");
@@ -96,55 +75,44 @@ export default function BarcodeScanner({ onDetect, onClose }) {
           </button>
         </div>
 
-        {mode === "live" ? (
-          <div className="relative bg-black" style={{ minHeight: "280px" }}>
-            <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover absolute inset-0" />
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center bg-zinc-900 py-10 px-4" style={{ minHeight: "280px" }}>
-            <Camera className="w-12 h-12 text-zinc-500 mb-3" strokeWidth={1.5} />
-            <p className="text-zinc-400 text-xs mb-4 text-center">
-              Live camera not available on this connection.<br/>Take a photo of the barcode instead.
-            </p>
-            <button
-              onClick={() => fileRef.current?.click()}
-              className="h-12 px-8 bg-white text-black font-bold uppercase tracking-widest text-xs hover:bg-zinc-200 flex items-center gap-2"
-            >
-              <Image className="w-4 h-4" /> Take Photo
-            </button>
-            <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handleFile} className="hidden" />
+        <div className="relative bg-black flex items-center justify-center overflow-hidden" style={{ minHeight: "320px", display: mode === "manual" ? "none" : "flex" }}>
+          <video ref={videoRef} autoPlay playsInline muted className="w-full object-contain" style={{ maxHeight: "320px" }} />
+          {mode === "init" && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900 gap-3 z-10">
+              <div className="w-8 h-8 border-2 border-zinc-500 border-t-white rounded-full animate-spin" />
+              <p className="text-zinc-400 text-xs font-mono">Starting camera...</p>
+            </div>
+          )}
+        </div>
+
+        {mode === "manual" && (
+          <div className="bg-zinc-900 py-8 px-6" style={{ minHeight: "280px" }}>
+            <div className="max-w-md mx-auto space-y-5">
+              <div className="text-center">
+                <ScanLine className="w-10 h-10 text-zinc-500 mx-auto mb-2" strokeWidth={1.5} />
+                <p className="text-zinc-400 text-sm">Camera unavailable. Type barcode or upload image.</p>
+              </div>
+              <div>
+                <input ref={inputRef} value={manual} onChange={e => setManual(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter" && manual.trim()) { e.preventDefault(); onDetect(manual.trim()); } }}
+                  placeholder="e.g. 8901234567890"
+                  className="w-full h-12 bg-zinc-800 border-2 border-zinc-600 text-white px-4 font-mono text-lg tracking-wider text-center focus:outline-none focus:border-[#E60000] placeholder-zinc-600" autoFocus />
+              </div>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-zinc-700" /></div>
+                <div className="relative flex justify-center"><span className="bg-zinc-900 px-3 text-[10px] font-mono uppercase text-zinc-500">or</span></div>
+              </div>
+              <button onClick={() => fileRef.current?.click()}
+                className="w-full h-12 bg-zinc-800 hover:bg-zinc-700 border-2 border-dashed border-zinc-600 text-zinc-300 font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 transition-colors">
+                <Upload className="w-4 h-4" /> Upload barcode image
+              </button>
+              <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
+              <div id="qr-reader-file" className="hidden" />
+            </div>
           </div>
         )}
 
-        <div className="p-4 bg-zinc-50 border-t-2 border-zinc-200">
-          {error && (
-            <div className="text-xs text-red-600 mb-2 font-mono">{error}</div>
-          )}
-          <div className="text-xs font-mono uppercase tracking-widest text-zinc-500 mb-2 flex items-center gap-1">
-            <ScanLine className="w-3 h-3" /> Or type barcode manually
-          </div>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (manual.trim()) onDetect(manual.trim());
-            }}
-            className="flex gap-2"
-          >
-            <input
-              value={manual}
-              onChange={(e) => setManual(e.target.value)}
-              placeholder="Type barcode or SKU"
-              className="flex-1 h-12 border-2 border-zinc-300 px-3 font-mono text-sm focus:outline-none focus:border-[#E60000]"
-              autoFocus
-            />
-            <button
-              type="submit"
-              className="h-12 px-5 bg-[#E60000] text-white font-bold uppercase tracking-widest text-xs hover:bg-red-700"
-            >
-              Add
-            </button>
-          </form>
-        </div>
+        {error && <div className="px-4 py-2 bg-red-50 border-t-2 border-red-200"><p className="text-xs text-red-600 font-mono">{error}</p></div>}
       </div>
     </div>
   );

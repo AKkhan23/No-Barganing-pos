@@ -11,6 +11,17 @@ import { verifyJWT, requireRoles } from '../middleware/auth';
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
 
+/**
+ * @openapi
+ * /accounting/trial-balance:
+ *   get:
+ *     tags: [Accounting Reports]
+ *     summary: Get trial balance
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Trial balance with debit/credit totals
+ */
 router.get('/trial-balance', async (_req: Request, res: Response) => {
   try {
     const entries = await LedgerEntry.aggregate([
@@ -26,6 +37,17 @@ router.get('/trial-balance', async (_req: Request, res: Response) => {
   } catch (err: any) { res.status(500).json({ detail: err.message }); }
 });
 
+/**
+ * @openapi
+ * /accounting/balance-sheet:
+ *   get:
+ *     tags: [Accounting Reports]
+ *     summary: Get balance sheet
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Balance sheet with assets, liabilities, equity
+ */
 router.get('/balance-sheet', async (_req: Request, res: Response) => {
   try {
     const entries = await LedgerEntry.aggregate([
@@ -49,6 +71,17 @@ router.get('/balance-sheet', async (_req: Request, res: Response) => {
   } catch (err: any) { res.status(500).json({ detail: err.message }); }
 });
 
+/**
+ * @openapi
+ * /accounting/balance-statement:
+ *   get:
+ *     tags: [Accounting Reports]
+ *     summary: Get balance statement (revenue, cogs, profit)
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Balance statement with revenue, COGS, expenses, net profit
+ */
 router.get('/balance-statement', async (_req: Request, res: Response) => {
   try {
     const orders = await Order.aggregate([{ $group: { _id: null, total: { $sum: '$grand_total' } } }]);
@@ -68,6 +101,17 @@ router.get('/balance-statement', async (_req: Request, res: Response) => {
 });
 
 // Accounting report views
+/**
+ * @openapi
+ * /accounting/account_balances:
+ *   get:
+ *     tags: [Accounting Reports]
+ *     summary: Get account balances
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Array of account balances
+ */
 router.get('/account_balances', async (_req: Request, res: Response) => {
   try {
     const accounts = await Account.find().lean();
@@ -82,6 +126,17 @@ router.get('/account_balances', async (_req: Request, res: Response) => {
   } catch (err: any) { res.status(500).json({ detail: err.message }); }
 });
 
+/**
+ * @openapi
+ * /accounting/income_statement:
+ *   get:
+ *     tags: [Accounting Reports]
+ *     summary: Get income statement
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Income statement with revenue, COGS, gross profit, net profit
+ */
 router.get('/income_statement', async (_req: Request, res: Response) => {
   try {
     const revenue = await Order.aggregate([{ $group: { _id: null, total: { $sum: '$grand_total' } } }]);
@@ -98,6 +153,17 @@ router.get('/income_statement', async (_req: Request, res: Response) => {
   } catch (err: any) { res.status(500).json({ detail: err.message }); }
 });
 
+/**
+ * @openapi
+ * /accounting/cash_flow:
+ *   get:
+ *     tags: [Accounting Reports]
+ *     summary: Get cash flow report
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Cash flow entries grouped by account and date
+ */
 router.get('/cash_flow', async (_req: Request, res: Response) => {
   try {
     const flow = await LedgerEntry.aggregate([
@@ -109,6 +175,17 @@ router.get('/cash_flow', async (_req: Request, res: Response) => {
   } catch (err: any) { res.status(500).json({ detail: err.message }); }
 });
 
+/**
+ * @openapi
+ * /accounting/aging_summary:
+ *   get:
+ *     tags: [Accounting Reports]
+ *     summary: Get aging summary of outstanding dues
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Aging buckets (0-30, 31-60, 61-90, 90+ days)
+ */
 router.get('/aging_summary', async (_req: Request, res: Response) => {
   try {
     const orders = await Order.find().sort({ created_at: -1 }).limit(100).lean();

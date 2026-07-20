@@ -17,6 +17,34 @@ const CreateIncomeSchema = z.object({
   date: z.string().optional(),
 });
 
+/**
+ * @openapi
+ * /income:
+ *   post:
+ *     tags: [Income]
+ *     summary: Create a new income entry
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               source:
+ *                 type: string
+ *               account:
+ *                 type: string
+ *               amount:
+ *                 type: number
+ *               note:
+ *                 type: string
+ *               date:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Income created
+ */
 router.post('/', validate(CreateIncomeSchema), async (req: Request, res: Response) => {
   const now = new Date().toISOString();
   const date = req.body.date || now;
@@ -51,6 +79,30 @@ router.post('/', validate(CreateIncomeSchema), async (req: Request, res: Respons
   res.status(201).json({ id: income.id, source: income.source, account: income.account, amount: income.amount, note: income.note, date: income.date, created_at: income.created_at });
 });
 
+/**
+ * @openapi
+ * /income:
+ *   get:
+ *     tags: [Income]
+ *     summary: List income entries
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: source
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: date_from
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: date_to
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Array of income entries
+ */
 router.get('/', async (req: Request, res: Response) => {
   const filter: any = {};
   if (req.query.source) filter.source = req.query.source;

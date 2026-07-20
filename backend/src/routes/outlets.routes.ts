@@ -27,11 +27,33 @@ const UpdateOutletSchema = z.object({
   is_active: z.boolean().optional(),
 });
 
+/**
+ * @openapi
+ * /outlets:
+ *   get:
+ *     tags: [Outlets]
+ *     summary: List all outlets
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Array of outlets
+ */
 router.get('/', async (_req: Request, res: Response) => {
   const outlets = await Outlet.find().lean();
   res.json(outlets.map((o: any) => ({ id: o.id, name: o.name, address: o.address, phone: o.phone, gstin: o.gstin, is_active: o.is_active, created_at: o.created_at })));
 });
 
+/**
+ * @openapi
+ * /outlets/current:
+ *   get:
+ *     tags: [Outlets]
+ *     summary: Get active outlet
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Active outlet details
+ */
 router.get('/current', async (_req: Request, res: Response) => {
   const outlet = await Outlet.findOne({ is_active: true }).lean();
   if (!outlet) {
@@ -43,12 +65,53 @@ router.get('/current', async (_req: Request, res: Response) => {
   res.json({ id: outlet.id, name: outlet.name, address: outlet.address, phone: outlet.phone, gstin: outlet.gstin, is_active: outlet.is_active, created_at: outlet.created_at });
 });
 
+/**
+ * @openapi
+ * /outlets/{id}:
+ *   get:
+ *     tags: [Outlets]
+ *     summary: Get outlet by ID
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Outlet details
+ *       404:
+ *         description: Outlet not found
+ */
 router.get('/:id', async (req: Request, res: Response) => {
   const outlet = await Outlet.findOne({ id: req.params.id }).lean();
   if (!outlet) { res.status(404).json({ detail: 'Outlet not found' }); return; }
   res.json({ id: outlet.id, name: outlet.name, address: outlet.address, phone: outlet.phone, gstin: outlet.gstin, is_active: outlet.is_active, created_at: outlet.created_at });
 });
 
+/**
+ * @openapi
+ * /outlets:
+ *   post:
+ *     tags: [Outlets]
+ *     summary: Create a new outlet
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name: { type: string }
+ *               address: { type: string }
+ *               phone: { type: string }
+ *               gstin: { type: string }
+ *               is_active: { type: boolean }
+ *     responses:
+ *       201:
+ *         description: Outlet created
+ */
 router.post('/', validate(CreateOutletSchema), async (req: Request, res: Response) => {
   const now = new Date().toISOString();
   const outlet = new Outlet({ ...req.body, id: generateId(), created_at: now });
@@ -56,12 +119,58 @@ router.post('/', validate(CreateOutletSchema), async (req: Request, res: Respons
   res.status(201).json({ id: outlet.id, name: outlet.name, address: outlet.address, phone: outlet.phone, gstin: outlet.gstin, is_active: outlet.is_active, created_at: outlet.created_at });
 });
 
+/**
+ * @openapi
+ * /outlets/{id}:
+ *   patch:
+ *     tags: [Outlets]
+ *     summary: Update an outlet
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name: { type: string }
+ *               address: { type: string }
+ *               phone: { type: string }
+ *               gstin: { type: string }
+ *               is_active: { type: boolean }
+ *     responses:
+ *       200:
+ *         description: Outlet updated
+ *       404:
+ *         description: Outlet not found
+ */
 router.patch('/:id', validate(UpdateOutletSchema), async (req: Request, res: Response) => {
   const outlet = await Outlet.findOneAndUpdate({ id: req.params.id }, { $set: req.body }, { new: true }).lean();
   if (!outlet) { res.status(404).json({ detail: 'Outlet not found' }); return; }
   res.json({ id: outlet.id, name: outlet.name, address: outlet.address, phone: outlet.phone, gstin: outlet.gstin, is_active: outlet.is_active, created_at: outlet.created_at });
 });
 
+/**
+ * @openapi
+ * /outlets/{id}:
+ *   delete:
+ *     tags: [Outlets]
+ *     summary: Delete an outlet
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Outlet deleted
+ */
 router.delete('/:id', async (req: Request, res: Response) => {
   await Outlet.deleteOne({ id: req.params.id });
   res.json({ ok: true });

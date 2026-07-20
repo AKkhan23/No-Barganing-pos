@@ -28,6 +28,30 @@ const CreateBookingSchema = z.object({
   note: z.string().optional(),
 });
 
+/**
+ * @openapi
+ * /bookings:
+ *   post:
+ *     tags: [Bookings]
+ *     summary: Create a booking
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               customer_id: { type: string }
+ *               customer_name: { type: string }
+ *               items: { type: array, items: { type: object } }
+ *               token_amount: { type: number }
+ *               deposit: { type: number }
+ *               note: { type: string }
+ *     responses:
+ *       201:
+ *         description: Booking created
+ */
 router.post('/', validate(CreateBookingSchema), async (req: Request, res: Response) => {
   try {
     const now = new Date().toISOString();
@@ -37,6 +61,22 @@ router.post('/', validate(CreateBookingSchema), async (req: Request, res: Respon
   } catch (err: any) { res.status(500).json({ detail: err.message }); }
 });
 
+/**
+ * @openapi
+ * /bookings:
+ *   get:
+ *     tags: [Bookings]
+ *     summary: List bookings
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema: { type: string }
+ *         description: Filter by status
+ *     responses:
+ *       200:
+ *         description: Array of bookings
+ */
 router.get('/', async (req: Request, res: Response) => {
   const filter: any = {};
   if (req.query.status) filter.status = req.query.status;
@@ -44,12 +84,50 @@ router.get('/', async (req: Request, res: Response) => {
   res.json(bookings.map((b: any) => ({ id: b.id, customer_id: b.customer_id, customer_name: b.customer_name, items: b.items, token_amount: b.token_amount, deposit: b.deposit, status: b.status, note: b.note, created_by_id: b.created_by_id, created_by_name: b.created_by_name, created_at: b.created_at })));
 });
 
+/**
+ * @openapi
+ * /bookings/{id}:
+ *   get:
+ *     tags: [Bookings]
+ *     summary: Get a booking by ID
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Booking details
+ *       404:
+ *         description: Booking not found
+ */
 router.get('/:id', async (req: Request, res: Response) => {
   const booking = await Booking.findOne({ id: req.params.id }).lean();
   if (!booking) { res.status(404).json({ detail: 'Booking not found' }); return; }
   res.json({ id: booking.id, customer_id: booking.customer_id, customer_name: booking.customer_name, items: booking.items, token_amount: booking.token_amount, deposit: booking.deposit, status: booking.status, note: booking.note, created_by_id: booking.created_by_id, created_by_name: booking.created_by_name, created_at: booking.created_at });
 });
 
+/**
+ * @openapi
+ * /bookings/{id}/convert:
+ *   post:
+ *     tags: [Bookings]
+ *     summary: Convert a booking to an order
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Booking converted to order
+ *       404:
+ *         description: Booking not found
+ *       400:
+ *         description: Booking already converted or cancelled
+ */
 router.post('/:id/convert', async (req: Request, res: Response) => {
   try {
     const booking = await Booking.findOne({ id: req.params.id });

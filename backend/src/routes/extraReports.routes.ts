@@ -14,6 +14,28 @@ import { SupplierPayment } from '../models/SupplierPayment';
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
 
+/**
+ * @openapi
+ * /extra-reports/cash-flow:
+ *   get:
+ *     tags: [Extra Reports]
+ *     summary: Get daily cash flow (sales, expenses, purchases, net)
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: start_date
+ *         schema:
+ *           type: string
+ *         description: Start date (ISO)
+ *       - in: query
+ *         name: end_date
+ *         schema:
+ *           type: string
+ *         description: End date (ISO)
+ *     responses:
+ *       200:
+ *         description: Cash flow data
+ */
 router.get('/cash-flow', async (req: Request, res: Response) => {
   try {
     const { start_date, end_date } = req.query;
@@ -85,6 +107,17 @@ router.get('/cash-flow', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * @openapi
+ * /extra-reports/customer-balance:
+ *   get:
+ *     tags: [Extra Reports]
+ *     summary: Get customer balance report
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Customer balances
+ */
 router.get('/customer-balance', async (req: Request, res: Response) => {
   try {
     const result = await LedgerEntry.aggregate([
@@ -123,6 +156,24 @@ router.get('/customer-balance', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * @openapi
+ * /extra-reports/customer-ledger/{customerId}:
+ *   get:
+ *     tags: [Extra Reports]
+ *     summary: Get customer ledger with running balance
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: customerId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Customer ID
+ *     responses:
+ *       200:
+ *         description: Customer ledger entries
+ */
 router.get('/customer-ledger/:customerId', async (req: Request, res: Response) => {
   try {
     const { customerId } = req.params;
@@ -142,6 +193,17 @@ router.get('/customer-ledger/:customerId', async (req: Request, res: Response) =
   }
 });
 
+/**
+ * @openapi
+ * /extra-reports/supplier-balance:
+ *   get:
+ *     tags: [Extra Reports]
+ *     summary: Get supplier balance report
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Supplier balances
+ */
 router.get('/supplier-balance', async (req: Request, res: Response) => {
   try {
     const result = await LedgerEntry.aggregate([
@@ -180,6 +242,24 @@ router.get('/supplier-balance', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * @openapi
+ * /extra-reports/supplier-ledger/{supplierId}:
+ *   get:
+ *     tags: [Extra Reports]
+ *     summary: Get supplier ledger with running balance
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: supplierId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Supplier ID
+ *     responses:
+ *       200:
+ *         description: Supplier ledger entries
+ */
 router.get('/supplier-ledger/:supplierId', async (req: Request, res: Response) => {
   try {
     const { supplierId } = req.params;
@@ -199,6 +279,17 @@ router.get('/supplier-ledger/:supplierId', async (req: Request, res: Response) =
   }
 });
 
+/**
+ * @openapi
+ * /extra-reports/balance-statement:
+ *   get:
+ *     tags: [Extra Reports]
+ *     summary: Get balance statement (assets, liabilities, equity)
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Balance statement data
+ */
 router.get('/balance-statement', async (req: Request, res: Response) => {
   try {
     const accounts = await Account.find().lean();
@@ -226,6 +317,28 @@ router.get('/balance-statement', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * @openapi
+ * /extra-reports/deposit-report:
+ *   get:
+ *     tags: [Extra Reports]
+ *     summary: Get deposit report
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: start_date
+ *         schema:
+ *           type: string
+ *         description: Start date (ISO)
+ *       - in: query
+ *         name: end_date
+ *         schema:
+ *           type: string
+ *         description: End date (ISO)
+ *     responses:
+ *       200:
+ *         description: Deposit report data
+ */
 router.get('/deposit-report', async (req: Request, res: Response) => {
   try {
     const { start_date, end_date } = req.query;
@@ -242,6 +355,28 @@ router.get('/deposit-report', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * @openapi
+ * /extra-reports/register-report:
+ *   get:
+ *     tags: [Extra Reports]
+ *     summary: Get register (shift) report
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: start_date
+ *         schema:
+ *           type: string
+ *         description: Start date (ISO)
+ *       - in: query
+ *         name: end_date
+ *         schema:
+ *           type: string
+ *         description: End date (ISO)
+ *     responses:
+ *       200:
+ *         description: Register report data
+ */
 router.get('/register-report', async (req: Request, res: Response) => {
   try {
     const { start_date, end_date } = req.query;

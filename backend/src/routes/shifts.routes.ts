@@ -20,6 +20,30 @@ const CloseShiftSchema = z.object({
   note: z.string().optional(),
 });
 
+/**
+ * @openapi
+ * /shifts:
+ *   post:
+ *     tags: [Shifts]
+ *     summary: Open a new shift
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [opening_cash]
+ *             properties:
+ *               opening_cash: { type: number }
+ *               outlet_id: { type: string }
+ *               note: { type: string }
+ *     responses:
+ *       201:
+ *         description: Shift opened
+ *       200:
+ *         description: Existing open shift returned
+ */
 router.post('/', validate(OpenShiftSchema), async (req: Request, res: Response) => {
   const existing = await ShiftReport.findOne({ user_id: req.user!.id, status: 'open' }).lean();
   if (existing) {
@@ -42,12 +66,54 @@ router.post('/', validate(OpenShiftSchema), async (req: Request, res: Response) 
   res.status(201).json({ id: shift.id, outlet_id: shift.outlet_id, user_id: shift.user_id, user_name: shift.user_name, opened_at: shift.opened_at, opening_cash: shift.opening_cash, note: shift.note, status: shift.status, created_at: shift.created_at });
 });
 
+/**
+ * @openapi
+ * /shifts/current:
+ *   get:
+ *     tags: [Shifts]
+ *     summary: Get current open shift for the logged-in user
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Open shift data
+ *       404:
+ *         description: No open shift found
+ */
 router.get('/current', async (req: Request, res: Response) => {
   const shift = await ShiftReport.findOne({ user_id: req.user!.id, status: 'open' }).lean();
   if (!shift) { res.status(404).json({ detail: 'No open shift found' }); return; }
   res.json({ id: shift.id, outlet_id: shift.outlet_id, user_id: shift.user_id, user_name: shift.user_name, opened_at: shift.opened_at, opening_cash: shift.opening_cash, note: shift.note, status: shift.status, created_at: shift.created_at });
 });
 
+/**
+ * @openapi
+ * /shifts/{id}/close:
+ *   post:
+ *     tags: [Shifts]
+ *     summary: Close an open shift
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [closing_cash, expected_cash]
+ *             properties:
+ *               closing_cash: { type: number }
+ *               expected_cash: { type: number }
+ *               note: { type: string }
+ *     responses:
+ *       200:
+ *         description: Shift closed
+ *       404:
+ *         description: Open shift not found
+ */
 router.post('/:id/close', validate(CloseShiftSchema), async (req: Request, res: Response) => {
   const { closing_cash, expected_cash, note } = req.body;
   const variance = closing_cash - expected_cash;

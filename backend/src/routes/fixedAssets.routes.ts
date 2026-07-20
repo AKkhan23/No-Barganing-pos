@@ -36,11 +36,39 @@ const UpdateAssetSchema = z.object({
   active: z.boolean().optional(),
 });
 
+/**
+ * @openapi
+ * /fixed-assets:
+ *   get:
+ *     tags: [Fixed Assets]
+ *     summary: List fixed assets
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Array of fixed assets
+ */
 router.get('/', async (req: Request, res: Response) => {
   const assets = await FixedAsset.find().lean();
   res.json(assets.map((a: any) => ({ id: a.id, name: a.name, purchase_date: a.purchase_date, purchase_price: a.purchase_price, current_value: a.current_value, depreciation_method: a.depreciation_method, depreciation_rate: a.depreciation_rate, useful_life_years: a.useful_life_years, location: a.location, category: a.category, notes: a.notes, active: a.active, created_at: a.created_at })));
 });
 
+/**
+ * @openapi
+ * /fixed-assets:
+ *   post:
+ *     tags: [Fixed Assets]
+ *     summary: Create a fixed asset
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       201:
+ *         description: Created fixed asset
+ */
 router.post('/', validate(CreateAssetSchema), async (req: Request, res: Response) => {
   const now = new Date().toISOString();
   const current_value = req.body.current_value ?? req.body.purchase_price;
@@ -49,12 +77,54 @@ router.post('/', validate(CreateAssetSchema), async (req: Request, res: Response
   res.status(201).json({ id: asset.id, name: asset.name, purchase_date: asset.purchase_date, purchase_price: asset.purchase_price, current_value: asset.current_value, depreciation_method: asset.depreciation_method, depreciation_rate: asset.depreciation_rate, useful_life_years: asset.useful_life_years, location: asset.location, category: asset.category, notes: asset.notes, active: asset.active, created_at: asset.created_at });
 });
 
+/**
+ * @openapi
+ * /fixed-assets/{id}:
+ *   patch:
+ *     tags: [Fixed Assets]
+ *     summary: Update a fixed asset
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Updated fixed asset
+ *       404:
+ *         description: Fixed asset not found
+ */
 router.patch('/:id', validate(UpdateAssetSchema), async (req: Request, res: Response) => {
   const asset = await FixedAsset.findOneAndUpdate({ id: req.params.id }, { $set: req.body }, { new: true }).lean();
   if (!asset) { res.status(404).json({ detail: 'Fixed asset not found' }); return; }
   res.json({ id: asset.id, name: asset.name, purchase_date: asset.purchase_date, purchase_price: asset.purchase_price, current_value: asset.current_value, depreciation_method: asset.depreciation_method, depreciation_rate: asset.depreciation_rate, useful_life_years: asset.useful_life_years, location: asset.location, category: asset.category, notes: asset.notes, active: asset.active });
 });
 
+/**
+ * @openapi
+ * /fixed-assets/{id}:
+ *   delete:
+ *     tags: [Fixed Assets]
+ *     summary: Delete a fixed asset
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Fixed asset deleted
+ */
 router.delete('/:id', async (req: Request, res: Response) => {
   await FixedAsset.deleteOne({ id: req.params.id });
   res.json({ ok: true });

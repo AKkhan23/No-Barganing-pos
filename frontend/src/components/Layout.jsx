@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, ScanBarcode, Package, Users, UserCog,
   Settings as SettingsIcon, LogOut, Store, CalendarCheck,
@@ -10,6 +10,7 @@ import {
   Building2, FileText, Printer, ChevronDown, Search, Receipt,
   Layers, Ruler, TableProperties, Hash, Palette, Currency,
   UserPlus, Wrench, ArrowRightToLine, ArrowLeftFromLine, ListChecks, FlaskConical, Tally5, BarChart,
+  Menu, ShoppingCart,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../lib/auth";
@@ -69,6 +70,7 @@ const GROUPS = [
   ]},
   { label: "Report", items: [
     { to: "/reports", key: "reports", label: "Reports", icon: PieChart, roles: ["admin", "manager"] },
+    { to: "/advanced-reports", key: "advancedReports", label: "Advanced Reports", icon: FileBarChart, roles: ["admin", "manager"] },
     { to: "/bi", key: "bi", label: "BI Dashboard", icon: BarChart, roles: ["admin", "manager"] },
   ]},
   { label: "Expense", items: [
@@ -94,6 +96,7 @@ const GROUPS = [
   ]},
   { label: "Fixed Assets", items: [
     { to: "/fixed-assets", key: "fixedAssets", label: "Fixed Assets", icon: Building2, roles: ["admin", "manager"] },
+    { to: "/fixed-asset-stock", key: "fixedAssetStock", label: "Asset Stock", icon: Package, roles: ["admin", "manager"] },
   ]},
   { label: "Booking", items: [
     { to: "/bookings", key: "bookings", label: "Booking", icon: CalendarCheck, roles: ["admin", "manager", "cashier"] },
@@ -131,6 +134,7 @@ const GROUPS = [
 export default function Layout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { t, i18n } = useTranslation();
   const items = GROUPS.map((g) => ({
     ...g,
@@ -146,6 +150,7 @@ export default function Layout() {
   const [outlets, setOutlets] = useState([]);
   const [outlet, setOutlet] = useState(localStorage.getItem("pos_outlet") || "");
   const [outletOpen, setOutletOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const unread = notifs.filter((n) => !n.read).length;
 
@@ -212,10 +217,21 @@ export default function Layout() {
 
   return (
     <div className="flex h-screen w-full bg-zinc-50 overflow-hidden">
-      <aside className="w-64 bg-zinc-950 text-zinc-100 flex flex-col border-r-2 border-zinc-900 flex-shrink-0 h-screen overflow-hidden">
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-black/60 z-30 lg:hidden" onClick={() => setSidebarOpen(false)} />
+      )}
+
+      {/* Sidebar */}
+      <aside className={`
+        fixed lg:static inset-y-0 left-0 z-40
+        w-64 bg-zinc-950 text-zinc-100 flex flex-col border-r-2 border-zinc-900
+        h-screen overflow-hidden transition-transform duration-300
+        ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+      `}>
         <div className="p-5 border-b-2 border-zinc-800">
           <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate("/pos")} data-testid="brand-logo">
+            <div className="flex items-center gap-3 cursor-pointer" onClick={() => { navigate("/pos"); setSidebarOpen(false); }} data-testid="brand-logo">
               <div className="w-10 h-10 bg-[#E60000] flex items-center justify-center">
                 <Store className="w-6 h-6 text-white" strokeWidth={2.5} />
               </div>
@@ -256,7 +272,7 @@ export default function Layout() {
         <div className="px-4 pt-3 pb-1">
           <div className="relative">
             <input type="text" value={navSearch} onChange={(e) => setNavSearch(e.target.value)}
-              placeholder={t("common.search") + " pages…"}
+              placeholder={t("common.search") + " pages\u2026"}
               className="w-full h-9 bg-zinc-800 border border-zinc-700 text-zinc-200 text-xs font-mono px-3 pl-8 focus:outline-none focus:border-[#E60000] placeholder-zinc-600" />
             <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-2.5 top-1/2 -translate-y-1/2" strokeWidth={2.5} />
           </div>
@@ -269,7 +285,7 @@ export default function Layout() {
             }).map((n) => {
               const Icon = n.icon;
               return (
-                <NavLink key={n.to} to={n.to} onClick={() => setNavSearch("")}
+                <NavLink key={n.to} to={n.to} onClick={() => { setNavSearch(""); setSidebarOpen(false); }}
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-5 py-2.5 text-sm font-semibold uppercase tracking-wider border-l-4 transition-all ${
                       isActive ? "bg-zinc-900 border-[#E60000] text-white" : "border-transparent text-zinc-400 hover:bg-zinc-900 hover:text-white"
@@ -293,7 +309,7 @@ export default function Layout() {
                   {isOpen && g.items.map((n) => {
                     const Icon = n.icon;
                     return (
-                      <NavLink key={n.to} to={n.to} data-testid={n.testid}
+                      <NavLink key={n.to} to={n.to} data-testid={n.testid} onClick={() => setSidebarOpen(false)}
                         className={({ isActive }) =>
                           `flex items-center gap-3 px-5 py-2.5 text-sm font-semibold uppercase tracking-wider border-l-4 transition-all ${
                             isActive
@@ -312,7 +328,7 @@ export default function Layout() {
           )}
         </nav>
 
-        <div className="border-t border-zinc-800 px-4 py-2 flex-shrink-0 space-y-1.5" onClick={(e) => e.stopPropagation()}>
+        <div className="relative border-t border-zinc-800 px-4 py-2 flex-shrink-0 space-y-1.5" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center gap-2 min-w-0">
             <Store className="w-4 h-4 text-[#E60000] flex-shrink-0" strokeWidth={2.5} />
             <button onClick={() => setOutletOpen(!outletOpen)} data-testid="outlet-switcher"
@@ -365,6 +381,10 @@ export default function Layout() {
 
               <InstallAppButton />
               <ConnectionBadge />
+              <button onClick={() => window.open('/api/docs', '_blank')} data-testid="nav-swagger"
+                className="w-full flex items-center justify-center gap-2 h-10 bg-zinc-800 hover:bg-blue-600 text-white text-xs font-bold uppercase tracking-widest transition-colors">
+                <BookOpen className="w-4 h-4" strokeWidth={2.5} /> API Docs
+              </button>
               <button onClick={logout} data-testid="logout-btn"
                 className="w-full flex items-center justify-center gap-2 h-10 bg-zinc-800 hover:bg-[#E60000] text-white text-xs font-bold uppercase tracking-widest transition-colors">
                 <LogOut className="w-4 h-4" strokeWidth={2.5} /> {t("common.logout")}
@@ -374,9 +394,56 @@ export default function Layout() {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-hidden bg-zinc-50">
-        <Outlet />
+      <main className="flex-1 overflow-hidden bg-zinc-50 flex flex-col min-w-0">
+        {/* Mobile header with hamburger */}
+        <div className="lg:hidden flex items-center justify-between bg-zinc-950 text-white px-4 py-3 border-b border-zinc-800 flex-shrink-0">
+          <button onClick={() => setSidebarOpen(true)} className="p-1 hover:bg-zinc-800 rounded" aria-label="Open menu">
+            <Menu className="w-6 h-6" strokeWidth={2.5} />
+          </button>
+          <div className="font-display font-black text-sm uppercase tracking-tight">No Bargaining</div>
+          <button onClick={() => setNotifOpen((v) => !v)} className="relative p-1 hover:bg-zinc-800 rounded" title={t("nav.notifications")}>
+            <Bell className="w-5 h-5 text-zinc-300" strokeWidth={2.5} />
+            {unread > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-[#E60000] text-white text-[9px] font-mono font-bold flex items-center justify-center">
+                {unread}
+              </span>
+            )}
+          </button>
+        </div>
+        <div className="flex-1 overflow-hidden pb-16 lg:pb-0">
+          <Outlet />
+        </div>
       </main>
+
+      {/* Mobile Bottom Tab Bar */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950 border-t-2 border-zinc-800 flex items-center justify-around h-14 safe-area-bottom">
+        {[
+          { to: "/dashboard", icon: LayoutDashboard, label: "Home" },
+          { to: "/pos", icon: ScanBarcode, label: "POS" },
+          { to: "/pos?cart=1", icon: ShoppingCart, label: "Cart" },
+          { to: "#more", icon: Menu, label: "More" },
+        ].map((tab) => {
+          const isActive = tab.to === "#more"
+            ? false
+            : tab.to === location.pathname || (tab.to.includes("?") && location.pathname + location.search === tab.to) || (tab.to === "/pos" && (location.pathname === "/pos" || location.pathname.startsWith("/pos")) && !location.search.includes("cart=1"));
+          const cartActive = tab.to.includes("cart=1") && location.pathname === "/pos" && location.search.includes("cart=1");
+          const active = tab.to === "#more" ? false : (tab.to === "/pos" && location.pathname === "/pos" && !location.search.includes("cart=1")) ? (isActive && !location.search.includes("cart=1")) : (tab.to === "/pos?cart=1") ? cartActive : isActive;
+          return tab.to === "#more" ? (
+            <button key="more" onClick={() => setSidebarOpen(true)}
+              className="flex flex-col items-center justify-center gap-0.5 h-full px-4 text-zinc-500">
+              <Menu className="w-5 h-5" strokeWidth={2} />
+              <span className="text-[9px] font-mono uppercase tracking-wider">More</span>
+            </button>
+          ) : (
+            <NavLink key={tab.to} to={tab.to}
+              className="flex flex-col items-center justify-center gap-0.5 h-full px-4">
+              <tab.icon className={`w-5 h-5 ${active ? "text-[#E60000]" : "text-zinc-500"}`} strokeWidth={active ? 2.5 : 2} />
+              <span className={`text-[9px] font-mono uppercase tracking-wider ${active ? "text-[#E60000] font-bold" : "text-zinc-500"}`}>{tab.label}</span>
+            </NavLink>
+          );
+        })}
+      </nav>
+
       <Toaster position="bottom-right" theme="light" richColors />
       {shiftOpen && <ShiftModal onClose={() => setShiftOpen(false)} />}
     </div>

@@ -90,6 +90,23 @@ router.get('/top-products', async (req: Request, res: Response) => {
   } catch (err: any) { res.status(500).json({ detail: err.message }); }
 });
 
+/**
+ * @openapi
+ * /bi-dashboard/top-customers:
+ *   get:
+ *     tags: [BI Dashboard]
+ *     summary: Get top customers by total spent
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Number of top customers to return (default 10)
+ *     responses:
+ *       200:
+ *         description: Top customers list
+ */
 router.get('/top-customers', async (req: Request, res: Response) => {
   try {
     const limit = parseInt(req.query.limit as string || '10', 10);
@@ -98,6 +115,28 @@ router.get('/top-customers', async (req: Request, res: Response) => {
   } catch (err: any) { res.status(500).json({ detail: err.message }); }
 });
 
+/**
+ * @openapi
+ * /bi-dashboard/profit-margin:
+ *   get:
+ *     tags: [BI Dashboard]
+ *     summary: Get profit margin analysis (gross & net)
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: date_from
+ *         schema:
+ *           type: string
+ *         description: Start date (ISO)
+ *       - in: query
+ *         name: date_to
+ *         schema:
+ *           type: string
+ *         description: End date (ISO)
+ *     responses:
+ *       200:
+ *         description: Profit margin data
+ */
 router.get('/profit-margin', async (req: Request, res: Response) => {
   try {
     const dateFrom = req.query.date_from as string;
@@ -124,6 +163,28 @@ router.get('/profit-margin', async (req: Request, res: Response) => {
   } catch (err: any) { res.status(500).json({ detail: err.message }); }
 });
 
+/**
+ * @openapi
+ * /bi-dashboard/cash-flow:
+ *   get:
+ *     tags: [BI Dashboard]
+ *     summary: Get cash flow ledger data by account
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: date_from
+ *         schema:
+ *           type: string
+ *         description: Start date (ISO)
+ *       - in: query
+ *         name: date_to
+ *         schema:
+ *           type: string
+ *         description: End date (ISO)
+ *     responses:
+ *       200:
+ *         description: Cash flow data
+ */
 router.get('/cash-flow', async (req: Request, res: Response) => {
   try {
     const dateFrom = req.query.date_from as string;

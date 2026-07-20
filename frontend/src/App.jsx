@@ -62,6 +62,8 @@ const Servicing = lazy(() => import("@/pages/Servicing"));
 const CheckInOut = lazy(() => import("@/pages/CheckInOut"));
 const UserProfile = lazy(() => import("@/pages/UserProfile"));
 const BulkItemUpdate = lazy(() => import("@/pages/BulkItemUpdate"));
+const AdvancedReports = lazy(() => import("@/pages/AdvancedReports"));
+const FixedAssetStock = lazy(() => import("@/pages/FixedAssetStock"));
 
 const Loading = () => (
   <div className="min-h-screen flex items-center justify-center bg-zinc-50">
@@ -150,6 +152,8 @@ function App() {
             <Route path="/deposits" element={<Deposits />} />
             <Route path="/servicing" element={<Servicing />} />
             <Route path="/bulk-item-update" element={<BulkItemUpdate />} />
+            <Route path="/advanced-reports" element={<AdvancedReports />} />
+            <Route path="/fixed-asset-stock" element={<FixedAssetStock />} />
           </Route>
 
           {/* Admin only */}

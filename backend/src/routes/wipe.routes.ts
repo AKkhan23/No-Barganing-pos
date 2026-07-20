@@ -60,6 +60,17 @@ const TRANSACTIONAL_MODELS: any[] = [
   Deposit, Servicing, CheckInOut,
 ];
 
+/**
+ * @openapi
+ * /wipe/demo-data:
+ *   delete:
+ *     tags: [Wipe]
+ *     summary: Wipe all demo/seed data (except users)
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Demo data wiped
+ */
 router.delete('/demo-data', async (_req: Request, res: Response) => {
   for (const model of ALL_MODELS) {
     await model.deleteMany({});
@@ -67,6 +78,17 @@ router.delete('/demo-data', async (_req: Request, res: Response) => {
   res.json({ ok: true, message: 'Demo data wiped' });
 });
 
+/**
+ * @openapi
+ * /wipe/all:
+ *   delete:
+ *     tags: [Wipe]
+ *     summary: Factory reset - wipe ALL data including users
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: All data wiped
+ */
 router.delete('/all', async (_req: Request, res: Response) => {
   for (const model of ALL_MODELS) {
     await model.deleteMany({});
@@ -75,17 +97,50 @@ router.delete('/all', async (_req: Request, res: Response) => {
   res.json({ ok: true, message: 'All data wiped' });
 });
 
+/**
+ * @openapi
+ * /wipe/barcodes:
+ *   post:
+ *     tags: [Wipe]
+ *     summary: Clear all product barcodes
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Barcodes cleared
+ */
 router.post('/barcodes', async (_req: Request, res: Response) => {
   const r = await Product.updateMany({}, { $unset: { barcode: '' } });
   res.json({ ok: true, modifiedCount: r.modifiedCount, message: 'All barcodes cleared' });
 });
 
+/**
+ * @openapi
+ * /wipe/products:
+ *   delete:
+ *     tags: [Wipe]
+ *     summary: Delete all products and stock movements
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: All products deleted
+ */
 router.delete('/products', async (_req: Request, res: Response) => {
   const r = await Product.deleteMany({});
   await StockMovement.deleteMany({});
   res.json({ ok: true, deletedCount: r.deletedCount, message: 'All products deleted' });
 });
 
+/**
+ * @openapi
+ * /wipe/transactional:
+ *   delete:
+ *     tags: [Wipe]
+ *     summary: Wipe all transactional data (orders, payments, etc.)
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Transactional data wiped
+ */
 router.delete('/transactional', async (_req: Request, res: Response) => {
   for (const model of TRANSACTIONAL_MODELS) {
     await model.deleteMany({});
@@ -93,6 +148,17 @@ router.delete('/transactional', async (_req: Request, res: Response) => {
   res.json({ ok: true, message: 'Transactional data wiped' });
 });
 
+/**
+ * @openapi
+ * /wipe/generate:
+ *   post:
+ *     tags: [Wipe]
+ *     summary: Generate dummy data (categories, products, customers, suppliers)
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Dummy data generated
+ */
 router.post('/generate', async (_req: Request, res: Response) => {
   const now = new Date().toISOString();
   const results: string[] = [];

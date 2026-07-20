@@ -17,6 +17,35 @@ const CreateExpenseSchema = z.object({
   date: z.string().optional(),
 });
 
+/**
+ * @openapi
+ * /expenses:
+ *   post:
+ *     tags: [Expenses]
+ *     summary: Create a new expense
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               category:
+ *                 type: string
+ *                 enum: [rent, utility, salary, misc]
+ *               account:
+ *                 type: string
+ *               amount:
+ *                 type: number
+ *               note:
+ *                 type: string
+ *               date:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Expense created
+ */
 router.post('/', validate(CreateExpenseSchema), async (req: Request, res: Response) => {
   const now = new Date().toISOString();
   const date = req.body.date || now;
@@ -51,6 +80,30 @@ router.post('/', validate(CreateExpenseSchema), async (req: Request, res: Respon
   res.status(201).json({ id: expense.id, category: expense.category, account: expense.account, amount: expense.amount, note: expense.note, date: expense.date, created_at: expense.created_at });
 });
 
+/**
+ * @openapi
+ * /expenses:
+ *   get:
+ *     tags: [Expenses]
+ *     summary: List expenses
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: date_from
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: date_to
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Array of expenses
+ */
 router.get('/', async (req: Request, res: Response) => {
   const filter: any = {};
   if (req.query.category) filter.category = req.query.category;

@@ -47,6 +47,42 @@ const CreateOrderSchema = z.object({
   notes: z.string().optional(),
 });
 
+/**
+ * @openapi
+ * /orders:
+ *   get:
+ *     tags: [Orders]
+ *     summary: List orders with optional filters
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 50 }
+ *         description: Items per page
+ *       - in: query
+ *         name: date_from
+ *         schema: { type: string, format: date }
+ *         description: Start date filter
+ *       - in: query
+ *         name: date_to
+ *         schema: { type: string, format: date }
+ *         description: End date filter
+ *       - in: query
+ *         name: cashier_id
+ *         schema: { type: string }
+ *         description: Filter by cashier
+ *       - in: query
+ *         name: payment_mode
+ *         schema: { type: string }
+ *         description: Filter by payment mode
+ *     responses:
+ *       200:
+ *         description: Array of orders
+ */
 router.get('/', async (req: Request, res: Response) => {
   const { date_from, date_to, cashier_id, payment_mode, limit: qLimit } = req.query;
   const page = parseInt(req.query.page as string || '1', 10);
@@ -63,12 +99,79 @@ router.get('/', async (req: Request, res: Response) => {
   res.json(orders);
 });
 
+/**
+ * @openapi
+ * /orders/{id}:
+ *   get:
+ *     tags: [Orders]
+ *     summary: Get a single order by ID
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *         description: Order ID
+ *     responses:
+ *       200:
+ *         description: Order details
+ *       404:
+ *         description: Order not found
+ */
 router.get('/:id', async (req: Request, res: Response) => {
   const order = await Order.findOne({ id: req.params.id }).select('-_id -__v').lean();
   if (!order) { res.status(404).json({ detail: 'Order not found' }); return; }
   res.json(order);
 });
 
+/**
+ * @openapi
+ * /orders:
+ *   post:
+ *     tags: [Orders]
+ *     summary: Create a new order (POS sale)
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [items]
+ *             properties:
+ *               customer_id: { type: string, nullable: true }
+ *               customer_name: { type: string, default: "Walk-in" }
+ *               customer_phone: { type: string }
+ *               items:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   required: [product_id, quantity, price]
+ *                   properties:
+ *                     product_id: { type: string }
+ *                     product_name: { type: string }
+ *                     quantity: { type: number }
+ *                     price: { type: number }
+ *                     tax: { type: number }
+ *                     tax_rate: { type: number }
+ *                     line_total: { type: number }
+ *                     unit: { type: string }
+ *                     sell_by: { type: string }
+ *               subtotal: { type: number }
+ *               tax_total: { type: number, default: 0 }
+ *               discount_percent: { type: number, default: 0 }
+ *               paid: { type: number, default: 0 }
+ *               payment_mode: { type: string, default: "cash" }
+ *               status: { type: string, default: "completed" }
+ *               note: { type: string }
+ *     responses:
+ *       201:
+ *         description: Order created
+ *       400:
+ *         description: Insufficient stock or product not found
+ *       422:
+ *         description: Validation error
+ */
 router.post('/', validate(CreateOrderSchema), async (req: Request, res: Response) => {
   const now = new Date().toISOString();
   const invoice_no = await generateInvoiceNo();

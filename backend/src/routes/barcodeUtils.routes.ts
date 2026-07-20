@@ -15,6 +15,25 @@ function computeEAN13CheckDigit(code: string): string {
   return code + check;
 }
 
+/**
+ * @openapi
+ * /barcode-utils/ean13/{code}:
+ *   get:
+ *     tags: [Barcode Utils]
+ *     summary: Compute EAN-13 check digit from 12-digit code
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: code
+ *         required: true
+ *         schema: { type: string }
+ *         description: 12-digit barcode prefix
+ *     responses:
+ *       200:
+ *         description: Full barcode with check digit
+ *       400:
+ *         description: Code must be exactly 12 digits
+ */
 router.get('/ean13/:code', async (req: Request, res: Response) => {
   const { code } = req.params;
   if (!/^\d{12}$/.test(code)) {

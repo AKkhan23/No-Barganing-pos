@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Printer, Search, Loader2, FileText, Receipt } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Printer, Search, Loader2, FileText, Receipt, ArrowLeft } from "lucide-react";
 import JsBarcode from "jsbarcode";
 import ReactDOMServer from "react-dom/server";
 import { QRCodeSVG } from "qrcode.react";
@@ -57,6 +58,7 @@ const MODES = {
 
 export default function BarcodeLabels() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
@@ -234,6 +236,10 @@ body.mode-a4 .label-qr-wrap svg { width: 8mm; display: block; }
   return (
     <PageShell title={t("page.barcode_labels")} subtitle={`${selected.length} ${t("page.products_selected")}`} right={
       <div className="flex items-center gap-2">
+        <button onClick={() => navigate(-1)}
+          className="h-10 px-3 border border-zinc-300 rounded-lg text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 hover:bg-zinc-50 transition-colors">
+          <ArrowLeft className="w-4 h-4" /> {t("common.back")}
+        </button>
         <div className="flex bg-zinc-100 rounded-lg p-0.5">
           {Object.entries(MODES).map(([key, cfg]) => {
             const Icon = cfg.icon;

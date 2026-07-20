@@ -17,6 +17,17 @@ const ReceivePaymentSchema = z.object({
   note: z.string().optional(),
 });
 
+/**
+ * @openapi
+ * /customer-dues:
+ *   get:
+ *     tags: [Customer Dues]
+ *     summary: List all customers with outstanding dues
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Array of customers with due amounts
+ */
 router.get('/', async (req: Request, res: Response) => {
   try {
     const orders = await Order.aggregate([
@@ -41,6 +52,31 @@ router.get('/', async (req: Request, res: Response) => {
   } catch (err: any) { res.status(500).json({ detail: err.message }); }
 });
 
+/**
+ * @openapi
+ * /customer-dues/receive-payment:
+ *   post:
+ *     tags: [Customer Dues]
+ *     summary: Receive a payment against customer dues
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [customer_name, amount, mode]
+ *             properties:
+ *               customer_name: { type: string }
+ *               amount: { type: number }
+ *               mode: { type: string }
+ *               note: { type: string }
+ *     responses:
+ *       200:
+ *         description: Payment received
+ *       422:
+ *         description: Validation error
+ */
 router.post('/receive-payment', validate(ReceivePaymentSchema), async (req: Request, res: Response) => {
   try {
     const { customer_name, amount, mode, note } = req.body;

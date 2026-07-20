@@ -5,6 +5,27 @@ import { verifyJWT, requireRoles } from '../middleware/auth';
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
 
+/**
+ * @openapi
+ * /stock-movements:
+ *   get:
+ *     tags: [Stock Movements]
+ *     summary: List stock movements
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: product_id
+ *         schema: { type: string }
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 100 }
+ *     responses:
+ *       200:
+ *         description: Array of stock movements
+ */
 router.get('/', async (req: Request, res: Response) => {
   const product_id = req.query.product_id as string | undefined;
   const page = parseInt(req.query.page as string || '1', 10);

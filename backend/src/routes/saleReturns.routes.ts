@@ -27,6 +27,38 @@ const CreateSaleReturnSchema = z.object({
   note: z.string().optional(),
 });
 
+/**
+ * @openapi
+ * /sale-returns:
+ *   post:
+ *     tags: [SaleReturns]
+ *     summary: Create a sale return (restocks inventory, adjusts customer receivable)
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               order_id: { type: string }
+ *               items:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     product_id: { type: string }
+ *                     quantity: { type: number }
+ *                     price: { type: number }
+ *                     tax_rate: { type: number }
+ *               refund_mode: { type: string, enum: [cash, card, upi, wallet] }
+ *               note: { type: string }
+ *     responses:
+ *       201:
+ *         description: Created sale return
+ *       404:
+ *         description: Order not found
+ */
 router.post('/', validate(CreateSaleReturnSchema), async (req: Request, res: Response) => {
   const { order_id, items, refund_mode, note } = req.body;
   const order = await Order.findOne({ id: order_id }).lean();
@@ -107,6 +139,21 @@ router.post('/', validate(CreateSaleReturnSchema), async (req: Request, res: Res
   res.status(201).json({ id: sr.id, order_id: sr.order_id, invoice_no: sr.invoice_no, customer_id: sr.customer_id, customer_name: sr.customer_name, items: sr.items, subtotal: sr.subtotal, tax_total: sr.tax_total, total: sr.total, refund_mode: sr.refund_mode, note: sr.note, created_at: sr.created_at });
 });
 
+/**
+ * @openapi
+ * /sale-returns:
+ *   get:
+ *     tags: [SaleReturns]
+ *     summary: List sale returns
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: order_id
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Array of sale returns
+ */
 router.get('/', async (req: Request, res: Response) => {
   const { order_id } = req.query;
   const filter: any = {};
@@ -115,6 +162,24 @@ router.get('/', async (req: Request, res: Response) => {
   res.json(items.map((sr: any) => ({ id: sr.id, order_id: sr.order_id, invoice_no: sr.invoice_no, customer_id: sr.customer_id, customer_name: sr.customer_name, items: sr.items, subtotal: sr.subtotal, tax_total: sr.tax_total, total: sr.total, refund_mode: sr.refund_mode, note: sr.note, created_at: sr.created_at })));
 });
 
+/**
+ * @openapi
+ * /sale-returns/{id}:
+ *   get:
+ *     tags: [SaleReturns]
+ *     summary: Get a sale return by ID
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Sale return details
+ *       404:
+ *         description: Sale return not found
+ */
 router.get('/:id', async (req: Request, res: Response) => {
   const sr = await SaleReturn.findOne({ id: req.params.id }).lean();
   if (!sr) { res.status(404).json({ detail: 'Sale return not found' }); return; }

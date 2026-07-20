@@ -4,6 +4,17 @@ import { verifyJWT, requireRoles } from '../middleware/auth';
 
 const router = Router();
 
+/**
+ * @openapi
+ * /settings:
+ *   get:
+ *     tags: [Settings]
+ *     summary: Get application settings
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Settings object
+ */
 router.get('/', verifyJWT, async (_req: Request, res: Response) => {
   let settings = await Settings.findOne({}).lean();
   if (!settings) {
@@ -28,12 +39,63 @@ router.get('/', verifyJWT, async (_req: Request, res: Response) => {
   res.json({ ...settings, _id: undefined, __v: undefined });
 });
 
+/**
+ * @openapi
+ * /settings:
+ *   put:
+ *     tags: [Settings]
+ *     summary: Update global settings
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               store_name: { type: string }
+ *               address: { type: string }
+ *               phone: { type: string }
+ *               gstin: { type: string }
+ *               currency: { type: string }
+ *               currency_symbol: { type: string }
+ *               default_tax_rate: { type: number }
+ *               receipt_footer: { type: string }
+ *     responses:
+ *       200:
+ *         description: Settings updated
+ */
 router.put('/', verifyJWT, requireRoles('admin'), async (req: Request, res: Response) => {
   const update = { ...req.body, updated_at: new Date().toISOString() };
   const settings = await Settings.findOneAndUpdate({}, { $set: update }, { upsert: true, new: true }).lean();
   res.json({ ...settings, _id: undefined, __v: undefined });
 });
 
+/**
+ * @openapi
+ * /settings/{group}:
+ *   patch:
+ *     tags: [Settings]
+ *     summary: Update a specific settings group (invoice, email, sms, etc.)
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: group
+ *         required: true
+ *         schema: { type: string }
+ *         description: Config group name (invoice_settings, email_config, sms_config, whatsapp_config, payment_gateway, printer_config, whitelabel, module_status)
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Group settings updated
+ *       400:
+ *         description: Invalid config group
+ */
 router.patch('/:group', verifyJWT, requireRoles('admin'), async (req: Request, res: Response) => {
   const { group } = req.params;
   const allowedGroups = ['invoice_settings', 'email_config', 'sms_config', 'whatsapp_config', 'payment_gateway', 'printer_config', 'whitelabel', 'module_status'];

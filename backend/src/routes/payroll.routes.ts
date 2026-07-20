@@ -17,6 +17,34 @@ const GeneratePayrollSchema = z.object({
   deduction: z.number().optional(),
 });
 
+/**
+ * @openapi
+ * /payroll/generate:
+ *   post:
+ *     tags: [Payroll]
+ *     summary: Generate payroll entries for a month
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [month]
+ *             properties:
+ *               user_ids:
+ *                 type: array
+ *                 items: { type: string }
+ *               month: { type: string, description: "YYYY-MM format" }
+ *               base: { type: number }
+ *               bonus: { type: number }
+ *               deduction: { type: number }
+ *     responses:
+ *       201:
+ *         description: Payroll entries created
+ *       400:
+ *         description: No active users found
+ */
 router.post('/generate', validate(GeneratePayrollSchema), async (req: Request, res: Response) => {
   const { user_ids, month, base: defaultBase, bonus: defaultBonus, deduction: defaultDeduction } = req.body;
   const filter: any = { active: true };
@@ -48,6 +76,26 @@ router.post('/generate', validate(GeneratePayrollSchema), async (req: Request, r
   res.status(201).json(entries.map((e) => ({ ...e, _id: undefined, __v: undefined })));
 });
 
+/**
+ * @openapi
+ * /payroll:
+ *   get:
+ *     tags: [Payroll]
+ *     summary: List payroll entries
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: month
+ *         schema: { type: string }
+ *         description: Filter by month (YYYY-MM)
+ *       - in: query
+ *         name: paid
+ *         schema: { type: string, enum: [true, false] }
+ *         description: Filter by paid status
+ *     responses:
+ *       200:
+ *         description: Array of payroll entries
+ */
 router.get('/', async (req: Request, res: Response) => {
   const { month, paid } = req.query;
   const filter: any = {};
@@ -57,6 +105,37 @@ router.get('/', async (req: Request, res: Response) => {
   res.json(items.map((e: any) => ({ id: e.id, user_id: e.user_id, user_name: e.user_name, month: e.month, base: e.base, bonus: e.bonus, deduction: e.deduction, net: e.net, paid: e.paid, paid_via: e.paid_via, created_at: e.created_at })));
 });
 
+/**
+ * @openapi
+ * /payroll/{id}/mark-paid:
+ *   post:
+ *     tags: [Payroll]
+ *     summary: Mark a payroll entry as paid
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [paid_via]
+ *             properties:
+ *               paid_via:
+ *                 type: string
+ *                 enum: [cash, bank, upi, wallet]
+ *     responses:
+ *       200:
+ *         description: Payroll marked as paid
+ *       404:
+ *         description: Payroll entry not found
+ *       422:
+ *         description: Invalid paid_via value
+ */
 router.post('/:id/mark-paid', async (req: Request, res: Response) => {
   const { paid_via } = req.body;
   if (!['cash', 'bank', 'upi', 'wallet'].includes(paid_via)) { res.status(422).json({ detail: 'paid_via must be cash/bank/upi/wallet' }); return; }

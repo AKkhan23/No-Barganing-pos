@@ -64,6 +64,8 @@ import depositsRoutes from './routes/deposits.routes';
 import servicingRoutes from './routes/servicing.routes';
 import checkInOutRoutes from './routes/checkInOut.routes';
 import extraReportsRoutes from './routes/extraReports.routes';
+import advancedReportsRoutes from './routes/advancedReports.routes';
+import fixedAssetStockRoutes from './routes/fixedAssetStock.routes';
 
 const app = express();
 
@@ -88,7 +90,21 @@ const swaggerSpec = swaggerJsdoc({
   },
   apis: ['./src/routes/*.ts'],
 });
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  swaggerOptions: {
+    url: '/api/docs/spec',
+  },
+}));
+app.get('/api/docs/spec', (_req, res) => {
+  const spec = JSON.parse(JSON.stringify(swaggerSpec));
+  const protocol = _req.headers['x-forwarded-proto'] || _req.protocol;
+  const host = _req.headers['x-forwarded-host'] || _req.headers.host;
+  spec.servers = [
+    { url: `${protocol}://${host}/api`, description: 'Current server' },
+    { url: '/api', description: 'Relative path' },
+  ];
+  res.json(spec);
+});
 
 app.get('/api', (_req, res) => {
   res.json({ service: 'No Bargaining POS', ok: true });
@@ -154,6 +170,8 @@ app.use('/api/deposits', depositsRoutes);
 app.use('/api/servicing', servicingRoutes);
 app.use('/api/check-in-out', checkInOutRoutes);
 app.use('/api/extra-reports', extraReportsRoutes);
+app.use('/api/advanced-reports', advancedReportsRoutes);
+app.use('/api/fixed-asset-stock', fixedAssetStockRoutes);
 
 app.use(globalErrorHandler);
 

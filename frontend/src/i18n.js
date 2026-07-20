@@ -27,7 +27,7 @@ const resources = {
       common: {
         add: "Add", save: "Save", cancel: "Cancel", delete: "Delete",
         edit: "Edit", search: "Search", loading: "Loading…",
-        confirm: "Confirm", name: "Name", close: "Close", lang: "Language",
+        confirm: "Confirm", name: "Name", close: "Close", lang: "Language", back: "Back",
         dashboard: "Dashboard", products: "Products", orders: "Orders",
         customers: "Customers", settings: "Settings", logout: "Logout",
       },
@@ -193,6 +193,7 @@ const resources = {
         no_voice_match: 'No match for "{{name}}"',
         voice_capture_failed: "Voice capture failed",
         added_item: "Added: {{name}}",
+        scanned_from_device: "Scanned from device: {{name}}",
         no_product_for_code: "No product for code: {{code}}",
         cart_empty: "Cart is empty",
         amount_paid_less: "Amount paid is less than total",
@@ -684,7 +685,7 @@ const resources = {
       common: {
         add: "जोड़ें", save: "सहेजें", cancel: "रद्द", delete: "हटाएं",
         edit: "संपादित", search: "खोजें", loading: "लोड हो रहा है",
-        confirm: "पुष्टि", name: "नाम", close: "बंद", lang: "भाषा",
+        confirm: "पुष्टि", name: "नाम", close: "बंद", lang: "भाषा", back: "वापस",
         dashboard: "डैशबोर्ड", products: "उत्पाद", orders: "ऑर्डर",
         customers: "ग्राहक", settings: "सेटिंग्स", logout: "लॉगआउट",
       },
@@ -772,7 +773,7 @@ const resources = {
         some_batches_expired: "{{name}} के कुछ बैच एक्सपायर्ड हैं। केवल ताज़ा स्टॉक बेचा जाएगा।",
         only_stock: "केवल {{stock}} स्टॉक में", speech_not_supported: "वॉइस पहचान समर्थित नहीं",
         voice_added: "वॉइस जोड़ा गया: {{name}}", no_voice_match: '"{{name}}" के लिए कोई मेल नहीं',
-        voice_capture_failed: "वॉइस कैप्चर विफल", added_item: "जोड़ा गया: {{name}}",
+        voice_capture_failed: "वॉइस कैप्चर विफल", added_item: "जोड़ा गया: {{name}}", scanned_from_device: "डिवाइस से स्कैन: {{name}}",
         no_product_for_code: "कोड {{code}} के लिए कोई उत्पाद नहीं", cart_empty: "कार्ट खाली है",
         amount_paid_less: "भुगतान राशि कुल से कम है",
         insufficient_stock: "{{name}} के लिए अपर्याप्त स्टॉक (उपलब्ध: {{available}}, मांग: {{requested}})",
@@ -858,7 +859,7 @@ const resources = {
       common: {
         add: "जोडा", save: "जतन करा", cancel: "रद्द", delete: "हटवा",
         edit: "संपादित", search: "शोधा", loading: "लोड होत आहे",
-        confirm: "पुष्टी", name: "नाव", close: "बंद", lang: "भाषा",
+        confirm: "पुष्टी", name: "नाव", close: "बंद", lang: "भाषा", back: "मागे",
       },
       page: {
         overview: "अवलोकन", revenue: "महसूल", orders: "ऑर्डर",
@@ -944,7 +945,7 @@ const resources = {
         some_batches_expired: "{{name}} चे काही बॅच एक्सपायर्ड आहेत. फक्त ताजा साठा विकला जाईल.",
         only_stock: "फक्त {{stock}} साठ्यात", speech_not_supported: "व्हॉइस ओळख समर्थित नाही",
         voice_added: "व्हॉइस जोडले: {{name}}", no_voice_match: '"{{name}}" साठी कोणतेही जुळणारे नाही',
-        voice_capture_failed: "व्हॉइस कॅप्चर अयशस्वी", added_item: "जोडले: {{name}}",
+        voice_capture_failed: "व्हॉइस कॅप्चर अयशस्वी", added_item: "जोडले: {{name}}", scanned_from_device: "डिव्हाइसवरून स्कॅन: {{name}}",
         no_product_for_code: "कोड {{code}} साठी कोणतेही उत्पाद नाही", cart_empty: "कार्ट रिकामी आहे",
         amount_paid_less: "दिलेली रक्कम एकूणपेक्षा कमी आहे",
         insufficient_stock: "{{name}} साठी अपुरा साठा (उपलब्ध: {{available}}, मागितले: {{requested}})",
@@ -1031,7 +1032,7 @@ const resources = {
       common: {
         add: "சேர்", save: "சேமி", cancel: "ரத்து", delete: "நீக்கு",
         edit: "திருத்து", search: "தேடு", loading: "ஏற்றுகிறது",
-        confirm: "உறுதிப்படுத்து", name: "பெயர்", close: "மூடு", lang: "மொழி",
+        confirm: "உறுதிப்படுத்து", name: "பெயர்", close: "மூடு", lang: "மொழி", back: "பின்",
       },
       page: {
         overview: "கண்ணோட்டம்", revenue: "வருவாய்", orders: "ஆர்டர்கள்",
@@ -1117,7 +1118,7 @@ const resources = {
         some_batches_expired: "{{name}} இன் சில தொகுதிகள் காலாவதியானவை. புதிய இருப்பு மட்டுமே விற்கப்படும்.",
         only_stock: "இருப்பில் {{stock}} மட்டுமே", speech_not_supported: "குரல் அங்கீகாரம் ஆதரிக்கப்படவில்லை",
         voice_added: "குரல் சேர்க்கப்பட்டது: {{name}}", no_voice_match: '"{{name}}" க்கு பொருந்தவில்லை',
-        voice_capture_failed: "குரல் பிடிப்பு தோல்வி", added_item: "சேர்க்கப்பட்டது: {{name}}",
+        voice_capture_failed: "குரல் பிடிப்பு தோல்வி", added_item: "சேர்க்கப்பட்டது: {{name}}", scanned_from_device: "சாதனத்தில் இருந்து ஸ்கேன்: {{name}}",
         no_product_for_code: "குறியீடு {{code}} க்கு தயாரிப்பு இல்லை", cart_empty: "கார்ட் காலியாக உள்ளது",
         amount_paid_less: "செலுத்திய தொகை மொத்தத்தை விட குறைவு",
         insufficient_stock: "{{name}} க்கு போதுமான இருப்பு இல்லை (கிடைப்பது: {{available}}, கோரியது: {{requested}})",
@@ -1205,7 +1206,7 @@ const resources = {
       common: {
         add: "شامل کریں", save: "محفوظ کریں", cancel: "منسوخ", delete: "حذف کریں",
         edit: "ترمیم", search: "تلاش", loading: "لوڈ ہو رہا ہے",
-        confirm: "تصدیق", name: "نام", close: "بند", lang: "زبان",
+        confirm: "تصدیق", name: "نام", close: "بند", lang: "زبان", back: "واپس",
         dashboard: "ڈیش بورڈ", products: "مصنوعات", orders: "آرڈر",
         customers: "گاہک", settings: "سیٹنگز", logout: "لاگ آؤٹ",
       },
@@ -1293,7 +1294,7 @@ const resources = {
         some_batches_expired: "{{name}} کے کچھ بیچ ایکسپائر ہیں۔ صرف تازہ اسٹاک فروخت کیا جائے گا۔",
         only_stock: "صرف {{stock}} اسٹاک میں", speech_not_supported: "صوتی شناخت تعاون یافتہ نہیں",
         voice_added: "صوتی شامل: {{name}}", no_voice_match: '"{{name}}" کے لیے کوئی مماثلت نہیں',
-        voice_capture_failed: "صوتی کیپچر ناکام", added_item: "شامل: {{name}}",
+        voice_capture_failed: "صوتی کیپچر ناکام", added_item: "شامل: {{name}}", scanned_from_device: "ڈیوائس سے اسکین: {{name}}",
         no_product_for_code: "کوڈ {{code}} کے لیے کوئی مصنوعات نہیں", cart_empty: "کارٹ خالی ہے",
         amount_paid_less: "ادا کردہ رقم کل سے کم ہے",
         insufficient_stock: "{{name}} کے لیے ناکافی اسٹاک (دستیاب: {{available}}, درخواست: {{requested}})",

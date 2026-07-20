@@ -33,6 +33,38 @@ const UpdatePurchaseSchema = z.object({
   note: z.string().optional(),
 });
 
+/**
+ * @openapi
+ * /purchases:
+ *   post:
+ *     tags: [Purchases]
+ *     summary: Create a purchase order
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               supplier_id: { type: string }
+ *               items:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     product_id: { type: string }
+ *                     quantity: { type: number }
+ *                     cost: { type: number }
+ *                     tax_rate: { type: number }
+ *               reference: { type: string }
+ *               note: { type: string }
+ *     responses:
+ *       201:
+ *         description: Created purchase order
+ *       404:
+ *         description: Supplier not found
+ */
 router.post('/', validate(CreatePurchaseSchema), async (req: Request, res: Response) => {
   const { supplier_id, items, reference, note } = req.body;
   const supplier = await Supplier.findOne({ id: supplier_id }).lean();
@@ -71,6 +103,24 @@ router.post('/', validate(CreatePurchaseSchema), async (req: Request, res: Respo
   res.status(201).json({ id: po.id, supplier_id: po.supplier_id, supplier_name: po.supplier_name, reference: po.reference, status: po.status, items: po.items, subtotal: po.subtotal, tax_total: po.tax_total, total: po.total, note: po.note, created_at: po.created_at });
 });
 
+/**
+ * @openapi
+ * /purchases:
+ *   get:
+ *     tags: [Purchases]
+ *     summary: List purchase orders
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: supplier_id
+ *         schema: { type: string }
+ *       - in: query
+ *         name: status
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Array of purchase orders
+ */
 router.get('/', async (req: Request, res: Response) => {
   const { supplier_id, status } = req.query;
   const filter: any = {};
@@ -80,12 +130,67 @@ router.get('/', async (req: Request, res: Response) => {
   res.json(items.map((po: any) => ({ id: po.id, supplier_id: po.supplier_id, supplier_name: po.supplier_name, reference: po.reference, status: po.status, items: po.items, subtotal: po.subtotal, tax_total: po.tax_total, total: po.total, note: po.note, created_at: po.created_at })));
 });
 
+/**
+ * @openapi
+ * /purchases/{id}:
+ *   get:
+ *     tags: [Purchases]
+ *     summary: Get a purchase order by ID
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Purchase order details
+ *       404:
+ *         description: Purchase order not found
+ */
 router.get('/:id', async (req: Request, res: Response) => {
   const po = await PurchaseOrder.findOne({ id: req.params.id }).lean();
   if (!po) { res.status(404).json({ detail: 'Purchase order not found' }); return; }
   res.json({ id: po.id, supplier_id: po.supplier_id, supplier_name: po.supplier_name, reference: po.reference, status: po.status, items: po.items, subtotal: po.subtotal, tax_total: po.tax_total, total: po.total, note: po.note, created_at: po.created_at });
 });
 
+/**
+ * @openapi
+ * /purchases/{id}:
+ *   patch:
+ *     tags: [Purchases]
+ *     summary: Update a draft purchase order
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               supplier_id: { type: string }
+ *               items:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     product_id: { type: string }
+ *                     quantity: { type: number }
+ *                     cost: { type: number }
+ *                     tax_rate: { type: number }
+ *               reference: { type: string }
+ *               note: { type: string }
+ *     responses:
+ *       200:
+ *         description: Updated purchase order
+ *       404:
+ *         description: Purchase order not found
+ */
 router.patch('/:id', validate(UpdatePurchaseSchema), async (req: Request, res: Response) => {
   const existing = await PurchaseOrder.findOne({ id: req.params.id }).lean();
   if (!existing) { res.status(404).json({ detail: 'Purchase order not found' }); return; }
@@ -114,6 +219,24 @@ router.patch('/:id', validate(UpdatePurchaseSchema), async (req: Request, res: R
   res.json({ id: po!.id, supplier_id: po!.supplier_id, supplier_name: po!.supplier_name, reference: po!.reference, status: po!.status, items: po!.items, subtotal: po!.subtotal, tax_total: po!.tax_total, total: po!.total, note: po!.note, created_at: po!.created_at });
 });
 
+/**
+ * @openapi
+ * /purchases/{id}:
+ *   delete:
+ *     tags: [Purchases]
+ *     summary: Delete a draft purchase order
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Deletion confirmed
+ *       404:
+ *         description: Purchase order not found
+ */
 router.delete('/:id', async (req: Request, res: Response) => {
   const po = await PurchaseOrder.findOne({ id: req.params.id }).lean();
   if (!po) { res.status(404).json({ detail: 'Purchase order not found' }); return; }
@@ -122,6 +245,24 @@ router.delete('/:id', async (req: Request, res: Response) => {
   res.json({ ok: true });
 });
 
+/**
+ * @openapi
+ * /purchases/{id}/receive:
+ *   post:
+ *     tags: [Purchases]
+ *     summary: Receive a purchase order (updates stock, creates ledger entries)
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Purchase order received
+ *       404:
+ *         description: Purchase order not found
+ */
 router.post('/:id/receive', async (req: Request, res: Response) => {
   const po = await PurchaseOrder.findOne({ id: req.params.id }).lean();
   if (!po) { res.status(404).json({ detail: 'Purchase order not found' }); return; }

@@ -7,17 +7,71 @@ import { verifyJWT, requireRoles } from '../middleware/auth';
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
 
+/**
+ * @openapi
+ * /batches/product/{productId}:
+ *   get:
+ *     tags: [Batches]
+ *     summary: Get batches by product ID
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: productId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Array of batches for the product
+ */
 router.get('/product/:productId', async (req: Request, res: Response) => {
   const batches = await StockBatch.find({ product_id: req.params.productId }).sort({ expiry_date: 1, created_at: 1 }).lean();
   res.json(batches);
 });
 
+/**
+ * @openapi
+ * /batches/expired:
+ *   get:
+ *     tags: [Batches]
+ *     summary: Get expired batches
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Array of expired batches with remaining quantity
+ */
 router.get('/expired', async (req: Request, res: Response) => {
   const today = new Date().toISOString().slice(0, 10);
   const batches = await StockBatch.find({ expiry_date: { $lte: today }, quantity: { $gt: 0 } }).sort({ expiry_date: 1 }).lean();
   res.json(batches);
 });
 
+/**
+ * @openapi
+ * /batches:
+ *   post:
+ *     tags: [Batches]
+ *     summary: Create or update a stock batch
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [product_id, batch_no]
+ *             properties:
+ *               product_id: { type: string }
+ *               batch_no: { type: string }
+ *               expiry_date: { type: string }
+ *               mfg_date: { type: string }
+ *               quantity: { type: number }
+ *               cost_price: { type: number }
+ *     responses:
+ *       201:
+ *         description: Batch created
+ *       404:
+ *         description: Product not found
+ */
 router.post('/', async (req: Request, res: Response) => {
   const { product_id, batch_no, expiry_date, mfg_date, quantity, cost_price } = req.body;
   const product = await Product.findOne({ id: product_id }).lean();
@@ -45,12 +99,60 @@ router.post('/', async (req: Request, res: Response) => {
   res.status(201).json(batch.toJSON());
 });
 
+/**
+ * @openapi
+ * /batches/{id}:
+ *   patch:
+ *     tags: [Batches]
+ *     summary: Update a batch
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               batch_no: { type: string }
+ *               expiry_date: { type: string }
+ *               mfg_date: { type: string }
+ *               quantity: { type: number }
+ *               cost_price: { type: number }
+ *     responses:
+ *       200:
+ *         description: Batch updated
+ *       404:
+ *         description: Batch not found
+ */
 router.patch('/:id', async (req: Request, res: Response) => {
   const batch = await StockBatch.findOneAndUpdate({ id: req.params.id }, { $set: req.body }, { new: true }).lean();
   if (!batch) { res.status(404).json({ detail: 'Batch not found' }); return; }
   res.json(batch);
 });
 
+/**
+ * @openapi
+ * /batches/{id}:
+ *   delete:
+ *     tags: [Batches]
+ *     summary: Delete a batch and reduce product stock
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Batch deleted
+ *       404:
+ *         description: Batch not found
+ */
 router.delete('/:id', async (req: Request, res: Response) => {
   const batch = await StockBatch.findOne({ id: req.params.id }).lean();
   if (!batch) { res.status(404).json({ detail: 'Batch not found' }); return; }
@@ -59,6 +161,31 @@ router.delete('/:id', async (req: Request, res: Response) => {
   res.json({ ok: true });
 });
 
+/**
+ * @openapi
+ * /batches/deduct-fifo:
+ *   post:
+ *     tags: [Batches]
+ *     summary: Deduct stock from batches using FIFO (excluding expired)
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [product_id, quantity]
+ *             properties:
+ *               product_id: { type: string }
+ *               quantity: { type: number }
+ *     responses:
+ *       200:
+ *         description: Stock deducted from FIFO batches
+ *       400:
+ *         description: Invalid quantity or insufficient non-expired stock
+ *       404:
+ *         description: Product not found
+ */
 router.post('/deduct-fifo', async (req: Request, res: Response) => {
   const { product_id, quantity } = req.body;
   const needed = Number(quantity) || 0;
@@ -91,6 +218,24 @@ router.post('/deduct-fifo', async (req: Request, res: Response) => {
   res.json({ deducted, product_id, quantity: needed });
 });
 
+/**
+ * @openapi
+ * /batches/check-expiry/{productId}:
+ *   get:
+ *     tags: [Batches]
+ *     summary: Check expiry status for a product
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: productId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Expiry status with list of expired batches
+ *       404:
+ *         description: Product not found
+ */
 router.get('/check-expiry/:productId', async (req: Request, res: Response) => {
   const today = new Date().toISOString().slice(0, 10);
   const product = await Product.findOne({ id: req.params.productId }).lean();

@@ -1,6 +1,7 @@
 import { app } from './app';
 import { connectDB } from './config/db';
 import { seedData } from './services/seed.service';
+import { initSocket } from './services/socket';
 import { env } from './config/env';
 import logger from './utils/logger';
 import { showStartupBanner } from './utils/banner';
@@ -20,6 +21,7 @@ async function start() {
     await connectDB();
     await seedData();
     const server = app.listen(env.PORT, '0.0.0.0', () => {
+      initSocket(server);
       showStartupBanner(env.PORT);
       logger.info(`Server running on http://0.0.0.0:${env.PORT}`);
     });

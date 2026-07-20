@@ -17,6 +17,24 @@ const CreateTransferSchema = z.object({
   note: z.string().optional(),
 });
 
+/**
+ * @openapi
+ * /transfers:
+ *   get:
+ *     tags: [Transfers]
+ *     summary: List account transfers
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: from_account
+ *         schema: { type: string }
+ *       - in: query
+ *         name: to_account
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Array of transfers
+ */
 router.get('/', async (req: Request, res: Response) => {
   const filter: any = {};
   if (req.query.from_account) { filter.from_account = req.query.from_account; }
@@ -25,6 +43,33 @@ router.get('/', async (req: Request, res: Response) => {
   res.json(transfers.map((t: any) => ({ id: t.id, outlet_id: t.outlet_id, from_account: t.from_account, to_account: t.to_account, amount: t.amount, note: t.note, created_at: t.created_at, created_by_id: t.created_by_id, created_by_name: t.created_by_name })));
 });
 
+/**
+ * @openapi
+ * /transfers:
+ *   post:
+ *     tags: [Transfers]
+ *     summary: Create an account transfer
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [from_account, to_account, amount]
+ *             properties:
+ *               from_account: { type: string }
+ *               to_account: { type: string }
+ *               amount: { type: number }
+ *               note: { type: string }
+ *     responses:
+ *       201:
+ *         description: Transfer created
+ *       400:
+ *         description: Insufficient balance
+ *       404:
+ *         description: Account not found
+ */
 router.post('/', validate(CreateTransferSchema), async (req: Request, res: Response) => {
   const now = new Date().toISOString();
 
