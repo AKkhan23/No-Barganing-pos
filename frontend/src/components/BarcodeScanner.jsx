@@ -9,45 +9,40 @@ export default function BarcodeScanner({ onDetect, onClose }) {
   const [error, setError] = useState("");
   const [manual, setManual] = useState("");
 
-  React.useEffect(() => {
-    let stream = null;
-    let alive = true;
-
-    async function openCam() {
+  const openCam = React.useCallback(async () => {
+    const isLocal = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+    if (location.protocol !== "https:" && !isLocal) {
+      setMode("manual");
+      return;
+    }
+    setMode("init");
+    const cams = [
+      { facingMode: "environment" },
+      { facingMode: "user" },
+      true,
+    ];
+    for (const constraints of cams) {
       try {
-        if (location.protocol !== "https:" && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
-          if (alive) setMode("manual");
-          return;
-        }
-        stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        if (!alive) { stream.getTracks().forEach(t => t.stop()); return; }
+        const stream = await navigator.mediaDevices.getUserMedia({ video: constraints });
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           await videoRef.current.play();
         }
-        if (alive) setMode("live");
-      } catch {
-        try {
-          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-          if (!alive) { stream.getTracks().forEach(t => t.stop()); return; }
-          if (videoRef.current) {
-            videoRef.current.srcObject = stream;
-            await videoRef.current.play();
-          }
-          if (alive) setMode("live");
-        } catch {
-          if (alive) setMode("manual");
-        }
-      }
+        setMode("live");
+        return;
+      } catch {}
     }
-
-    openCam();
-
-    return () => {
-      alive = false;
-      if (stream) stream.getTracks().forEach(t => t.stop());
-    };
+    setMode("manual");
   }, []);
+
+  React.useEffect(() => {
+    openCam();
+    return () => {
+      if (videoRef.current?.srcObject) {
+        videoRef.current.srcObject.getTracks().forEach(t => t.stop());
+      }
+    };
+  }, [openCam]);
 
   async function handleFile(e) {
     const file = e.target.files?.[0];
@@ -75,7 +70,7 @@ export default function BarcodeScanner({ onDetect, onClose }) {
           </button>
         </div>
 
-        <div className="relative bg-black flex items-center justify-center overflow-hidden" style={{ minHeight: "320px", display: mode === "manual" ? "none" : "flex" }}>
+        <div className="relative bg-black flex items-center justify-center overflow-hidden" style={{ minHeight: mode === "manual" ? 0 : "320px" }}>
           <video ref={videoRef} autoPlay playsInline muted className="w-full object-contain" style={{ maxHeight: "320px" }} />
           {mode === "init" && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900 gap-3 z-10">
@@ -91,6 +86,9 @@ export default function BarcodeScanner({ onDetect, onClose }) {
               <div className="text-center">
                 <ScanLine className="w-10 h-10 text-zinc-500 mx-auto mb-2" strokeWidth={1.5} />
                 <p className="text-zinc-400 text-sm">Camera unavailable. Type barcode or upload image.</p>
+                <button onClick={openCam} className="mt-3 h-9 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold uppercase tracking-widest flex items-center gap-2 mx-auto transition-colors rounded border border-zinc-600">
+                  <RefreshCw className="w-3.5 h-3.5" /> Try Camera Again
+                </button>
               </div>
               <div>
                 <input ref={inputRef} value={manual} onChange={e => setManual(e.target.value)}
