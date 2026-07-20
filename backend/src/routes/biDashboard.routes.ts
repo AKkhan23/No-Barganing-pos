@@ -41,6 +41,33 @@ router.get('/comparison', async (req: Request, res: Response) => {
   } catch (err: any) { res.status(500).json({ detail: err.message }); }
 });
 
+/**
+ * @openapi
+ * /bi-dashboard/top-products:
+ *   get:
+ *     tags: [BI Dashboard]
+ *     summary: Get top selling products by quantity
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Number of top products to return (default 10)
+ *       - in: query
+ *         name: date_from
+ *         schema:
+ *           type: string
+ *         description: Start date (ISO)
+ *       - in: query
+ *         name: date_to
+ *         schema:
+ *           type: string
+ *         description: End date (ISO)
+ *     responses:
+ *       200:
+ *         description: Top products list
+ */
 router.get('/top-products', async (req: Request, res: Response) => {
   try {
     const limit = parseInt(req.query.limit as string || '10', 10);
