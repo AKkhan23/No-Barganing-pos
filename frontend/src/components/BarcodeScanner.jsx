@@ -4,7 +4,6 @@ import { X, Camera, ScanLine, Upload, RefreshCw } from "lucide-react";
 export default function BarcodeScanner({ onDetect, onClose }) {
   const fileRef = useRef(null);
   const inputRef = useRef(null);
-  const qrDivRef = useRef(null);
   const qrRef = useRef(null);
   const flashRef = useRef(null);
   const [mode, setMode] = useState("init");
@@ -40,16 +39,10 @@ export default function BarcodeScanner({ onDetect, onClose }) {
     }
   };
 
-  const success = (code) => {
+  const handleDetect = (code) => {
     beep();
     flashGreen();
-    if (qrRef.current) {
-      qrRef.current.stop().catch(() => {}).then(() => {
-        setTimeout(() => onDetect(code), 200);
-      });
-    } else {
-      setTimeout(() => onDetect(code), 200);
-    }
+    onDetect(code);
   };
 
   const startCamera = useCallback(async () => {
@@ -59,18 +52,17 @@ export default function BarcodeScanner({ onDetect, onClose }) {
       const { Html5Qrcode } = await import("html5-qrcode");
       const qr = new Html5Qrcode("qr-reader-live");
       qrRef.current = qr;
-
       await qr.start(
         { facingMode: "environment" },
         { fps: 10, qrbox: { width: 280, height: 120 } },
-        (code) => success(code),
+        (code) => handleDetect(code),
         () => {}
       );
       setMode("live");
-    } catch (err) {
+    } catch {
       setMode("manual");
     }
-  }, [onDetect]);
+  }, []);
 
   const stopCam = useCallback(async () => {
     if (qrRef.current) {
@@ -91,7 +83,7 @@ export default function BarcodeScanner({ onDetect, onClose }) {
       const { Html5Qrcode } = await import("html5-qrcode");
       const s = new Html5Qrcode("qr-reader-file");
       const result = await s.scanFile(file, true);
-      success(result);
+      handleDetect(result);
     } catch {
       setError("Could not read barcode from image. Try typing it.");
     }
@@ -99,69 +91,56 @@ export default function BarcodeScanner({ onDetect, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg bg-white border-2 border-white/20">
-        <div className="flex items-center justify-between p-4 bg-zinc-950 text-white">
-          <div className="flex items-center gap-2">
-            <Camera className="w-5 h-5 text-[#E60000]" strokeWidth={2.5} />
-            <h3 className="font-display font-bold uppercase tracking-wider">Scan Barcode</h3>
+      <div className="w-full max-w-md bg-black rounded border border-zinc-800 overflow-hidden">
+        <div className="flex items-center justify-between px-3 py-2 bg-zinc-900">
+          <div className="flex items-center gap-1.5">
+            <Camera className="w-4 h-4 text-[#E60000]" strokeWidth={2.5} />
+            <span className="text-white text-xs font-bold uppercase tracking-wider">Barcode Scanner</span>
           </div>
-          <button onClick={onClose} className="p-1 hover:bg-zinc-800" aria-label="Close scanner">
-            <X className="w-5 h-5" strokeWidth={2.5} />
+          <button onClick={onClose} className="p-1 hover:bg-zinc-700 rounded" aria-label="Close scanner">
+            <X className="w-4 h-4 text-zinc-400" strokeWidth={2.5} />
           </button>
         </div>
 
-        <div className="relative bg-black flex items-center justify-center overflow-hidden" style={{ minHeight: mode === "manual" ? 0 : "320px" }}>
-          <div ref={qrDivRef} id="qr-reader-live" className="w-full" style={{ minHeight: "320px" }} />
+        <div className="relative bg-black overflow-hidden" style={{ height: "260px" }}>
+          <div id="qr-reader-live" className="w-full h-full" />
 
-          {/* Red laser line */}
+          {mode === "init" && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900 gap-2 z-10">
+              <div className="w-6 h-6 border-2 border-zinc-500 border-t-white rounded-full animate-spin" />
+              <p className="text-zinc-500 text-[10px] font-mono">Starting camera...</p>
+            </div>
+          )}
+
           {mode === "live" && (
             <>
-              <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-red-500 shadow-[0_0_8px_#ff0000] z-10 pointer-events-none">
-                <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-red-500 rounded-full shadow-[0_0_6px_#ff0000]" />
+              <div className="absolute inset-x-4 z-10 pointer-events-none animate-[scan_2s_ease-in-out_infinite]">
+                <div className="h-0.5 bg-red-500 shadow-[0_0_10px_#ff0000]" />
               </div>
-              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 bg-black/60 px-3 py-1 rounded-full">
-                <div className="w-32 h-1 bg-zinc-700 rounded overflow-hidden">
-                  <div className="h-full bg-[#E60000] rounded animate-pulse" style={{ width: "60%" }} />
-                </div>
-                <p className="text-[9px] text-zinc-400 font-mono text-center mt-0.5">Scanning...</p>
+              <div className="absolute bottom-1 left-1/2 -translate-x-1/2 z-10 bg-black/70 px-2 py-0.5 rounded">
+                <p className="text-[8px] text-zinc-500 font-mono tracking-wider">SCANNING</p>
               </div>
             </>
           )}
 
-          {mode === "init" && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900 gap-3 z-10">
-              <div className="w-8 h-8 border-2 border-zinc-500 border-t-white rounded-full animate-spin" />
-              <p className="text-zinc-400 text-xs font-mono">Starting camera...</p>
-            </div>
-          )}
-
-          {/* Green flash overlay */}
-          <div ref={flashRef} className="absolute inset-0 bg-green-500/40 z-20 pointer-events-none opacity-0 transition-opacity duration-150" />
+          <div ref={flashRef} className="absolute inset-0 bg-green-500/40 z-20 pointer-events-none opacity-0 transition-opacity duration-200" />
         </div>
 
         {mode === "manual" && (
-          <div className="bg-zinc-900 py-8 px-6" style={{ minHeight: "280px" }}>
-            <div className="max-w-md mx-auto space-y-5">
-              <div className="text-center">
-                <ScanLine className="w-10 h-10 text-zinc-500 mx-auto mb-2" strokeWidth={1.5} />
-                <p className="text-zinc-400 text-sm">Camera unavailable. Type barcode or upload image.</p>
-                <button onClick={startCamera} className="mt-3 h-9 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold uppercase tracking-widest flex items-center gap-2 mx-auto transition-colors rounded border border-zinc-600">
-                  <RefreshCw className="w-3.5 h-3.5" /> Try Camera Again
-                </button>
-              </div>
-              <div>
-                <input ref={inputRef} value={manual} onChange={e => setManual(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter" && manual.trim()) { e.preventDefault(); onDetect(manual.trim()); } }}
-                  placeholder="e.g. 8901234567890"
-                  className="w-full h-12 bg-zinc-800 border-2 border-zinc-600 text-white px-4 font-mono text-lg tracking-wider text-center focus:outline-none focus:border-[#E60000] placeholder-zinc-600" autoFocus />
-              </div>
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-zinc-700" /></div>
-                <div className="relative flex justify-center"><span className="bg-zinc-900 px-3 text-[10px] font-mono uppercase text-zinc-500">or</span></div>
-              </div>
+          <div className="bg-zinc-900 px-4 py-6">
+            <div className="space-y-3">
+              <p className="text-zinc-400 text-xs text-center">Camera unavailable</p>
+              <button onClick={startCamera} className="w-full h-8 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold uppercase tracking-widest border border-zinc-700 rounded flex items-center justify-center gap-1.5">
+                <RefreshCw className="w-3 h-3" /> Try Camera Again
+              </button>
+              <input value={manual} onChange={e => setManual(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter" && manual.trim()) { e.preventDefault(); onDetect(manual.trim()); } }}
+                placeholder="Type barcode..."
+                className="w-full h-10 bg-zinc-800 border border-zinc-700 text-white px-3 font-mono text-sm text-center focus:outline-none focus:border-[#E60000] placeholder-zinc-600 rounded" autoFocus />
+              <div className="flex items-center gap-3"><div className="flex-1 h-px bg-zinc-800" /><span className="text-zinc-600 text-[10px] font-mono">or</span><div className="flex-1 h-px bg-zinc-800" /></div>
               <button onClick={() => fileRef.current?.click()}
-                className="w-full h-12 bg-zinc-800 hover:bg-zinc-700 border-2 border-dashed border-zinc-600 text-zinc-300 font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 transition-colors">
-                <Upload className="w-4 h-4" /> Upload barcode image
+                className="w-full h-8 bg-zinc-800 hover:bg-zinc-700 border border-dashed border-zinc-700 text-zinc-400 text-xs font-mono flex items-center justify-center gap-1.5 rounded">
+                <Upload className="w-3 h-3" /> Upload Image
               </button>
               <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
               <div id="qr-reader-file" className="hidden" />
@@ -169,7 +148,7 @@ export default function BarcodeScanner({ onDetect, onClose }) {
           </div>
         )}
 
-        {error && <div className="px-4 py-2 bg-red-50 border-t-2 border-red-200"><p className="text-xs text-red-600 font-mono">{error}</p></div>}
+        {error && <div className="px-3 py-1.5 bg-red-900/30 border-t border-red-800"><p className="text-[11px] text-red-400 font-mono">{error}</p></div>}
       </div>
     </div>
   );

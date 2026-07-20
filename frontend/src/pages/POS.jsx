@@ -794,7 +794,7 @@ export default function POS() {
 
       {scannerOpen && (
         <BarcodeScanner
-          onDetect={(code) => { setScannerOpen(false); handleScan(code); }}
+          onDetect={(code) => { handleScan(code); }}
           onClose={() => setScannerOpen(false)}
         />
       )}
