@@ -6,6 +6,8 @@ export default function BarcodeScanner({ onDetect, onClose }) {
   const inputRef = useRef(null);
   const qrRef = useRef(null);
   const flashRef = useRef(null);
+  const lastCodeRef = useRef(null);
+  const lastTimeRef = useRef(0);
   const [mode, setMode] = useState("init");
   const [error, setError] = useState("");
   const [manual, setManual] = useState("");
@@ -40,6 +42,10 @@ export default function BarcodeScanner({ onDetect, onClose }) {
   };
 
   const handleDetect = (code) => {
+    const now = Date.now();
+    if (code === lastCodeRef.current && now - lastTimeRef.current < 5000) return;
+    lastCodeRef.current = code;
+    lastTimeRef.current = now;
     beep();
     flashGreen();
     onDetect(code);
@@ -90,40 +96,40 @@ export default function BarcodeScanner({ onDetect, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-2xl border border-zinc-200 overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-zinc-200">
-          <div className="flex items-center gap-2">
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-2 sm:p-4">
+      <div className="w-full max-w-lg bg-white rounded-xl shadow-2xl border border-zinc-100 overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3.5 bg-white">
+          <div className="flex items-center gap-2.5">
             <Camera className="w-5 h-5 text-[#E60000]" strokeWidth={2.5} />
-            <span className="text-zinc-900 text-sm font-bold uppercase tracking-wider">Barcode Scanner</span>
+            <span className="text-zinc-900 text-base font-bold uppercase tracking-wider">Barcode Scanner</span>
           </div>
-          <button onClick={onClose} className="p-1.5 hover:bg-zinc-100 rounded-full" aria-label="Close scanner">
+          <button onClick={onClose} className="p-1.5 hover:bg-zinc-100 rounded-full transition-colors" aria-label="Close scanner">
             <X className="w-5 h-5 text-zinc-500" strokeWidth={2.5} />
           </button>
         </div>
 
-        <div className="relative bg-zinc-900 overflow-hidden" style={{ height: "280px" }}>
+        <div className="relative bg-black overflow-hidden" style={{ height: "380px" }}>
           <div id="qr-reader-live" className="w-full h-full" />
 
           {mode === "init" && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900 gap-2 z-10">
-              <div className="w-6 h-6 border-2 border-zinc-500 border-t-white rounded-full animate-spin" />
-              <p className="text-zinc-400 text-[11px] font-mono">Starting camera...</p>
+              <div className="w-8 h-8 border-2 border-zinc-500 border-t-white rounded-full animate-spin" />
+              <p className="text-zinc-400 text-xs font-mono">Starting camera...</p>
             </div>
           )}
 
           {mode === "live" && (
             <>
               <div className="absolute inset-x-0 z-10 pointer-events-none animate-[scan_2s_ease-in-out_infinite]">
-                <div className="h-0.5 bg-red-500 shadow-[0_0_12px_#ff0000_inset]" />
+                <div className="h-0.5 bg-red-500 shadow-[0_0_15px_#ff0000]" />
               </div>
-              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 bg-black/60 px-3 py-1 rounded-full">
-                <p className="text-[9px] text-zinc-400 font-mono tracking-widest">SCANNING</p>
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 bg-black/60 px-4 py-1 rounded-full">
+                <p className="text-[10px] text-zinc-400 font-mono tracking-widest">SCANNING</p>
               </div>
             </>
           )}
 
-          <div ref={flashRef} className="absolute inset-0 bg-green-500/50 z-20 pointer-events-none opacity-0 transition-opacity duration-200" />
+          <div ref={flashRef} className="absolute inset-0 bg-green-500/40 z-20 pointer-events-none opacity-0 transition-opacity duration-200" />
         </div>
 
         {mode === "manual" && (
