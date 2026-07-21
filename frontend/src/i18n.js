@@ -7,7 +7,7 @@ const resources = {
       nav: {
         pos: "Billing / POS", dashboard: "Dashboard", products: "Products",
         stock: "Stock Log", orders: "Orders", customers: "Customers",
-        reports: "Reports", users: "Staff", settings: "Settings",
+        reports: "Reports", users: "Users", settings: "Settings",
         sales: "Sales", bookings: "Bookings", saleReturns: "Sale Returns",
         purchase: "Purchase", suppliers: "Suppliers", purchases: "Purchases",
         purchaseReturns: "Purchase Returns", damageStock: "Damage Stock",
@@ -682,7 +682,7 @@ const resources = {
       nav: {
         pos: "बिलिंग / POS", dashboard: "डैशबोर्ड", products: "उत्पाद",
         stock: "स्टॉक लॉग", orders: "ऑर्डर", customers: "ग्राहक",
-        reports: "रिपोर्ट", users: "स्टाफ", settings: "सेटिंग्स",
+        reports: "रिपोर्ट", users: "उपयोगकर्ता", settings: "सेटिंग्स",
         sales: "बिक्री", bookings: "बुकिंग", saleReturns: "बिक्री वापसी",
         purchase: "खरीद", suppliers: "आपूर्तिकर्ता", purchases: "खरीद",
         purchaseReturns: "खरीद वापसी", damageStock: "क्षतिग्रस्त स्टॉक",
@@ -858,7 +858,7 @@ const resources = {
       nav: {
         pos: "बिलिंग / POS", dashboard: "डॅशबोर्ड", products: "उत्पादने",
         stock: "साठा लॉग", orders: "ऑर्डर", customers: "ग्राहक",
-        reports: "अहवाल", users: "कर्मचारी", settings: "सेटिंग्ज",
+        reports: "अहवाल", users: "वापरकर्ते", settings: "सेटिंग्ज",
         sales: "विक्री", bookings: "बुकिंग", saleReturns: "विक्री परत",
         purchase: "खरेदी", suppliers: "पुरवठादार", purchases: "खरेदी",
         purchaseReturns: "खरेदी परत", damageStock: "खराब साठा",
@@ -1030,7 +1030,7 @@ const resources = {
       nav: {
         pos: "பில்லிங் / POS", dashboard: "டாஷ்போர்டு", products: "பொருட்கள்",
         stock: "ஸ்டாக் பதிவு", orders: "ஆர்டர்கள்", customers: "வாடிக்கையாளர்கள்",
-        reports: "அறிக்கைகள்", users: "ஊழியர்கள்", settings: "அமைப்புகள்",
+        reports: "அறிக்கைகள்", users: "பயனர்கள்", settings: "அமைப்புகள்",
         sales: "விற்பனை", bookings: "முன்பதிவுகள்", saleReturns: "விற்பனை திரும்பப் பெறுதல்",
         purchase: "கொள்முதல்", suppliers: "சப்ளையர்கள்", purchases: "கொள்முதல்",
         purchaseReturns: "கொள்முதல் திரும்பப் பெறுதல்", damageStock: "சேதமடைந்த ஸ்டாக்",
@@ -1203,7 +1203,7 @@ const resources = {
       nav: {
         pos: "بلنگ / POS", dashboard: "ڈیش بورڈ", products: "مصنوعات",
         stock: "اسٹاک لاگ", orders: "آرڈر", customers: "گاہک",
-        reports: "رپورٹس", users: "اسٹاف", settings: "سیٹنگز",
+        reports: "رپورٹس", users: "صارفین", settings: "سیٹنگز",
         sales: "سیل", bookings: "بکنگ", saleReturns: "سیل واپسی",
         purchase: "خرید", suppliers: "سپلائرز", purchases: "خریداری",
         purchaseReturns: "خرید واپسی", damageStock: "خراب اسٹاک",
