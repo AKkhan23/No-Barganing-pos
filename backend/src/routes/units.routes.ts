@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { Unit } from '../models/Unit';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
-import { scopeFilter } from '../middleware/scope';
+
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -19,7 +19,7 @@ router.use(verifyJWT, requireRoles('admin', 'manager'));
  *         description: List of units
  */
 router.get('/', async (req: Request, res: Response) => {
-  const items = await Unit.find(scopeFilter(req)).lean();
+  const items = await Unit.find({}).lean();
   res.json(items);
 });
 
@@ -77,7 +77,7 @@ router.post('/', async (req: Request, res: Response) => {
  *         description: Unit not found
  */
 router.patch('/:id', async (req: Request, res: Response) => {
-  const item = await Unit.findOneAndUpdate({ ...scopeFilter(req), id: req.params.id }, { $set: req.body }, { new: true }).lean();
+  const item = await Unit.findOneAndUpdate({ id: req.params.id }, { $set: req.body }, { new: true }).lean();
   if (!item) { res.status(404).json({ detail: 'Unit not found' }); return; }
   res.json(item);
 });
@@ -99,7 +99,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
  *         description: Unit deleted
  */
 router.delete('/:id', async (req: Request, res: Response) => {
-  await Unit.deleteOne({ ...scopeFilter(req), id: req.params.id });
+  await Unit.deleteOne({ id: req.params.id });
   res.json({ ok: true });
 });
 

@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { Rack } from '../models/Rack';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
-import { scopeFilter } from '../middleware/scope';
+
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -19,7 +19,7 @@ router.use(verifyJWT, requireRoles('admin', 'manager'));
  *         description: Array of racks
  */
 router.get('/', async (_req: Request, res: Response) => {
-  const items = await Rack.find(scopeFilter(_req)).lean();
+  const items = await Rack.find({}).lean();
   res.json(items);
 });
 
@@ -79,7 +79,7 @@ router.post('/', async (req: Request, res: Response) => {
  *         description: Rack not found
  */
 router.patch('/:id', async (req: Request, res: Response) => {
-  const item = await Rack.findOneAndUpdate({ ...scopeFilter(req), id: req.params.id }, { $set: req.body }, { new: true }).lean();
+  const item = await Rack.findOneAndUpdate({ id: req.params.id }, { $set: req.body }, { new: true }).lean();
   if (!item) { res.status(404).json({ detail: 'Rack not found' }); return; }
   res.json(item);
 });
@@ -102,7 +102,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
  *         description: Deleted successfully
  */
 router.delete('/:id', async (req: Request, res: Response) => {
-  await Rack.deleteOne({ ...scopeFilter(req), id: req.params.id });
+  await Rack.deleteOne({ id: req.params.id });
   res.json({ ok: true });
 });
 

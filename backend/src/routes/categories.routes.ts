@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { Category } from '../models/Category';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
-import { scopeFilter } from '../middleware/scope';
+
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -19,7 +19,7 @@ router.use(verifyJWT, requireRoles('admin', 'manager'));
  *         description: List of categories
  */
 router.get('/', async (_req: Request, res: Response) => {
-  const categories = await Category.find(scopeFilter(_req)).lean();
+  const categories = await Category.find({}).lean();
   res.json(categories.map((c: any) => ({ id: c.id, name: c.name, description: c.description, created_at: c.created_at })));
 });
 
@@ -79,7 +79,7 @@ router.post('/', async (req: Request, res: Response) => {
  *         description: Category not found
  */
 router.patch('/:id', async (req: Request, res: Response) => {
-  const cat = await Category.findOneAndUpdate({ ...scopeFilter(req), id: req.params.id }, { $set: req.body }, { new: true }).lean();
+  const cat = await Category.findOneAndUpdate({ id: req.params.id }, { $set: req.body }, { new: true }).lean();
   if (!cat) { res.status(404).json({ detail: 'Category not found' }); return; }
   res.json({ id: cat.id, name: cat.name, description: cat.description, created_at: cat.created_at });
 });
@@ -101,7 +101,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
  *         description: Category deleted
  */
 router.delete('/:id', async (req: Request, res: Response) => {
-  await Category.deleteOne({ ...scopeFilter(req), id: req.params.id });
+  await Category.deleteOne({ id: req.params.id });
   res.json({ ok: true });
 });
 
