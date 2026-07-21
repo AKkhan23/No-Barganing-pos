@@ -144,16 +144,5 @@ export async function seedData(): Promise<void> {
     logger.info('Default settings created');
   }
 
-  const adminUser = await User.findOne({ email: adminEmail });
-  if (adminUser) {
-    const modelNames = mongoose.modelNames().filter(n => n !== 'User' && n !== 'Role');
-    for (const name of modelNames) {
-      const Model = mongoose.model(name);
-      await Model.updateMany(
-        { $or: [{ created_by: { $exists: false } }, { created_by: adminUser.id }] },
-        { $set: { created_by: null } }
-      );
-    }
-    logger.info('created_by backfill complete');
-  }
+  // Backfill removed — scopeFilter uses exact created_by match only
 }
