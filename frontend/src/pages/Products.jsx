@@ -12,6 +12,9 @@ import { isWeightUnit, formatStock } from "../lib/sellBy";
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from "../components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
+import { Button } from "../components/ui/button";
+import { Separator } from "../components/ui/separator";
 
 const EMPTY = {
   name: "", size: "", sku: "", barcode: "", category: "", brand: "", rack: "",
@@ -429,6 +432,7 @@ export default function Products() {
           allProducts={items}
           onClose={() => setModal(null)}
           onSave={onSave}
+          onBrandCreated={() => api.get("/brands").then(r => setBrands(r.data || [])).catch(() => {})}
         />
       )}
       {labelFor && <BarcodeLabel product={labelFor} onClose={() => setLabelFor(null)} />}
@@ -520,7 +524,7 @@ function RepackModal({ product, onClose, onDone }) {
   );
 }
 
-function ProductModal({ initial, edit, cats, units, brands, racks, variations, allProducts, onClose, onSave }) {
+function ProductModal({ initial, edit, cats, units, brands, racks, variations, allProducts, onClose, onSave, onBrandCreated }) {
   const { t } = useTranslation();
   const [form, setForm] = useState(initial);
   const [variants, setVariants] = useState([]);
@@ -528,6 +532,8 @@ function ProductModal({ initial, edit, cats, units, brands, racks, variations, a
   const [variantGroup, setVariantGroup] = useState([]);
   const [selectedVariantId, setSelectedVariantId] = useState(null);
   const [parentProductId, setParentProductId] = useState("");
+  const [brandDialogOpen, setBrandDialogOpen] = useState(false);
+  const [newBrandName, setNewBrandName] = useState("");
   const skuTouched = useRef(false);
   const upd = (k, v) => {
     if (k === "sku") skuTouched.current = true;
@@ -666,7 +672,10 @@ function ProductModal({ initial, edit, cats, units, brands, racks, variations, a
             <div key={f.k} className={f.span === 2 ? "md:col-span-2" : ""}>
               <label className="block text-xs font-semibold text-zinc-600 mb-1">{f.label}{f.req && " *"}</label>
               {f.select ? (
-                <Select value={form[f.k] || ""} onValueChange={(v) => upd(f.k, v)}>
+                <Select value={form[f.k] || ""} onValueChange={(v) => {
+                  if (f.k === "brand" && v === "__add_brand__") { setBrandDialogOpen(true); return; }
+                  upd(f.k, v);
+                }}>
                   <SelectTrigger data-testid={`pf-${f.k}`}
                     className="w-full h-10 text-sm border border-zinc-300 px-3 bg-white focus:outline-none focus:ring-2 focus:ring-[#E60000]/30 focus:border-[#E60000] rounded shadow-none [&>svg]:text-zinc-500">
                     <SelectValue placeholder={t("page.select_option")} />
@@ -674,7 +683,7 @@ function ProductModal({ initial, edit, cats, units, brands, racks, variations, a
                   <SelectContent className="max-h-48 border border-zinc-200 rounded bg-white shadow-lg">
                     {f.k === "category" && cats.map((c) => <SelectItem key={c.id || c.name} value={c.name} className="text-sm">{c.name}</SelectItem>)}
                     {f.k === "unit" && (units.length ? units : UNITS).map((u) => <SelectItem key={u.unit_name || u} value={u.unit_name || u} className="text-sm">{u.unit_name || u}</SelectItem>)}
-                    {f.k === "brand" && brands.map((b) => <SelectItem key={b.id || b.name} value={b.name} className="text-sm">{b.name}</SelectItem>)}
+                    {f.k === "brand" && <>{brands.map((b) => <SelectItem key={b.id || b.name} value={b.name} className="text-sm">{b.name}</SelectItem>)}<Separator className="my-1" /><SelectItem value="__add_brand__" className="text-sm text-[#E60000] font-medium">+ Add Brand</SelectItem></>}
                     {f.k === "rack" && racks.map((r) => <SelectItem key={r.id || r.name} value={r.name} className="text-sm">{r.name}</SelectItem>)}
                     {f.k === "sell_by" && (units.length ? units : UNITS).map((u) => {
                       const val = u.unit_name || u;
@@ -838,6 +847,34 @@ function ProductModal({ initial, edit, cats, units, brands, racks, variations, a
             </button>
           </div>
         </form>
+
+        <Dialog open={brandDialogOpen} onOpenChange={setBrandDialogOpen}>
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Add Brand</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <input type="text" value={newBrandName} onChange={(e) => setNewBrandName(e.target.value)}
+                placeholder="Brand name"
+                className="w-full h-10 text-sm border border-zinc-300 px-3 rounded focus:outline-none focus:ring-2 focus:ring-[#E60000]/30" />
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" size="sm" onClick={() => { setBrandDialogOpen(false); setNewBrandName(""); }}>Cancel</Button>
+                <Button size="sm" className="bg-[#E60000] hover:bg-[#cc0000]" onClick={async () => {
+                  if (!newBrandName.trim()) return;
+                  try {
+                    const { data } = await api.post("/brands", { name: newBrandName.trim() });
+                    if (onBrandCreated) onBrandCreated(data);
+                    upd("brand", data.name);
+                    setBrandDialogOpen(false);
+                    setNewBrandName("");
+                  } catch (e) {
+                    toast.error(e?.response?.data?.detail || "Failed to create brand");
+                  }
+                }}>Save</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
