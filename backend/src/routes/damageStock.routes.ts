@@ -6,6 +6,7 @@ import { StockMovement } from '../models/StockMovement';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -48,12 +49,12 @@ const CreateDamageSchema = z.object({
  */
 router.post('/', validate(CreateDamageSchema), async (req: Request, res: Response) => {
   const now = new Date().toISOString();
-  const product = await Product.findOne({ id: req.body.product_id });
+  const product = await Product.findOne({ ...scopeFilter(req), id: req.body.product_id });
   if (!product) { res.status(404).json({ detail: 'Product not found' }); return; }
   if (product.stock < req.body.quantity) { res.status(400).json({ detail: 'Insufficient stock' }); return; }
-  const damage = new DamageStock({ ...req.body, id: generateId(), created_at: now, created_by_id: (req as any).user?.id, created_by_name: (req as any).user?.name });
+  const damage = new DamageStock({ ...req.body, id: generateId(), created_at: now, created_by_id: (req as any).user?.id, created_by_name: (req as any).user?.name, created_by: req.user!.id });
   await damage.save();
-  await Product.updateOne({ id: req.body.product_id }, { $inc: { stock: -req.body.quantity }, updated_at: now });
+  await Product.updateOne({ ...scopeFilter(req), id: req.body.product_id }, { $inc: { stock: -req.body.quantity }, updated_at: now });
   const movement = new StockMovement({
     id: generateId(),
     product_id: req.body.product_id,
@@ -67,6 +68,7 @@ router.post('/', validate(CreateDamageSchema), async (req: Request, res: Respons
     user_id: (req as any).user?.id || '',
     user_name: (req as any).user?.name || '',
     created_at: now,
+    created_by: req.user!.id,
   });
   await movement.save();
   res.status(201).json({ id: damage.id, product_id: damage.product_id, product_name: damage.product_name, quantity: damage.quantity, reason: damage.reason, note: damage.note, created_at: damage.created_at });
@@ -90,7 +92,8 @@ router.post('/', validate(CreateDamageSchema), async (req: Request, res: Respons
 router.get('/', async (req: Request, res: Response) => {
   const filter: any = {};
   if (req.query.product_id) filter.product_id = req.query.product_id;
-  const items = await DamageStock.find(filter).lean();
+  const sf = scopeFilter(req);
+  const items = await DamageStock.find({ ...sf, ...filter }).lean();
   res.json(items.map((d: any) => ({ id: d.id, product_id: d.product_id, product_name: d.product_name, quantity: d.quantity, reason: d.reason, note: d.note, created_at: d.created_at })));
 });
 

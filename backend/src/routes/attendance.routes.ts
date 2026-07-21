@@ -4,6 +4,7 @@ import { Attendance } from '../models/Attendance';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 
@@ -43,7 +44,7 @@ router.post('/check-in', verifyJWT, validate(CheckInSchema), async (req: Request
   try {
     const now = new Date();
     const dateStr = now.toISOString().slice(0, 10);
-    const existing = await Attendance.findOne({ user_id: req.user!.id, date: dateStr }).lean();
+    const existing = await Attendance.findOne({ ...scopeFilter(req), user_id: req.user!.id, date: dateStr }).lean();
     if (existing) { res.status(400).json({ detail: 'Already checked in today' }); return; }
     const record = new Attendance({
       id: generateId(),
@@ -56,6 +57,7 @@ router.post('/check-in', verifyJWT, validate(CheckInSchema), async (req: Request
       longitude: req.body.longitude,
       total_hours: 0,
       created_at: now.toISOString(),
+      created_by: req.user!.id,
     });
     await record.save();
     res.status(201).json({ id: record.id, user_id: record.user_id, user_name: record.user_name, check_in: record.check_in, date: record.date });
@@ -88,7 +90,7 @@ router.post('/check-out', verifyJWT, validate(CheckOutSchema), async (req: Reque
   try {
     const now = new Date();
     const dateStr = now.toISOString().slice(0, 10);
-    const record = await Attendance.findOne({ user_id: req.user!.id, date: dateStr, check_out: { $exists: false } });
+    const record = await Attendance.findOne({ ...scopeFilter(req), user_id: req.user!.id, date: dateStr, check_out: { $exists: false } });
     if (!record) { res.status(400).json({ detail: 'No open check-in record found for today' }); return; }
     record.check_out = now.toISOString();
     const checkInTime = new Date(record.check_in!).getTime();
@@ -126,7 +128,8 @@ router.get('/', verifyJWT, requireRoles('admin', 'manager'), async (req: Request
     const filter: any = {};
     if (req.query.date) filter.date = req.query.date;
     if (req.query.user_id) filter.user_id = req.query.user_id;
-    const records = await Attendance.find(filter).sort({ date: -1 }).lean();
+    const sf = scopeFilter(req);
+    const records = await Attendance.find({ ...sf, ...filter }).sort({ date: -1 }).lean();
     res.json(records.map((r: any) => ({ id: r.id, user_id: r.user_id, user_name: r.user_name, role: r.role, check_in: r.check_in, check_out: r.check_out, date: r.date, total_hours: r.total_hours })));
   } catch (err: any) { res.status(500).json({ detail: err.message }); }
 });
@@ -152,7 +155,8 @@ router.get('/summary', verifyJWT, requireRoles('admin', 'manager'), async (req: 
   try {
     const month = req.query.month as string;
     if (!month) { res.status(400).json({ detail: 'month query param required (e.g. 2026-07)' }); return; }
-    const records = await Attendance.find({ date: { $regex: `^${month}` } }).lean();
+    const sf = scopeFilter(req);
+    const records = await Attendance.find({ ...sf, date: { $regex: `^${month}` } }).lean();
     const grouped: Record<string, { user_id: string; user_name: string; total_days: number; total_hours: number }> = {};
     for (const r of records) {
       if (!grouped[r.user_id]) grouped[r.user_id] = { user_id: r.user_id, user_name: r.user_name, total_days: 0, total_hours: 0 };

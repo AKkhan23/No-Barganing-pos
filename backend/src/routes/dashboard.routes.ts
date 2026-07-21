@@ -3,6 +3,7 @@ import { Order } from '../models/Order';
 import { Product } from '../models/Product';
 import { Customer } from '../models/Customer';
 import { verifyJWT, requireRoles } from '../middleware/auth';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -45,17 +46,19 @@ router.get('/stats', async (req: Request, res: Response) => {
   const diffDays = Math.ceil((rangeEnd.getTime() - rangeStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
   const numDays = Math.min(Math.max(diffDays, 1), 90);
 
+  const sf = scopeFilter(req);
   const [totalProducts, dbCustomers, orderNames, revenueData, lowStockProducts, rangeOrders, topProductsAgg] = await Promise.all([
-    Product.countDocuments(),
-    Customer.countDocuments(),
-    Order.distinct('customer_name'),
+    Product.countDocuments(sf),
+    Customer.countDocuments(sf),
+    Order.distinct('customer_name', sf),
     Order.aggregate([
+      { $match: sf },
       { $group: { _id: null, total: { $sum: '$grand_total' }, count: { $sum: 1 } } },
     ]),
-    (Product.find({ $expr: { $lte: ['$stock', '$low_stock_threshold'] } } as any).lean() as Promise<any[]>),
-    Order.find(dateFilter).sort({ created_at: 1 }).lean(),
+    (Product.find({ $and: [sf, { $expr: { $lte: ['$stock', '$low_stock_threshold'] } }] } as any).lean() as Promise<any[]>),
+    Order.find({ ...sf, ...dateFilter }).sort({ created_at: 1 }).lean(),
     Order.aggregate([
-      { $match: dateFilter },
+      { $match: { ...sf, ...dateFilter } },
       { $unwind: '$items' },
       { $group: { _id: '$items.product_name', total_qty: { $sum: '$items.quantity' }, total_rev: { $sum: '$items.total' } } },
       { $sort: { total_rev: -1 } },

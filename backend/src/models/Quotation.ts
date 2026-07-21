@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface IQuotationItem {
   product_id: string;
@@ -51,5 +52,6 @@ const QuotationSchema = new Schema<IQuotation>({
   created_by_id: { type: String },
   created_at: { type: String, required: true },
 });
+QuotationSchema.plugin(scopePlugin);
 
 export const Quotation = mongoose.model<IQuotation>('Quotation', QuotationSchema);

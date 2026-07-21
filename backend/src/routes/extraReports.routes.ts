@@ -10,6 +10,7 @@ import { ShiftReport } from '../models/ShiftReport';
 import { Supplier } from '../models/Supplier';
 import { Customer } from '../models/Customer';
 import { SupplierPayment } from '../models/SupplierPayment';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -43,8 +44,9 @@ router.get('/cash-flow', async (req: Request, res: Response) => {
     if (start_date) filter.created_at = { $gte: start_date };
     if (end_date) filter.created_at = { ...filter.created_at, $lte: end_date };
 
+    const sf = scopeFilter(req);
     const sales = await Order.aggregate([
-      { $match: { ...filter, status: { $ne: 'cancelled' } } },
+      { $match: { ...sf, ...filter, status: { $ne: 'cancelled' } } },
       {
         $group: {
           _id: { $substr: ['$created_at', 0, 10] },
@@ -55,7 +57,7 @@ router.get('/cash-flow', async (req: Request, res: Response) => {
     ]);
 
     const expenses = await Expense.aggregate([
-      { $match: filter },
+      { $match: { ...sf, ...filter } },
       {
         $group: {
           _id: { $substr: ['$created_at', 0, 10] },
@@ -66,7 +68,7 @@ router.get('/cash-flow', async (req: Request, res: Response) => {
     ]);
 
     const purchases = await PurchaseOrder.aggregate([
-      { $match: { ...filter, status: { $in: ['received', 'completed'] } } },
+      { $match: { ...sf, ...filter, status: { $in: ['received', 'completed'] } } },
       {
         $group: {
           _id: { $substr: ['$created_at', 0, 10] },
@@ -120,8 +122,9 @@ router.get('/cash-flow', async (req: Request, res: Response) => {
  */
 router.get('/customer-balance', async (req: Request, res: Response) => {
   try {
+    const sf = scopeFilter(req);
     const result = await LedgerEntry.aggregate([
-      { $match: { party_type: 'customer' } },
+      { $match: { ...sf, party_type: 'customer' } },
       {
         $group: {
           _id: '$party_id',
@@ -177,7 +180,7 @@ router.get('/customer-balance', async (req: Request, res: Response) => {
 router.get('/customer-ledger/:customerId', async (req: Request, res: Response) => {
   try {
     const { customerId } = req.params;
-    const entries = await LedgerEntry.find({ party_type: 'customer', party_id: customerId })
+    const entries = await LedgerEntry.find({ ...scopeFilter(req), party_type: 'customer', party_id: customerId })
       .sort({ created_at: 1 })
       .lean();
 
@@ -206,8 +209,9 @@ router.get('/customer-ledger/:customerId', async (req: Request, res: Response) =
  */
 router.get('/supplier-balance', async (req: Request, res: Response) => {
   try {
+    const sf = scopeFilter(req);
     const result = await LedgerEntry.aggregate([
-      { $match: { party_type: 'supplier' } },
+      { $match: { ...sf, party_type: 'supplier' } },
       {
         $group: {
           _id: '$party_id',
@@ -263,7 +267,7 @@ router.get('/supplier-balance', async (req: Request, res: Response) => {
 router.get('/supplier-ledger/:supplierId', async (req: Request, res: Response) => {
   try {
     const { supplierId } = req.params;
-    const entries = await LedgerEntry.find({ party_type: 'supplier', party_id: supplierId })
+    const entries = await LedgerEntry.find({ ...scopeFilter(req), party_type: 'supplier', party_id: supplierId })
       .sort({ created_at: 1 })
       .lean();
 
@@ -292,10 +296,12 @@ router.get('/supplier-ledger/:supplierId', async (req: Request, res: Response) =
  */
 router.get('/balance-statement', async (req: Request, res: Response) => {
   try {
-    const accounts = await Account.find().lean();
+    const sf = scopeFilter(req);
+    const accounts = await Account.find(sf).lean();
     const totalAssets = accounts.reduce((s, a) => s + (Number(a.current_balance) || 0), 0);
 
     const supplierPayments = await SupplierPayment.aggregate([
+      { $match: sf },
       {
         $group: {
           _id: null,
@@ -346,7 +352,7 @@ router.get('/deposit-report', async (req: Request, res: Response) => {
     if (start_date) filter.created_at = { $gte: start_date };
     if (end_date) filter.created_at = { ...filter.created_at, $lte: end_date };
 
-    const deposits = await Deposit.find(filter).sort({ created_at: -1 }).lean();
+    const deposits = await Deposit.find({ ...scopeFilter(req), ...filter }).sort({ created_at: -1 }).lean();
     const totalAmount = deposits.reduce((s, d) => s + (Number(d.amount) || 0), 0);
 
     res.json({ total_deposits: deposits.length, total_amount: totalAmount, deposits });
@@ -384,7 +390,7 @@ router.get('/register-report', async (req: Request, res: Response) => {
     if (start_date) filter.created_at = { $gte: start_date };
     if (end_date) filter.created_at = { ...filter.created_at, $lte: end_date };
 
-    const reports = await ShiftReport.find(filter).sort({ created_at: -1 }).lean();
+    const reports = await ShiftReport.find({ ...scopeFilter(req), ...filter }).sort({ created_at: -1 }).lean();
     const totalOpening = reports.reduce((s, r) => s + (Number(r.opening_cash) || 0), 0);
     const totalClosing = reports.reduce((s, r) => s + (Number(r.closing_cash) || 0), 0);
     const totalVariance = reports.reduce((s, r) => s + (Number(r.variance) || 0), 0);

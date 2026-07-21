@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface IDenomination extends Document {
   id: string;
@@ -15,5 +16,6 @@ const DenominationSchema = new Schema<IDenomination>({
   created_at: { type: String, required: true },
   updated_at: { type: String },
 });
+DenominationSchema.plugin(scopePlugin);
 
 export const Denomination = mongoose.model<IDenomination>('Denomination', DenominationSchema);

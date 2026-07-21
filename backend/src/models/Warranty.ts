@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface IWarranty extends Document {
   id: string;
@@ -29,5 +30,6 @@ const WarrantySchema = new Schema<IWarranty>({
   notes: { type: String },
   created_at: { type: String, required: true },
 });
+WarrantySchema.plugin(scopePlugin);
 
 export const Warranty = mongoose.model<IWarranty>('Warranty', WarrantySchema);

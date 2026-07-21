@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface ISupplier extends Document {
   id: string;
@@ -25,5 +26,6 @@ const SupplierSchema = new Schema<ISupplier>({
   outlet_id: { type: String },
   created_at: { type: String, required: true },
 });
+SupplierSchema.plugin(scopePlugin);
 
 export const Supplier = mongoose.model<ISupplier>('Supplier', SupplierSchema);

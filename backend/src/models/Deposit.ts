@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface IDeposit extends Document {
   id: string;
@@ -23,5 +24,6 @@ const DepositSchema = new Schema<IDeposit>({
   created_at: { type: String, required: true },
   updated_at: { type: String },
 });
+DepositSchema.plugin(scopePlugin);
 
 export const Deposit = mongoose.model<IDeposit>('Deposit', DepositSchema);

@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface ISRItem {
   product_id: string;
@@ -55,5 +56,6 @@ const SaleReturnSchema = new Schema<ISaleReturn>({
   created_by_id: { type: String },
   created_by_name: { type: String },
 });
+SaleReturnSchema.plugin(scopePlugin);
 
 export const SaleReturn = mongoose.model<ISaleReturn>('SaleReturn', SaleReturnSchema);

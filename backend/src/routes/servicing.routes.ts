@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { Servicing } from '../models/Servicing';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -18,7 +19,7 @@ router.use(verifyJWT, requireRoles('admin', 'manager'));
  *         description: Array of servicing records
  */
 router.get('/', async (_req: Request, res: Response) => {
-  const items = await Servicing.find({}).lean();
+  const items = await Servicing.find(scopeFilter(_req)).lean();
   res.json(items);
 });
 
@@ -41,7 +42,7 @@ router.get('/', async (_req: Request, res: Response) => {
  */
 router.post('/', async (req: Request, res: Response) => {
   const now = new Date().toISOString();
-  const item = new Servicing({ id: generateId(), ...req.body, created_at: now });
+  const item = new Servicing({ id: generateId(), ...req.body, created_by: req.user?.id, created_at: now });
   await item.save();
   res.status(201).json(item.toJSON());
 });
@@ -73,7 +74,7 @@ router.post('/', async (req: Request, res: Response) => {
  */
 router.patch('/:id', async (req: Request, res: Response) => {
   const item = await Servicing.findOneAndUpdate(
-    { id: req.params.id },
+    { ...scopeFilter(req), id: req.params.id },
     { $set: { ...req.body, updated_at: new Date().toISOString() } },
     { new: true }
   ).lean();
@@ -119,7 +120,7 @@ router.patch('/:id/status', async (req: Request, res: Response) => {
     return;
   }
   const item = await Servicing.findOneAndUpdate(
-    { id: req.params.id },
+    { ...scopeFilter(req), id: req.params.id },
     { $set: { status, updated_at: new Date().toISOString() } },
     { new: true }
   ).lean();
@@ -145,7 +146,7 @@ router.patch('/:id/status', async (req: Request, res: Response) => {
  *         description: Servicing record deleted
  */
 router.delete('/:id', async (req: Request, res: Response) => {
-  await Servicing.deleteOne({ id: req.params.id });
+  await Servicing.deleteOne({ ...scopeFilter(req), id: req.params.id });
   res.json({ ok: true });
 });
 

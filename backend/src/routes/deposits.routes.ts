@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { Deposit } from '../models/Deposit';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -18,7 +19,7 @@ router.use(verifyJWT, requireRoles('admin', 'manager'));
  *         description: Array of deposits
  */
 router.get('/', async (_req: Request, res: Response) => {
-  const items = await Deposit.find({}).lean();
+  const items = await Deposit.find(scopeFilter(_req)).lean();
   res.json(items);
 });
 
@@ -46,7 +47,7 @@ router.get('/', async (_req: Request, res: Response) => {
  */
 router.post('/', async (req: Request, res: Response) => {
   const now = new Date().toISOString();
-  const item = new Deposit({ id: generateId(), ...req.body, created_at: now });
+  const item = new Deposit({ id: generateId(), ...req.body, created_at: now, created_by: req.user!.id });
   await item.save();
   res.status(201).json(item.toJSON());
 });
@@ -83,7 +84,7 @@ router.post('/', async (req: Request, res: Response) => {
  */
 router.patch('/:id', async (req: Request, res: Response) => {
   const item = await Deposit.findOneAndUpdate(
-    { id: req.params.id },
+    { ...scopeFilter(req), id: req.params.id },
     { $set: { ...req.body, updated_at: new Date().toISOString() } },
     { new: true }
   ).lean();
@@ -109,7 +110,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
  *         description: Deposit deleted
  */
 router.delete('/:id', async (req: Request, res: Response) => {
-  await Deposit.deleteOne({ id: req.params.id });
+  await Deposit.deleteOne({ ...scopeFilter(req), id: req.params.id });
   res.json({ ok: true });
 });
 

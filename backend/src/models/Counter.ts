@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface ICounter extends Document {
   id: string;
@@ -19,5 +20,6 @@ const CounterSchema = new Schema<ICounter>({
   created_at: { type: String, required: true },
   updated_at: { type: String },
 });
+CounterSchema.plugin(scopePlugin);
 
 export const Counter = mongoose.model<ICounter>('Counter', CounterSchema);

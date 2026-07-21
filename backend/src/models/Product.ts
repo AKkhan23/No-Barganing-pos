@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface IProduct extends Document {
   id: string;
@@ -47,5 +48,6 @@ const ProductSchema = new Schema<IProduct>({
   created_at: { type: String, required: true },
   updated_at: { type: String, required: true },
 });
+ProductSchema.plugin(scopePlugin);
 
 export const Product = mongoose.model<IProduct>('Product', ProductSchema);

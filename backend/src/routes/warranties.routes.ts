@@ -4,6 +4,7 @@ import { Warranty } from '../models/Warranty';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -43,8 +44,8 @@ const UpdateWarrantySchema = z.object({
  *       200:
  *         description: Array of warranties
  */
-router.get('/', async (_req: Request, res: Response) => {
-  const warranties = await Warranty.find().sort({ created_at: -1 }).lean();
+router.get('/', async (req: Request, res: Response) => {
+  const warranties = await Warranty.find(scopeFilter(req)).sort({ created_at: -1 }).lean();
   res.json(warranties.map((w: any) => ({ id: w.id, order_id: w.order_id, product_id: w.product_id, product_name: w.product_name, customer_id: w.customer_id, customer_name: w.customer_name, sale_date: w.sale_date, warranty_period_days: w.warranty_period_days, expiry_date: w.expiry_date, service_status: w.service_status, notes: w.notes, created_at: w.created_at })));
 });
 
@@ -76,6 +77,7 @@ router.post('/', validate(CreateWarrantySchema), async (req: Request, res: Respo
     expiry_date: expiryDate,
     service_status: 'active',
     created_at: now,
+    created_by: req.user?.id,
   });
   await warranty.save();
 
@@ -113,7 +115,7 @@ router.patch('/:id', validate(UpdateWarrantySchema), async (req: Request, res: R
     const saleDate = new Date(req.body.sale_date);
     update.expiry_date = new Date(saleDate.getTime() + req.body.warranty_period_days * 24 * 60 * 60 * 1000).toISOString();
   }
-  const warranty = await Warranty.findOneAndUpdate({ id: req.params.id }, { $set: update }, { new: true }).lean();
+  const warranty = await Warranty.findOneAndUpdate({ ...scopeFilter(req), id: req.params.id }, { $set: update }, { new: true }).lean();
   if (!warranty) { res.status(404).json({ detail: 'Warranty not found' }); return; }
   res.json({ id: warranty.id, order_id: warranty.order_id, product_id: warranty.product_id, product_name: warranty.product_name, customer_id: warranty.customer_id, customer_name: warranty.customer_name, sale_date: warranty.sale_date, warranty_period_days: warranty.warranty_period_days, expiry_date: warranty.expiry_date, service_status: warranty.service_status, notes: warranty.notes, created_at: warranty.created_at });
 });
@@ -136,7 +138,7 @@ router.patch('/:id', validate(UpdateWarrantySchema), async (req: Request, res: R
  *         description: Warranty deleted
  */
 router.delete('/:id', async (req: Request, res: Response) => {
-  await Warranty.deleteOne({ id: req.params.id });
+  await Warranty.deleteOne({ ...scopeFilter(req), id: req.params.id });
   res.json({ ok: true });
 });
 

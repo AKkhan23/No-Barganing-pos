@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface IFixedAssetStock extends Document {
   id: string;
@@ -25,5 +26,6 @@ const FixedAssetStockSchema = new Schema<IFixedAssetStock>({
   created_by: { type: String },
   created_at: { type: String, required: true },
 });
+FixedAssetStockSchema.plugin(scopePlugin);
 
 export const FixedAssetStock = mongoose.model<IFixedAssetStock>('FixedAssetStock', FixedAssetStockSchema);

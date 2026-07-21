@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface IDeliveryPartner extends Document {
   id: string;
@@ -25,5 +26,6 @@ const DeliveryPartnerSchema = new Schema<IDeliveryPartner>({
   active: { type: Boolean, default: true },
   created_at: { type: String, required: true },
 });
+DeliveryPartnerSchema.plugin(scopePlugin);
 
 export const DeliveryPartner = mongoose.model<IDeliveryPartner>('DeliveryPartner', DeliveryPartnerSchema);

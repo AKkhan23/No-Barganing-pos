@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface ITransfer extends Document {
   id: string;
@@ -23,5 +24,6 @@ const TransferSchema = new Schema<ITransfer>({
   created_by_id: { type: String },
   created_by_name: { type: String },
 });
+TransferSchema.plugin(scopePlugin);
 
 export const Transfer = mongoose.model<ITransfer>('Transfer', TransferSchema);

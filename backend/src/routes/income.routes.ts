@@ -5,6 +5,7 @@ import { LedgerEntry } from '../models/LedgerEntry';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -48,7 +49,7 @@ const CreateIncomeSchema = z.object({
 router.post('/', validate(CreateIncomeSchema), async (req: Request, res: Response) => {
   const now = new Date().toISOString();
   const date = req.body.date || now;
-  const income = new Income({ ...req.body, date, id: generateId(), created_at: now, created_by_id: (req as any).user?.id, created_by_name: (req as any).user?.name });
+  const income = new Income({ ...req.body, date, id: generateId(), created_at: now, created_by_id: (req as any).user?.id, created_by_name: (req as any).user?.name, created_by: req.user!.id });
   await income.save();
   const debitEntry = new LedgerEntry({
     id: generateId(),
@@ -61,6 +62,7 @@ router.post('/', validate(CreateIncomeSchema), async (req: Request, res: Respons
     created_by_id: (req as any).user?.id,
     created_by_name: (req as any).user?.name,
     created_at: now,
+    created_by: req.user!.id,
   });
   await debitEntry.save();
   const creditEntry = new LedgerEntry({
@@ -74,6 +76,7 @@ router.post('/', validate(CreateIncomeSchema), async (req: Request, res: Respons
     created_by_id: (req as any).user?.id,
     created_by_name: (req as any).user?.name,
     created_at: now,
+    created_by: req.user!.id,
   });
   await creditEntry.save();
   res.status(201).json({ id: income.id, source: income.source, account: income.account, amount: income.amount, note: income.note, date: income.date, created_at: income.created_at });
@@ -111,7 +114,7 @@ router.get('/', async (req: Request, res: Response) => {
     if (req.query.date_from) filter.date.$gte = req.query.date_from;
     if (req.query.date_to) filter.date.$lte = req.query.date_to;
   }
-  const incomes = await Income.find(filter).lean();
+  const incomes = await Income.find({ ...scopeFilter(req), ...filter }).lean();
   res.json(incomes.map((i: any) => ({ id: i.id, source: i.source, account: i.account, amount: i.amount, note: i.note, date: i.date, created_at: i.created_at })));
 });
 

@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface ICustomerGroup extends Document {
   id: string;
@@ -15,5 +16,6 @@ const CustomerGroupSchema = new Schema<ICustomerGroup>({
   description: { type: String },
   created_at: { type: String, required: true },
 });
+CustomerGroupSchema.plugin(scopePlugin);
 
 export const CustomerGroup = mongoose.model<ICustomerGroup>('CustomerGroup', CustomerGroupSchema);

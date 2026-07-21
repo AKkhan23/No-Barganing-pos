@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface IWhatsAppLog extends Document {
   id: string;
@@ -17,5 +18,6 @@ const WhatsAppLogSchema = new Schema<IWhatsAppLog>({
   status: { type: String, default: 'stubbed' },
   created_at: { type: String, required: true },
 });
+WhatsAppLogSchema.plugin(scopePlugin);
 
 export const WhatsAppLog = mongoose.model<IWhatsAppLog>('WhatsAppLog', WhatsAppLogSchema);

@@ -6,6 +6,7 @@ import { Order } from '../models/Order';
 import { generateId, computeEAN13, generateBarcode12 } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 
@@ -97,13 +98,14 @@ router.get('/', verifyJWT, requireRoles('admin', 'manager', 'cashier'), async (r
   if (q) { filter.$or = [{ name: { $regex: q, $options: 'i' } }, { sku: { $regex: q, $options: 'i' } }, { barcode: { $regex: q, $options: 'i' } }]; }
   if (category) filter.category = category;
   if (lowStock === 'true') filter.$expr = { $lte: ['$stock', '$low_stock_threshold'] };
-  const products = await Product.find(filter as any).limit(limit).select('-_id -__v').lean();
+  const products = await Product.find({ ...scopeFilter(req), ...filter } as any).limit(limit).select('-_id -__v').lean();
 
   const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
   const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
   const productIds = products.map((p: any) => p.id);
+  const sf = scopeFilter(req);
   const todaySales = await Order.aggregate([
-    { $match: { created_at: { $gte: todayStart.toISOString(), $lte: todayEnd.toISOString() } } },
+    { $match: { ...sf, created_at: { $gte: todayStart.toISOString(), $lte: todayEnd.toISOString() } } },
     { $unwind: '$items' },
     { $match: { 'items.product_id': { $in: productIds } } },
     { $group: { _id: '$items.product_id', qty: { $sum: '$items.quantity' }, rev: { $sum: '$items.total' } } },
@@ -139,20 +141,20 @@ router.get('/', verifyJWT, requireRoles('admin', 'manager', 'cashier'), async (r
  */
 router.get('/barcode/:code', verifyJWT, requireRoles('admin', 'manager', 'cashier'), async (req: Request, res: Response) => {
   const code = req.params.code;
-  let product = await Product.findOne({ $or: [{ barcode: code }, { sku: code }] }).select('-_id -__v').lean();
+  let product = await Product.findOne({ $and: [scopeFilter(req), { $or: [{ barcode: code }, { sku: code }] }] }).select('-_id -__v').lean();
   // Scanner may strip EAN-13 check digit → try both with and without it
   if (!product && /^\d{12}$/.test(code)) {
     const withCheck = computeEAN13(code);
-    product = await Product.findOne({ barcode: withCheck }).select('-_id -__v').lean();
+    product = await Product.findOne({ ...scopeFilter(req), barcode: withCheck }).select('-_id -__v').lean();
   }
   if (!product && /^\d{13}$/.test(code)) {
     const withoutCheck = code.slice(0, -1);
-    product = await Product.findOne({ barcode: withoutCheck }).select('-_id -__v').lean();
+    product = await Product.findOne({ ...scopeFilter(req), barcode: withoutCheck }).select('-_id -__v').lean();
   }
   // Some products may have barcode stored as trimmed number (no leading zeros)
   if (!product) {
     const stripped = String(Number(code));
-    product = await Product.findOne({ $or: [{ barcode: stripped }, { sku: stripped }] }).select('-_id -__v').lean();
+    product = await Product.findOne({ $and: [scopeFilter(req), { $or: [{ barcode: stripped }, { sku: stripped }] }] }).select('-_id -__v').lean();
   }
   if (!product) {
     const withCheck = /^\d{12}$/.test(code) ? computeEAN13(code) : null;
@@ -181,7 +183,7 @@ router.get('/barcode/:code', verifyJWT, requireRoles('admin', 'manager', 'cashie
  *         description: Product not found
  */
 router.get('/:id', verifyJWT, requireRoles('admin', 'manager', 'cashier'), async (req: Request, res: Response) => {
-  const product = await Product.findOne({ id: req.params.id }).select('-_id -__v').lean();
+  const product = await Product.findOne({ ...scopeFilter(req), id: req.params.id }).select('-_id -__v').lean();
   if (!product) { res.status(404).json({ detail: 'Product not found' }); return; }
   res.json(product);
 });
@@ -203,9 +205,9 @@ router.get('/:id', verifyJWT, requireRoles('admin', 'manager', 'cashier'), async
  *         description: List of variant products
  */
 router.get('/:id/variants', verifyJWT, requireRoles('admin', 'manager', 'cashier'), async (req: Request, res: Response) => {
-  const product = await Product.findOne({ id: req.params.id }).select('variant_group_id').lean();
+  const product = await Product.findOne({ ...scopeFilter(req), id: req.params.id }).select('variant_group_id').lean();
   if (!product || !product.variant_group_id) { res.json([]); return; }
-  const variants = await Product.find({ variant_group_id: product.variant_group_id }).select('-_id -__v').lean();
+  const variants = await Product.find({ ...scopeFilter(req), variant_group_id: product.variant_group_id }).select('-_id -__v').lean();
   res.json(variants);
 });
 
@@ -255,7 +257,7 @@ router.get('/:id/variants', verifyJWT, requireRoles('admin', 'manager', 'cashier
  *         description: SKU already exists
  */
 router.post('/', verifyJWT, requireRoles('admin', 'manager'), validate(CreateProductWithVariantsSchema), async (req: Request, res: Response) => {
-  const existing = await Product.findOne({ sku: req.body.sku });
+  const existing = await Product.findOne({ ...scopeFilter(req), sku: req.body.sku });
   if (existing) { res.status(409).json({ detail: 'SKU already exists' }); return; }
   const now = new Date().toISOString();
   let barcode = req.body.barcode;
@@ -269,6 +271,7 @@ router.post('/', verifyJWT, requireRoles('admin', 'manager'), validate(CreatePro
     id: generateId(),
     variant_group_id: variantGroupId,
     stock: req.body.stock || 0,
+    created_by: req.user?.id,
     created_at: now, updated_at: now,
   });
   await product.save();
@@ -277,7 +280,7 @@ router.post('/', verifyJWT, requireRoles('admin', 'manager'), validate(CreatePro
   if (req.body.variants?.length) {
     for (const v of req.body.variants) {
       const vSku = v.sku;
-      const vExists = await Product.findOne({ sku: vSku });
+      const vExists = await Product.findOne({ ...scopeFilter(req), sku: vSku });
       if (vExists) continue;
       let vBarcode = v.barcode;
       if (!vBarcode) {
@@ -299,6 +302,7 @@ router.post('/', verifyJWT, requireRoles('admin', 'manager'), validate(CreatePro
         variant_name: v.variant_name,
         id: generateId(),
         active: true,
+        created_by: req.user?.id,
         created_at: now, updated_at: now,
       });
       await variant.save();
@@ -343,7 +347,7 @@ router.post('/bulk-update', verifyJWT, requireRoles('admin'), async (req: Reques
   if (!Array.isArray(ids) || ids.length === 0) { res.status(400).json({ detail: 'ids must be a non-empty array' }); return; }
   if (!updates || !updates.field || updates.value === undefined) { res.status(400).json({ detail: 'updates must have field and value' }); return; }
   const result = await Product.updateMany(
-    { id: { $in: ids } },
+    { ...scopeFilter(req), id: { $in: ids } },
     { $set: { [updates.field]: updates.value, updated_at: new Date().toISOString() } }
   );
   res.json({ ok: true, modified: result.modifiedCount });
@@ -391,12 +395,12 @@ router.post('/bulk-update', verifyJWT, requireRoles('admin'), async (req: Reques
 router.patch('/:id', verifyJWT, requireRoles('admin', 'manager'), validate(UpdateProductSchema), async (req: Request, res: Response) => {
   const update: any = { ...req.body, updated_at: new Date().toISOString() };
   if (!update.barcode) {
-    const existing = await Product.findOne({ id: req.params.id }).lean();
+    const existing = await Product.findOne({ ...scopeFilter(req), id: req.params.id }).lean();
     if (existing && !existing.barcode) {
       update.barcode = generateBarcode12(existing.sku + generateId().replace(/-/g, '').slice(0, 4));
     }
   }
-  const product = await Product.findOneAndUpdate({ id: req.params.id }, { $set: update }, { new: true }).lean();
+  const product = await Product.findOneAndUpdate({ ...scopeFilter(req), id: req.params.id }, { $set: update }, { new: true }).lean();
   if (!product) { res.status(404).json({ detail: 'Product not found' }); return; }
   res.json(product);
 });
@@ -418,7 +422,7 @@ router.patch('/:id', verifyJWT, requireRoles('admin', 'manager'), validate(Updat
  *         description: Product deleted
  */
 router.delete('/:id', verifyJWT, requireRoles('admin', 'manager'), async (req: Request, res: Response) => {
-  await Product.deleteOne({ id: req.params.id });
+  await Product.deleteOne({ ...scopeFilter(req), id: req.params.id });
   res.json({ ok: true });
 });
 
@@ -452,7 +456,7 @@ router.delete('/:id', verifyJWT, requireRoles('admin', 'manager'), async (req: R
  */
 router.post('/:id/adjust-stock', verifyJWT, requireRoles('admin', 'manager'), async (req: Request, res: Response) => {
   const { quantity, note, type } = req.body;
-  const product = await Product.findOne({ id: req.params.id });
+  const product = await Product.findOne({ ...scopeFilter(req), id: req.params.id });
   if (!product) { res.status(404).json({ detail: 'Product not found' }); return; }
   const adjQty = Number(quantity) || 0;
   product.stock += adjQty;
@@ -461,7 +465,7 @@ router.post('/:id/adjust-stock', verifyJWT, requireRoles('admin', 'manager'), as
   await StockMovement.create({
     id: generateId(), product_id: product.id, product_name: product.name,
     type: type || 'adjustment', quantity: adjQty,
-    note: note || '', created_by_id: req.user?.id,
+    note: note || '', created_by_id: req.user?.id, created_by: req.user?.id,
     created_at: new Date().toISOString(),
   });
   res.json({ id: product.id, stock: product.stock });
@@ -501,7 +505,7 @@ router.post('/:id/adjust-stock', verifyJWT, requireRoles('admin', 'manager'), as
  */
 router.post('/:id/repack', verifyJWT, requireRoles('admin', 'manager'), async (req: Request, res: Response) => {
   const { packet_weight, packet_count, packet_name, packet_price } = req.body;
-  const source = await Product.findOne({ id: req.params.id });
+  const source = await Product.findOne({ ...scopeFilter(req), id: req.params.id });
   if (!source) { res.status(404).json({ detail: 'Source product not found' }); return; }
   const totalWeight = packet_weight * packet_count;
   if (source.stock < totalWeight) { res.status(400).json({ detail: 'Insufficient stock' }); return; }
@@ -519,6 +523,7 @@ router.post('/:id/repack', verifyJWT, requireRoles('admin', 'manager'), async (r
     stock: packet_count, low_stock_threshold: source.low_stock_threshold,
     unit: source.unit, sell_by: source.sell_by,
     repack_parent_id: source.id,
+    created_by: req.user?.id,
     created_at: now, updated_at: now,
   });
   await newProduct.save();
@@ -548,7 +553,7 @@ router.post('/:id/repack', verifyJWT, requireRoles('admin', 'manager'), async (r
  *         description: List of repack children
  */
 router.get('/:id/repack-children', verifyJWT, async (req: Request, res: Response) => {
-  const children = await Product.find({ repack_parent_id: req.params.id }).sort({ created_at: -1 });
+  const children = await Product.find({ ...scopeFilter(req), repack_parent_id: req.params.id }).sort({ created_at: -1 });
   res.json(children);
 });
 
@@ -564,18 +569,18 @@ router.get('/:id/repack-children', verifyJWT, async (req: Request, res: Response
  *         description: Backfill results
  */
 router.post('/backfill-repack-parents', verifyJWT, requireRoles('admin'), async (_req: Request, res: Response) => {
-  const orphans = await Product.find({ repack_parent_id: { $in: [null, '', undefined] }, sku: /-PKT$/ }).lean();
+  const orphans = await Product.find({ ...scopeFilter(_req), repack_parent_id: { $in: [null, '', undefined] }, sku: /-PKT$/ }).lean();
   let linked = 0; let barcoded = 0;
   for (const p of orphans) {
     const parentSku = (p as any).sku.replace(/-PKT$/, '');
-    const parent = await Product.findOne({ sku: parentSku }).lean();
+    const parent = await Product.findOne({ ...scopeFilter(_req), sku: parentSku }).lean();
     if (parent) {
-      await Product.updateOne({ id: (p as any).id }, { $set: { repack_parent_id: (parent as any).id } });
+      await Product.updateOne({ ...scopeFilter(_req), id: (p as any).id }, { $set: { repack_parent_id: (parent as any).id } });
       linked++;
     }
     if (!(p as any).barcode) {
       const barcode = generateBarcode12((p as any).sku + generateId().replace(/-/g, '').slice(0, 4));
-      await Product.updateOne({ id: (p as any).id }, { $set: { barcode } });
+      await Product.updateOne({ ...scopeFilter(_req), id: (p as any).id }, { $set: { barcode } });
       barcoded++;
     }
   }
@@ -594,11 +599,11 @@ router.post('/backfill-repack-parents', verifyJWT, requireRoles('admin'), async 
  *         description: Number of products backfilled
  */
 router.post('/backfill-barcodes', verifyJWT, requireRoles('admin'), async (_req: Request, res: Response) => {
-  const products = await Product.find({ barcode: { $in: [null, '', undefined] } }).lean();
+  const products = await Product.find({ ...scopeFilter(_req), barcode: { $in: [null, '', undefined] } }).lean();
   let count = 0;
   for (const p of products) {
     const barcode = generateBarcode12((p as any).sku + generateId().replace(/-/g, '').slice(0, 4));
-    await Product.updateOne({ id: (p as any).id }, { $set: { barcode } });
+    await Product.updateOne({ ...scopeFilter(_req), id: (p as any).id }, { $set: { barcode } });
     count++;
   }
   res.json({ ok: true, backfilled: count });

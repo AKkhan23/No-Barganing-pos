@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface IRack extends Document {
   id: string;
@@ -15,5 +16,6 @@ const RackSchema = new Schema<IRack>({
   created_at: { type: String, required: true },
   updated_at: { type: String },
 });
+RackSchema.plugin(scopePlugin);
 
 export const Rack = mongoose.model<IRack>('Rack', RackSchema);

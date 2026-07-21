@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface ICategory extends Document {
   id: string;
@@ -13,5 +14,6 @@ const CategorySchema = new Schema<ICategory>({
   description: { type: String },
   created_at: { type: String, required: true },
 });
+CategorySchema.plugin(scopePlugin);
 
 export const Category = mongoose.model<ICategory>('Category', CategorySchema);

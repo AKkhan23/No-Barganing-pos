@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface IStockBatch extends Document {
   id: string;
@@ -23,6 +24,7 @@ const StockBatchSchema = new Schema<IStockBatch>({
   cost_price: { type: Number, default: 0 },
   created_at: { type: String, required: true },
 });
+StockBatchSchema.plugin(scopePlugin);
 
 StockBatchSchema.index({ product_id: 1, expiry_date: 1 });
 

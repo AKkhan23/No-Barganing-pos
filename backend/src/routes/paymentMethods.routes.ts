@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { PaymentMethod } from '../models/PaymentMethod';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -18,7 +19,7 @@ router.use(verifyJWT, requireRoles('admin', 'manager'));
  *         description: Array of payment methods
  */
 router.get('/', async (_req: Request, res: Response) => {
-  const items = await PaymentMethod.find({}).lean();
+  const items = await PaymentMethod.find(scopeFilter(_req)).lean();
   res.json(items);
 });
 
@@ -41,7 +42,7 @@ router.get('/', async (_req: Request, res: Response) => {
  */
 router.post('/', async (req: Request, res: Response) => {
   const now = new Date().toISOString();
-  const item = new PaymentMethod({ id: generateId(), ...req.body, created_at: now });
+  const item = new PaymentMethod({ id: generateId(), ...req.body, created_by: req.user?.id, created_at: now });
   await item.save();
   res.status(201).json(item.toJSON());
 });
@@ -73,7 +74,7 @@ router.post('/', async (req: Request, res: Response) => {
  */
 router.patch('/:id', async (req: Request, res: Response) => {
   const item = await PaymentMethod.findOneAndUpdate(
-    { id: req.params.id },
+    { ...scopeFilter(req), id: req.params.id },
     { $set: { ...req.body, updated_at: new Date().toISOString() } },
     { new: true }
   ).lean();
@@ -99,7 +100,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
  *         description: Payment method deleted
  */
 router.delete('/:id', async (req: Request, res: Response) => {
-  await PaymentMethod.deleteOne({ id: req.params.id });
+  await PaymentMethod.deleteOne({ ...scopeFilter(req), id: req.params.id });
   res.json({ ok: true });
 });
 

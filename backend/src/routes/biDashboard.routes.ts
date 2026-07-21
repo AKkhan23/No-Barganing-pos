@@ -8,6 +8,7 @@ import { StockMovement } from '../models/StockMovement';
 import { Customer } from '../models/Customer';
 import { LedgerEntry } from '../models/LedgerEntry';
 import { verifyJWT, requireRoles } from '../middleware/auth';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -22,13 +23,14 @@ router.get('/comparison', async (req: Request, res: Response) => {
       if (dateFrom) dateFilter.created_at.$gte = dateFrom;
       if (dateTo) dateFilter.created_at.$lte = dateTo;
     }
+    const sf = scopeFilter(req);
     const [purchases, sales, damages, expenses, incomes, stockMovements] = await Promise.all([
-      PurchaseOrder.aggregate([{ $match: dateFilter }, { $group: { _id: null, total: { $sum: '$total' } } }]),
-      Order.aggregate([{ $match: dateFilter }, { $group: { _id: null, total: { $sum: '$grand_total' } } }]),
-      DamageStock.aggregate([{ $match: dateFilter }, { $group: { _id: null, total: { $sum: { $multiply: ['$quantity', 1] } } } }]),
-      Expense.aggregate([{ $match: dateFilter }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
-      Income.aggregate([{ $match: dateFilter }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
-      StockMovement.aggregate([{ $match: dateFilter }, { $group: { _id: null, total: { $sum: '$change' } } }]),
+      PurchaseOrder.aggregate([{ $match: { ...sf, ...dateFilter } }, { $group: { _id: null, total: { $sum: '$total' } } }]),
+      Order.aggregate([{ $match: { ...sf, ...dateFilter } }, { $group: { _id: null, total: { $sum: '$grand_total' } } }]),
+      DamageStock.aggregate([{ $match: { ...sf, ...dateFilter } }, { $group: { _id: null, total: { $sum: { $multiply: ['$quantity', 1] } } } }]),
+      Expense.aggregate([{ $match: { ...sf, ...dateFilter } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+      Income.aggregate([{ $match: { ...sf, ...dateFilter } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+      StockMovement.aggregate([{ $match: { ...sf, ...dateFilter } }, { $group: { _id: null, total: { $sum: '$change' } } }]),
     ]);
     res.json({
       total_purchases: purchases[0]?.total || 0,
@@ -79,6 +81,8 @@ router.get('/top-products', async (req: Request, res: Response) => {
       if (dateFrom) match.created_at.$gte = dateFrom;
       if (dateTo) match.created_at.$lte = dateTo;
     }
+    const sf2 = scopeFilter(req);
+    Object.assign(match, sf2);
     const topProducts = await Order.aggregate([
       { $match: match },
       { $unwind: '$items' },
@@ -110,7 +114,7 @@ router.get('/top-products', async (req: Request, res: Response) => {
 router.get('/top-customers', async (req: Request, res: Response) => {
   try {
     const limit = parseInt(req.query.limit as string || '10', 10);
-    const customers = await Customer.find().sort({ total_spent: -1 }).limit(limit).lean();
+    const customers = await Customer.find(scopeFilter(req)).sort({ total_spent: -1 }).limit(limit).lean();
     res.json(customers.map((c: any) => ({ id: c.id, name: c.name, phone: c.phone, total_spent: c.total_spent, receivable: c.receivable })));
   } catch (err: any) { res.status(500).json({ detail: err.message }); }
 });
@@ -147,10 +151,11 @@ router.get('/profit-margin', async (req: Request, res: Response) => {
       if (dateFrom) dateFilter.created_at.$gte = dateFrom;
       if (dateTo) dateFilter.created_at.$lte = dateTo;
     }
+    const sf3 = scopeFilter(req);
     const [revenueAgg, cogsAgg, expensesAgg] = await Promise.all([
-      Order.aggregate([{ $match: dateFilter }, { $group: { _id: null, total: { $sum: '$grand_total' } } }]),
-      PurchaseOrder.aggregate([{ $match: dateFilter }, { $group: { _id: null, total: { $sum: '$total' } } }]),
-      Expense.aggregate([{ $match: dateFilter }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+      Order.aggregate([{ $match: { ...sf3, ...dateFilter } }, { $group: { _id: null, total: { $sum: '$grand_total' } } }]),
+      PurchaseOrder.aggregate([{ $match: { ...sf3, ...dateFilter } }, { $group: { _id: null, total: { $sum: '$total' } } }]),
+      Expense.aggregate([{ $match: { ...sf3, ...dateFilter } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
     ]);
     const revenue = revenueAgg[0]?.total || 0;
     const cogs = cogsAgg[0]?.total || 0;
@@ -194,6 +199,8 @@ router.get('/cash-flow', async (req: Request, res: Response) => {
     if (dateTo) dateFilter.$lte = dateTo;
     const match: any = { account: { $in: ['cash', 'bank', 'upi'] } };
     if (Object.keys(dateFilter).length) match.date = dateFilter;
+    const sf4 = scopeFilter(req);
+    Object.assign(match, sf4);
     const flow = await LedgerEntry.aggregate([
       { $match: match },
       { $group: { _id: { account: '$account', date: '$date' }, total_debit: { $sum: '$debit' }, total_credit: { $sum: '$credit' } } },

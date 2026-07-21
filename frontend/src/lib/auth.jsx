@@ -15,7 +15,9 @@ export function AuthProvider({ children }) {
       setLoading(false);
       return;
     }
-    if (cached) setUser(JSON.parse(cached));
+    if (cached) {
+      try { setUser(JSON.parse(cached)); } catch { localStorage.removeItem('pos_user'); }
+    }
     api
       .get("/auth/me")
       .then((r) => {

@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface IStockMovement extends Document {
   id: string;
@@ -33,5 +34,6 @@ const StockMovementSchema = new Schema<IStockMovement>({
   created_by_id: { type: String },
   created_at: { type: String, required: true },
 });
+StockMovementSchema.plugin(scopePlugin);
 
 export const StockMovement = mongoose.model<IStockMovement>('StockMovement', StockMovementSchema);

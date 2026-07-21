@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface IMultipleCurrency extends Document {
   id: string;
@@ -15,5 +16,6 @@ const MultipleCurrencySchema = new Schema<IMultipleCurrency>({
   created_at: { type: String, required: true },
   updated_at: { type: String },
 });
+MultipleCurrencySchema.plugin(scopePlugin);
 
 export const MultipleCurrency = mongoose.model<IMultipleCurrency>('MultipleCurrency', MultipleCurrencySchema);

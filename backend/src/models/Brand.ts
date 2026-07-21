@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface IBrand extends Document {
   id: string;
@@ -15,5 +16,6 @@ const BrandSchema = new Schema<IBrand>({
   created_at: { type: String, required: true },
   updated_at: { type: String },
 });
+BrandSchema.plugin(scopePlugin);
 
 export const Brand = mongoose.model<IBrand>('Brand', BrandSchema);

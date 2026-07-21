@@ -4,6 +4,7 @@ import { Promotion } from '../models/Promotion';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -56,7 +57,7 @@ router.get('/', async (req: Request, res: Response) => {
   const { active_only } = req.query;
   const filter: any = {};
   if (active_only === 'true') filter.active = true;
-  const items = await Promotion.find(filter).lean();
+  const items = await Promotion.find({ ...scopeFilter(req), ...filter }).lean();
   res.json(items.map((p: any) => ({ id: p.id, name: p.name, type: p.type, discount_value: p.discount_value, min_purchase: p.min_purchase, valid_from: p.valid_from, valid_to: p.valid_to, applicable_products: p.applicable_products, applicable_categories: p.applicable_categories, active: p.active, max_discount: p.max_discount, usage_limit: p.usage_limit, used_count: p.used_count, created_at: p.created_at })));
 });
 
@@ -91,7 +92,7 @@ router.get('/', async (req: Request, res: Response) => {
  */
 router.post('/', validate(CreatePromotionSchema), async (req: Request, res: Response) => {
   const now = new Date().toISOString();
-  const promo = new Promotion({ ...req.body, id: generateId(), created_at: now, created_by_id: req.user?.id });
+  const promo = new Promotion({ ...req.body, id: generateId(), created_by: req.user?.id, created_by_id: req.user?.id, created_at: now });
   await promo.save();
   res.status(201).json({ id: promo.id, name: promo.name, type: promo.type, discount_value: promo.discount_value, min_purchase: promo.min_purchase, valid_from: promo.valid_from, valid_to: promo.valid_to, applicable_products: promo.applicable_products, applicable_categories: promo.applicable_categories, active: promo.active, max_discount: promo.max_discount, usage_limit: promo.usage_limit, used_count: promo.used_count, created_at: promo.created_at });
 });
@@ -133,7 +134,7 @@ router.post('/', validate(CreatePromotionSchema), async (req: Request, res: Resp
  *         description: Promotion not found
  */
 router.patch('/:id', validate(UpdatePromotionSchema), async (req: Request, res: Response) => {
-  const promo = await Promotion.findOneAndUpdate({ id: req.params.id }, { $set: req.body }, { new: true }).lean();
+  const promo = await Promotion.findOneAndUpdate({ ...scopeFilter(req), id: req.params.id }, { $set: req.body }, { new: true }).lean();
   if (!promo) { res.status(404).json({ detail: 'Promotion not found' }); return; }
   res.json({ id: promo.id, name: promo.name, type: promo.type, discount_value: promo.discount_value, min_purchase: promo.min_purchase, valid_from: promo.valid_from, valid_to: promo.valid_to, applicable_products: promo.applicable_products, applicable_categories: promo.applicable_categories, active: promo.active, max_discount: promo.max_discount, usage_limit: promo.usage_limit, used_count: promo.used_count });
 });
@@ -157,7 +158,7 @@ router.patch('/:id', validate(UpdatePromotionSchema), async (req: Request, res: 
  *         description: Promotion not found
  */
 router.delete('/:id', async (req: Request, res: Response) => {
-  const promo = await Promotion.findOneAndDelete({ id: req.params.id });
+  const promo = await Promotion.findOneAndDelete({ ...scopeFilter(req), id: req.params.id });
   if (!promo) { res.status(404).json({ detail: 'Promotion not found' }); return; }
   res.json({ ok: true });
 });

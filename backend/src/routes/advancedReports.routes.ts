@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { verifyJWT, requireRoles } from '../middleware/auth';
+import { scopeFilter } from '../middleware/scope';
 import { Order } from '../models/Order';
 import { StockBatch } from '../models/StockBatch';
 import { StockMovement } from '../models/StockMovement';
@@ -41,7 +42,9 @@ router.get('/z-report', async (req: Request, res: Response) => {
     const start = `${date}T00:00:00.000Z`;
     const end = `${date}T23:59:59.999Z`;
 
+    const sf = scopeFilter(req);
     const orders = await Order.find({
+      ...sf,
       created_at: { $gte: start, $lte: end },
       status: { $ne: 'cancelled' },
     }).lean();
@@ -93,7 +96,9 @@ router.get('/daily-summary', async (req: Request, res: Response) => {
     const start = `${date}T00:00:00.000Z`;
     const end = `${date}T23:59:59.999Z`;
 
+    const sf = scopeFilter(req);
     const orders = await Order.find({
+      ...sf,
       created_at: { $gte: start, $lte: end },
       status: { $ne: 'cancelled' },
     }).lean();
@@ -143,7 +148,8 @@ router.get('/due-sales', async (req: Request, res: Response) => {
     const { start_date, end_date } = req.query;
     const filter: any = { due: { $gt: 0 } };
     if (start_date || end_date) filter.created_at = dateFilter(start_date as string, end_date as string);
-    const orders = await Order.find(filter).sort({ created_at: -1 }).lean();
+    const sf = scopeFilter(req);
+    const orders = await Order.find({ ...sf, ...filter }).sort({ created_at: -1 }).lean();
     res.json(orders);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -160,8 +166,9 @@ router.get('/due-sales', async (req: Request, res: Response) => {
  */
 router.get('/final-due-sales', async (req: Request, res: Response) => {
   try {
+    const sf = scopeFilter(req);
     const result = await Order.aggregate([
-      { $match: { due: { $gt: 0 } } },
+      { $match: { ...sf, due: { $gt: 0 } } },
       {
         $group: {
           _id: '$customer_name',
@@ -213,7 +220,8 @@ router.get('/service-sales', async (req: Request, res: Response) => {
     const filter: any = {};
     if (start_date || end_date) filter.created_at = dateFilter(start_date as string, end_date as string);
     if (status) filter.status = status;
-    const records = await Servicing.find(filter).sort({ created_at: -1 }).lean();
+    const sf = scopeFilter(req);
+    const records = await Servicing.find({ ...sf, ...filter }).sort({ created_at: -1 }).lean();
     res.json(records);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -230,7 +238,9 @@ router.get('/service-sales', async (req: Request, res: Response) => {
  */
 router.get('/combo-service', async (req: Request, res: Response) => {
   try {
+    const sf = scopeFilter(req);
     const result = await Servicing.aggregate([
+      { $match: sf },
       {
         $group: {
           _id: '$status',
@@ -263,9 +273,11 @@ router.get('/expiry-stock', async (req: Request, res: Response) => {
     const days = parseInt(req.query.days as string) || 30;
     const future = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
+    const sf = scopeFilter(req);
     const batches = await StockBatch.aggregate([
       {
         $match: {
+          ...sf,
           expiry_date: { $ne: '', $exists: true, $lte: future },
           quantity: { $gt: 0 },
         },
@@ -371,6 +383,8 @@ router.get('/customer-due-receive', async (req: Request, res: Response) => {
     const { start_date, end_date } = req.query;
     const match: any = { party_type: 'customer', credit: { $gt: 0 } };
     if (start_date || end_date) match.created_at = dateFilter(start_date as string, end_date as string);
+    const sf = scopeFilter(req);
+    Object.assign(match, sf);
 
     const result = await LedgerEntry.aggregate([
       { $match: match },
@@ -431,7 +445,8 @@ router.get('/attendance-report', async (req: Request, res: Response) => {
     const match: any = {};
     if (start_date || end_date) match.date = dateFilter(start_date as string, end_date as string);
 
-    const allRecords = await Attendance.find(match).sort({ date: -1 }).lean();
+    const sf = scopeFilter(req);
+    const allRecords = await Attendance.find({ ...sf, ...match }).sort({ date: -1 }).lean();
     const enriched = allRecords.map(r => {
       let computedStatus = 'absent';
       if (r.check_in && r.check_out) computedStatus = 'present';
@@ -479,10 +494,12 @@ router.get('/attendance-report', async (req: Request, res: Response) => {
 router.get('/product-profit', async (req: Request, res: Response) => {
   try {
     const { start_date, end_date } = req.query;
-    const match: any = { status: { $ne: 'cancelled' } };
+    const match: any = {};
     if (start_date || end_date) match.created_at = dateFilter(start_date as string, end_date as string);
+    const sf = scopeFilter(req);
+    Object.assign(match, sf);
 
-    const result = await Order.aggregate([
+    const result = await PurchaseOrder.aggregate([
       { $match: match },
       { $unwind: '$items' },
       {
@@ -580,6 +597,8 @@ router.get('/product-sales', async (req: Request, res: Response) => {
     const { start_date, end_date } = req.query;
     const match: any = { status: { $ne: 'cancelled' } };
     if (start_date || end_date) match.created_at = dateFilter(start_date as string, end_date as string);
+    const sf = scopeFilter(req);
+    Object.assign(match, sf);
 
     const result = await Order.aggregate([
       { $match: match },
@@ -630,6 +649,8 @@ router.get('/tax-report', async (req: Request, res: Response) => {
     const { start_date, end_date } = req.query;
     const match: any = { status: { $ne: 'cancelled' } };
     if (start_date || end_date) match.created_at = dateFilter(start_date as string, end_date as string);
+    const sf = scopeFilter(req);
+    Object.assign(match, sf);
 
     const summary = await Order.aggregate([
       { $match: match },
@@ -729,7 +750,8 @@ router.get('/detailed-sales', async (req: Request, res: Response) => {
     const match: any = {};
     if (start_date || end_date) match.created_at = dateFilter(start_date as string, end_date as string);
 
-    const query = Order.find(match).sort({ created_at: -1 });
+    const sf = scopeFilter(req);
+    const query = Order.find({ ...sf, ...match }).sort({ created_at: -1 });
     if (limit) query.limit(parseInt(limit as string));
     const orders = await query.lean();
     res.json(orders);
@@ -758,6 +780,8 @@ router.get('/purchase-by-date', async (req: Request, res: Response) => {
     const { start_date, end_date } = req.query;
     const match: any = {};
     if (start_date || end_date) match.created_at = dateFilter(start_date as string, end_date as string);
+    const sf = scopeFilter(req);
+    Object.assign(match, sf);
 
     const result = await PurchaseOrder.aggregate([
       { $match: match },
@@ -804,10 +828,12 @@ router.get('/purchase-by-date', async (req: Request, res: Response) => {
 router.get('/product-purchase', async (req: Request, res: Response) => {
   try {
     const { start_date, end_date } = req.query;
-    const match: any = {};
+    const match: any = { status: { $ne: 'cancelled' } };
     if (start_date || end_date) match.created_at = dateFilter(start_date as string, end_date as string);
+    const sf = scopeFilter(req);
+    Object.assign(match, sf);
 
-    const result = await PurchaseOrder.aggregate([
+    const result = await Order.aggregate([
       { $match: match },
       { $unwind: '$items' },
       {
@@ -865,7 +891,8 @@ router.get('/salary-report', async (req: Request, res: Response) => {
       match.paid = status === 'paid';
     }
 
-    const records = await Payroll.find(match).sort({ created_at: -1 }).lean();
+    const sf = scopeFilter(req);
+    const records = await Payroll.find({ ...sf, ...match }).sort({ created_at: -1 }).lean();
     const total_base = records.reduce((s, r) => s + (r.base || 0), 0);
     const total_net = records.reduce((s, r) => s + (r.net || 0), 0);
     const total_deduction = records.reduce((s, r) => s + (r.deduction || 0), 0);
@@ -905,6 +932,8 @@ router.get('/installment-report', async (req: Request, res: Response) => {
     const { status } = req.query;
     const match: any = {};
     if (status) match.status = status;
+    const sf = scopeFilter(req);
+    Object.assign(match, sf);
 
     const result = await InstallmentPlan.aggregate([
       { $match: match },
@@ -938,9 +967,11 @@ router.get('/installment-due', async (req: Request, res: Response) => {
   try {
     const now = new Date().toISOString();
 
+    const sf = scopeFilter(req);
     const overdue = await InstallmentPlan.aggregate([
       {
         $match: {
+          ...sf,
           status: { $in: ['active', 'overdue'] },
           due_date: { $ne: '', $exists: true, $lt: now },
         },
@@ -978,6 +1009,7 @@ router.get('/installment-due', async (req: Request, res: Response) => {
     const pending = await InstallmentPlan.aggregate([
       {
         $match: {
+          ...sf,
           status: { $in: ['active', 'overdue'] },
           $expr: { $lt: ['$installments_paid', '$total_installments'] },
         },
@@ -1043,11 +1075,13 @@ router.get('/item-tracing', async (req: Request, res: Response) => {
     if (product_id) match.product_id = product_id;
     if (start_date || end_date) match.created_at = dateFilter(start_date as string, end_date as string);
 
-    const movements = await StockMovement.find(match).sort({ created_at: -1 }).lean();
+    const sfStock = scopeFilter(req);
+    const movements = await StockMovement.find({ ...sfStock, ...match }).sort({ created_at: -1 }).lean();
 
     const orderMatch: any = { status: { $ne: 'cancelled' } };
     if (product_id) orderMatch['items.product_id'] = product_id;
     if (start_date || end_date) orderMatch.created_at = dateFilter(start_date as string, end_date as string);
+    Object.assign(orderMatch, scopeFilter(req));
 
     const orderItems = await Order.aggregate([
       { $match: orderMatch },
@@ -1106,8 +1140,9 @@ router.get('/price-history', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'product_id is required' });
     }
 
+    const sf = scopeFilter(req);
     const result = await Order.aggregate([
-      { $match: { status: { $ne: 'cancelled' } } },
+      { $match: { ...sf, status: { $ne: 'cancelled' } } },
       { $unwind: '$items' },
       { $match: { 'items.product_id': product_id } },
       {
@@ -1152,7 +1187,7 @@ router.get('/price-history', async (req: Request, res: Response) => {
  */
 router.get('/stock-report', async (req: Request, res: Response) => {
   try {
-    const products = await Product.find().sort({ name: 1 }).lean();
+    const products = await Product.find(scopeFilter(req)).sort({ name: 1 }).lean();
     const total_stock_value = products.reduce((s, p) => s + ((p.stock || 0) * (p.cost || 0)), 0);
     const total_stock_retail = products.reduce((s, p) => s + ((p.stock || 0) * (p.price || 0)), 0);
 

@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface IUnit extends Document {
   id: string;
@@ -15,5 +16,6 @@ const UnitSchema = new Schema<IUnit>({
   created_at: { type: String, required: true },
   updated_at: { type: String },
 });
+UnitSchema.plugin(scopePlugin);
 
 export const Unit = mongoose.model<IUnit>('Unit', UnitSchema);

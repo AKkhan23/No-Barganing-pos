@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface ISettings extends Document {
   id: string;
@@ -169,5 +170,6 @@ const SettingsSchema = new Schema<ISettings>({
   },
   updated_at: { type: String, required: true },
 });
+SettingsSchema.plugin(scopePlugin);
 
 export const Settings = mongoose.model<ISettings>('Settings', SettingsSchema);

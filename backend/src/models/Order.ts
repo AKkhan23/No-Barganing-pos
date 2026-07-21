@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface IOrderItem {
   product_id: string;
@@ -93,5 +94,6 @@ const OrderSchema = new Schema<IOrder>({
   delivery_partner_name: { type: String },
   created_at: { type: String, required: true },
 });
+OrderSchema.plugin(scopePlugin);
 
 export const Order = mongoose.model<IOrder>('Order', OrderSchema);

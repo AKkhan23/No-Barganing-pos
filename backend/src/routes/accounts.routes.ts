@@ -4,6 +4,7 @@ import { Account } from '../models/Account';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -32,7 +33,7 @@ const UpdateAccountSchema = z.object({
  *         description: Array of accounts
  */
 router.get('/', async (_req: Request, res: Response) => {
-  const accounts = await Account.find().lean();
+  const accounts = await Account.find(scopeFilter(_req)).lean();
   res.json(accounts.map((a: any) => ({ id: a.id, name: a.name, type: a.type, opening_balance: a.opening_balance, current_balance: a.current_balance, created_at: a.created_at })));
 });
 
@@ -63,7 +64,7 @@ router.get('/', async (_req: Request, res: Response) => {
  */
 router.post('/', validate(CreateAccountSchema), async (req: Request, res: Response) => {
   const now = new Date().toISOString();
-  const account = new Account({ ...req.body, id: generateId(), current_balance: req.body.opening_balance, created_at: now });
+  const account = new Account({ ...req.body, id: generateId(), current_balance: req.body.opening_balance, created_at: now, created_by: req.user!.id });
   await account.save();
   res.status(201).json({ id: account.id, name: account.name, type: account.type, opening_balance: account.opening_balance, current_balance: account.current_balance, created_at: account.created_at });
 });
@@ -88,7 +89,7 @@ router.post('/', validate(CreateAccountSchema), async (req: Request, res: Respon
  *         description: Account not found
  */
 router.get('/:id', async (req: Request, res: Response) => {
-  const account = await Account.findOne({ id: req.params.id }).lean();
+  const account = await Account.findOne({ ...scopeFilter(req), id: req.params.id }).lean();
   if (!account) { res.status(404).json({ detail: 'Account not found' }); return; }
   res.json({ id: account.id, name: account.name, type: account.type, opening_balance: account.opening_balance, current_balance: account.current_balance, created_at: account.created_at });
 });
@@ -128,7 +129,7 @@ router.get('/:id', async (req: Request, res: Response) => {
  */
 router.patch('/:id', validate(UpdateAccountSchema), async (req: Request, res: Response) => {
   const update = { ...req.body, updated_at: new Date().toISOString() };
-  const account = await Account.findOneAndUpdate({ id: req.params.id }, { $set: update }, { new: true }).lean();
+  const account = await Account.findOneAndUpdate({ ...scopeFilter(req), id: req.params.id }, { $set: update }, { new: true }).lean();
   if (!account) { res.status(404).json({ detail: 'Account not found' }); return; }
   res.json({ id: account.id, name: account.name, type: account.type, opening_balance: account.opening_balance, current_balance: account.current_balance });
 });
@@ -151,7 +152,7 @@ router.patch('/:id', validate(UpdateAccountSchema), async (req: Request, res: Re
  *         description: Account deleted
  */
 router.delete('/:id', async (req: Request, res: Response) => {
-  await Account.deleteOne({ id: req.params.id });
+  await Account.deleteOne({ ...scopeFilter(req), id: req.params.id });
   res.json({ ok: true });
 });
 

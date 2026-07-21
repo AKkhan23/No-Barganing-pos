@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface IInstallmentPlan extends Document {
   id: string;
@@ -29,5 +30,6 @@ const InstallmentPlanSchema = new Schema<IInstallmentPlan>({
   due_date: { type: String, default: '' },
   created_at: { type: String, required: true },
 });
+InstallmentPlanSchema.plugin(scopePlugin);
 
 export const InstallmentPlan = mongoose.model<IInstallmentPlan>('InstallmentPlan', InstallmentPlanSchema);

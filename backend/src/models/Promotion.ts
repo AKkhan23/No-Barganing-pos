@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface IPromotion extends Document {
   id: string;
@@ -37,5 +38,6 @@ const PromotionSchema = new Schema<IPromotion>({
   created_at: { type: String, required: true },
   created_by_id: { type: String },
 });
+PromotionSchema.plugin(scopePlugin);
 
 export const Promotion = mongoose.model<IPromotion>('Promotion', PromotionSchema);

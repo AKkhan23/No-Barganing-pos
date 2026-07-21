@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface IRegister extends Document {
   id: string;
@@ -21,5 +22,6 @@ const RegisterSchema = new Schema<IRegister>({
   created_at: { type: String, required: true },
   updated_at: { type: String },
 });
+RegisterSchema.plugin(scopePlugin);
 
 export const Register = mongoose.model<IRegister>('Register', RegisterSchema);

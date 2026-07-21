@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface IOutlet extends Document {
   id: string;
@@ -19,5 +20,6 @@ const OutletSchema = new Schema<IOutlet>({
   is_active: { type: Boolean, default: true },
   created_at: { type: String, required: true },
 });
+OutletSchema.plugin(scopePlugin);
 
 export const Outlet = mongoose.model<IOutlet>('Outlet', OutletSchema);

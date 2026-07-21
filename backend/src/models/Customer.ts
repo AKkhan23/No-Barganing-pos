@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface ICustomer extends Document {
   id: string;
@@ -29,5 +30,6 @@ const CustomerSchema = new Schema<ICustomer>({
   created_at: { type: String, required: true },
   updated_at: { type: String, required: true },
 });
+CustomerSchema.plugin(scopePlugin);
 
 export const Customer = mongoose.model<ICustomer>('Customer', CustomerSchema);

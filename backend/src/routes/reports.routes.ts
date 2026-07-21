@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { Order } from '../models/Order';
 import { verifyJWT, requireRoles } from '../middleware/auth';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -45,7 +46,7 @@ router.get('/sales', async (req: Request, res: Response) => {
   if (from) filter.created_at = { $gte: from };
   if (to) filter.created_at = { ...filter.created_at, $lte: to };
 
-  const orders = await Order.find(filter).sort({ created_at: -1 }).lean();
+  const orders = await Order.find({ ...scopeFilter(req), ...filter }).sort({ created_at: -1 }).lean();
 
   const totalRevenue = orders.reduce((s, o) => s + (Number(o.grand_total) || 0), 0);
   const totalTax = orders.reduce((s, o) => s + (Number(o.tax_total) || 0), 0);

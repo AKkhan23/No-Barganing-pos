@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface ICheckInOut extends Document {
   id: string;
@@ -19,5 +20,6 @@ const CheckInOutSchema = new Schema<ICheckInOut>({
   note: { type: String, default: '' },
   created_at: { type: String, required: true },
 });
+CheckInOutSchema.plugin(scopePlugin);
 
 export const CheckInOut = mongoose.model<ICheckInOut>('CheckInOut', CheckInOutSchema);

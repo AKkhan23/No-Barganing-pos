@@ -7,6 +7,7 @@ import { Supplier } from '../models/Supplier';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -59,19 +60,19 @@ const CreatePurchaseReturnSchema = z.object({
  */
 router.post('/', validate(CreatePurchaseReturnSchema), async (req: Request, res: Response) => {
   const { supplier_id, items, purchase_order_id, reason, note } = req.body;
-  const supplier = await Supplier.findOne({ id: supplier_id }).lean();
+  const supplier = await Supplier.findOne({ ...scopeFilter(req), id: supplier_id }).lean();
   if (!supplier) { res.status(404).json({ detail: 'Supplier not found' }); return; }
 
   const enriched = [];
   let subtotal = 0;
   for (const item of items) {
-    const product = await Product.findOne({ id: item.product_id }).lean();
+    const product = await Product.findOne({ ...scopeFilter(req), id: item.product_id }).lean();
     if (!product) { res.status(400).json({ detail: `Product not found: ${item.product_id}` }); return; }
     const line_total = item.quantity * item.cost;
     subtotal += line_total;
     enriched.push({ product_id: item.product_id, name: product.name, sku: product.sku, quantity: item.quantity, cost: item.cost, line_total });
 
-    await Product.findOneAndUpdate({ id: item.product_id }, { $inc: { stock: -item.quantity } });
+    await Product.findOneAndUpdate({ ...scopeFilter(req), id: item.product_id }, { $inc: { stock: -item.quantity } });
 
     const sm = new StockMovement({
       id: generateId(),
@@ -85,13 +86,14 @@ router.post('/', validate(CreatePurchaseReturnSchema), async (req: Request, res:
       user_id: req.user?.id || '',
       user_name: req.user?.name || '',
       created_by_id: req.user?.id,
+      created_by: req.user?.id,
       created_at: new Date().toISOString(),
     });
     await sm.save();
   }
 
   const total = subtotal;
-  await Supplier.findOneAndUpdate({ id: supplier_id }, { $inc: { current_balance: -total } });
+  await Supplier.findOneAndUpdate({ ...scopeFilter(req), id: supplier_id }, { $inc: { current_balance: -total } });
 
   const now = new Date().toISOString();
   const pr = new PurchaseReturn({
@@ -107,6 +109,7 @@ router.post('/', validate(CreatePurchaseReturnSchema), async (req: Request, res:
     note,
     created_at: now,
     created_by_id: req.user?.id,
+    created_by: req.user?.id,
     created_by_name: req.user?.name,
   });
   await pr.save();
@@ -125,7 +128,7 @@ router.post('/', validate(CreatePurchaseReturnSchema), async (req: Request, res:
  *         description: Array of purchase returns
  */
 router.get('/', async (req: Request, res: Response) => {
-  const items = await PurchaseReturn.find().lean();
+  const items = await PurchaseReturn.find(scopeFilter(req)).lean();
   res.json(items.map((pr: any) => ({ id: pr.id, supplier_id: pr.supplier_id, supplier_name: pr.supplier_name, purchase_order_id: pr.purchase_order_id, items: pr.items, subtotal: pr.subtotal, tax_total: pr.tax_total, total: pr.total, reason: pr.reason, note: pr.note, created_at: pr.created_at })));
 });
 
@@ -148,9 +151,9 @@ router.get('/', async (req: Request, res: Response) => {
  *         description: Purchase return not found
  */
 router.delete('/:id', async (req: Request, res: Response) => {
-  const pr = await PurchaseReturn.findOne({ id: req.params.id }).lean();
+  const pr = await PurchaseReturn.findOne({ ...scopeFilter(req), id: req.params.id }).lean();
   if (!pr) { res.status(404).json({ detail: 'Purchase return not found' }); return; }
-  await PurchaseReturn.deleteOne({ id: req.params.id });
+  await PurchaseReturn.deleteOne({ ...scopeFilter(req), id: req.params.id });
   res.json({ ok: true });
 });
 
@@ -173,7 +176,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
  *         description: Purchase return not found
  */
 router.get('/:id', async (req: Request, res: Response) => {
-  const pr = await PurchaseReturn.findOne({ id: req.params.id }).lean();
+  const pr = await PurchaseReturn.findOne({ ...scopeFilter(req), id: req.params.id }).lean();
   if (!pr) { res.status(404).json({ detail: 'Purchase return not found' }); return; }
   res.json({ id: pr.id, supplier_id: pr.supplier_id, supplier_name: pr.supplier_name, purchase_order_id: pr.purchase_order_id, items: pr.items, subtotal: pr.subtotal, tax_total: pr.tax_total, total: pr.total, reason: pr.reason, note: pr.note, created_at: pr.created_at });
 });

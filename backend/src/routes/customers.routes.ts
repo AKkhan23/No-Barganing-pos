@@ -4,6 +4,7 @@ import { Customer } from '../models/Customer';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager', 'cashier'));
@@ -44,7 +45,14 @@ router.get('/', async (req: Request, res: Response) => {
   const q = req.query.q as string | undefined;
   const filter: any = {};
   if (q) { filter.$or = [{ name: { $regex: q, $options: 'i' } }, { phone: { $regex: q, $options: 'i' } }, { email: { $regex: q, $options: 'i' } }]; }
-  const customers = await Customer.find(filter).lean();
+  const sf = scopeFilter(req);
+  const combined: any = {};
+  if (Object.keys(sf).length && Object.keys(filter).length) {
+    combined.$and = [sf, filter];
+  } else {
+    Object.assign(combined, sf, filter);
+  }
+  const customers = await Customer.find(combined).lean();
   res.json(customers.map((c: any) => ({ id: c.id, name: c.name, phone: c.phone, email: c.email, address: c.address, opening_balance: c.opening_balance, created_at: c.created_at })));
 });
 
@@ -76,7 +84,7 @@ router.get('/', async (req: Request, res: Response) => {
  */
 router.post('/', validate(CreateCustomerSchema), async (req: Request, res: Response) => {
   const now = new Date().toISOString();
-  const customer = new Customer({ ...req.body, id: generateId(), created_at: now, updated_at: now });
+  const customer = new Customer({ ...req.body, id: generateId(), created_at: now, updated_at: now, created_by: req.user!.id });
   await customer.save();
   res.status(201).json({ id: customer.id, name: customer.name, phone: customer.phone, email: customer.email, address: customer.address, opening_balance: customer.opening_balance, created_at: customer.created_at });
 });
@@ -116,7 +124,7 @@ router.post('/', validate(CreateCustomerSchema), async (req: Request, res: Respo
  */
 router.patch('/:id', validate(UpdateCustomerSchema), async (req: Request, res: Response) => {
   const update = { ...req.body, updated_at: new Date().toISOString() };
-  const customer = await Customer.findOneAndUpdate({ id: req.params.id }, { $set: update }, { new: true }).lean();
+  const customer = await Customer.findOneAndUpdate({ ...scopeFilter(req), id: req.params.id }, { $set: update }, { new: true }).lean();
   if (!customer) { res.status(404).json({ detail: 'Customer not found' }); return; }
   res.json({ id: customer.id, name: customer.name, phone: customer.phone, email: customer.email, address: customer.address, opening_balance: customer.opening_balance });
 });
@@ -139,7 +147,7 @@ router.patch('/:id', validate(UpdateCustomerSchema), async (req: Request, res: R
  *         description: Customer deleted
  */
 router.delete('/:id', async (req: Request, res: Response) => {
-  await Customer.deleteOne({ id: req.params.id });
+  await Customer.deleteOne({ ...scopeFilter(req), id: req.params.id });
   res.json({ ok: true });
 });
 

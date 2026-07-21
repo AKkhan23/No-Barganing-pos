@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface IShiftReport extends Document {
   id: string;
@@ -31,5 +32,6 @@ const ShiftReportSchema = new Schema<IShiftReport>({
   status: { type: String, default: 'open', enum: ['open', 'closed'] },
   created_at: { type: String, required: true },
 });
+ShiftReportSchema.plugin(scopePlugin);
 
 export const ShiftReport = mongoose.model<IShiftReport>('ShiftReport', ShiftReportSchema);

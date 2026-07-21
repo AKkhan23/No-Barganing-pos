@@ -4,6 +4,7 @@ import { WhatsAppLog } from '../models/WhatsAppLog';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager', 'cashier'));
@@ -43,6 +44,7 @@ router.post('/send', validate(SendSchema), async (req: Request, res: Response) =
     id: generateId(),
     status: 'stubbed',
     created_at: now,
+    created_by: req.user?.id,
   });
   await log.save();
   res.json({ ok: true, stubbed: true });

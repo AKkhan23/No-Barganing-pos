@@ -7,6 +7,7 @@ import { StockMovement } from '../models/StockMovement';
 import { generateId, generateInvoiceNo } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager', 'cashier'));
@@ -95,7 +96,7 @@ router.get('/', async (req: Request, res: Response) => {
   if (payment_mode) {
     filter.$or = [{ payment_mode }, { payment_method: payment_mode }];
   }
-  const orders = await Order.find(filter).sort({ created_at: -1 }).skip(skip).limit(limit).select('-_id -__v').lean();
+  const orders = await Order.find({ ...scopeFilter(req), ...filter }).sort({ created_at: -1 }).skip(skip).limit(limit).select('-_id -__v').lean();
   res.json(orders);
 });
 
@@ -119,7 +120,7 @@ router.get('/', async (req: Request, res: Response) => {
  *         description: Order not found
  */
 router.get('/:id', async (req: Request, res: Response) => {
-  const order = await Order.findOne({ id: req.params.id }).select('-_id -__v').lean();
+  const order = await Order.findOne({ ...scopeFilter(req), id: req.params.id }).select('-_id -__v').lean();
   if (!order) { res.status(404).json({ detail: 'Order not found' }); return; }
   res.json(order);
 });
@@ -203,10 +204,11 @@ router.post('/', validate(CreateOrderSchema), async (req: Request, res: Response
     cashier_id: req.user?.id || '',
     cashier_name: req.user?.name || '',
     created_by_id: req.user?.id,
+    created_by: req.user?.id,
     created_at: now,
   };
   for (const item of items) {
-    const product = await Product.findOne({ id: item.product_id }).lean();
+    const product = await Product.findOne({ ...scopeFilter(req), id: item.product_id }).lean();
     if (!product) {
       res.status(400).json({ detail: `Product not found: ${item.product_name || item.name || item.product_id}` });
       return;
@@ -221,7 +223,7 @@ router.post('/', validate(CreateOrderSchema), async (req: Request, res: Response
   await order.save();
 
   for (const item of items) {
-    await Product.findOneAndUpdate({ id: item.product_id }, { $inc: { stock: -item.quantity }, $set: { updated_at: now } });
+    await Product.findOneAndUpdate({ ...scopeFilter(req), id: item.product_id }, { $inc: { stock: -item.quantity }, $set: { updated_at: now } });
     await StockMovement.create({
       id: generateId(),
       product_id: item.product_id,
@@ -240,15 +242,15 @@ router.post('/', validate(CreateOrderSchema), async (req: Request, res: Response
 
   if (orderData.customer_id) {
     await Customer.findOneAndUpdate(
-      { id: orderData.customer_id },
+      { ...scopeFilter(req), id: orderData.customer_id },
       { $inc: { total_spent: grand_total, receivable: orderData.due } }
     );
   } else if (orderData.due > 0 && orderData.customer_name) {
     const custPhone = (req.body as any).customer_phone || '-';
-    const existing = await Customer.findOne({ name: orderData.customer_name }).lean();
+    const existing = await Customer.findOne({ ...scopeFilter(req), name: orderData.customer_name }).lean();
     if (existing) {
       await Customer.findOneAndUpdate(
-        { name: orderData.customer_name },
+        { ...scopeFilter(req), name: orderData.customer_name },
         { $inc: { total_spent: grand_total, receivable: orderData.due } }
       );
     } else {
@@ -258,6 +260,7 @@ router.post('/', validate(CreateOrderSchema), async (req: Request, res: Response
         phone: custPhone,
         total_spent: grand_total,
         receivable: orderData.due,
+        created_by: req.user?.id,
         created_at: now,
         updated_at: now,
       });

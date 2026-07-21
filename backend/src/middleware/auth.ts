@@ -30,7 +30,7 @@ export function requireRoles(...roles: string[]) {
       res.status(401).json({ detail: 'Not authenticated' });
       return;
     }
-    if (!roles.includes(req.user.role)) {
+    if (req.user.role !== 'super_admin' && !roles.includes(req.user.role)) {
       res.status(403).json({ detail: 'Insufficient permissions' });
       return;
     }

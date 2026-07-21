@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface IAccount extends Document {
   id: string;
@@ -19,5 +20,6 @@ const AccountSchema = new Schema<IAccount>({
   outlet_id: { type: String },
   created_at: { type: String, required: true },
 });
+AccountSchema.plugin(scopePlugin);
 
 export const Account = mongoose.model<IAccount>('Account', AccountSchema);

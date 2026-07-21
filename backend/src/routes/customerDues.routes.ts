@@ -6,6 +6,7 @@ import { LedgerEntry } from '../models/LedgerEntry';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -30,8 +31,9 @@ const ReceivePaymentSchema = z.object({
  */
 router.get('/', async (req: Request, res: Response) => {
   try {
+    const sf = scopeFilter(req);
     const orders = await Order.aggregate([
-      { $match: { due: { $gt: 0 } } },
+      { $match: { ...sf, due: { $gt: 0 } } },
       {
         $group: {
           _id: '$customer_name',
@@ -82,7 +84,7 @@ router.post('/receive-payment', validate(ReceivePaymentSchema), async (req: Requ
     const { customer_name, amount, mode, note } = req.body;
     const now = new Date().toISOString();
 
-    let customer = await Customer.findOne({ name: customer_name });
+    let customer = await Customer.findOne({ ...scopeFilter(req), name: customer_name });
     if (!customer) {
       customer = await Customer.create({
         id: generateId(),
@@ -92,6 +94,7 @@ router.post('/receive-payment', validate(ReceivePaymentSchema), async (req: Requ
         total_spent: 0,
         created_at: now,
         updated_at: now,
+        created_by: req.user!.id,
       });
     }
     customer.receivable = Math.max(0, (customer.receivable || 0) - amount);
@@ -102,16 +105,16 @@ router.post('/receive-payment', validate(ReceivePaymentSchema), async (req: Requ
       party_type: 'customer', party_id: customer.id,
       debit: 0, credit: amount, reference: `Payment from ${customer.name}`,
       note: note || '', created_by_id: req.user!.id, created_by_name: req.user!.name,
-      created_at: now,
+      created_at: now, created_by: req.user!.id,
     });
     await entry.save();
 
     let remaining = amount;
-    const unpaidOrders = await Order.find({ customer_name, due: { $gt: 0 } }).sort({ created_at: 1 });
+    const unpaidOrders = await Order.find({ ...scopeFilter(req), customer_name, due: { $gt: 0 } }).sort({ created_at: 1 });
     for (const order of unpaidOrders) {
       if (remaining <= 0) break;
       const reduce = Math.min(remaining, order.due);
-      await Order.findOneAndUpdate({ id: order.id }, { $inc: { due: -reduce } });
+      await Order.findOneAndUpdate({ ...scopeFilter(req), id: order.id }, { $inc: { due: -reduce } });
       remaining -= reduce;
     }
 

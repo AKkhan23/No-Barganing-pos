@@ -4,6 +4,7 @@ import { Quotation } from '../models/Quotation';
 import { generateId, generateInvoiceNo } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -58,7 +59,7 @@ const UpdateQuotationSchema = z.object({
  *         description: Array of quotations
  */
 router.get('/', async (req: Request, res: Response) => {
-  const items = await Quotation.find().lean();
+  const items = await Quotation.find(scopeFilter(req)).lean();
   res.json(items.map((q: any) => ({ id: q.id, quote_no: q.quote_no, customer_id: q.customer_id, customer_name: q.customer_name, items: q.items, subtotal: q.subtotal, tax_total: q.tax_total, discount: q.discount, grand_total: q.grand_total, status: q.status, valid_until: q.valid_until, notes: q.notes, created_at: q.created_at })));
 });
 
@@ -91,9 +92,9 @@ router.get('/', async (req: Request, res: Response) => {
  */
 router.post('/', validate(CreateQuotationSchema), async (req: Request, res: Response) => {
   const now = new Date().toISOString();
-  const count = await Quotation.countDocuments();
+  const count = await Quotation.countDocuments(scopeFilter(req));
   const quote_no = `Q-${now.slice(0, 4).replace(/-/g, '')}-${String(count + 1).padStart(6, '0')}`;
-  const q = new Quotation({ ...req.body, id: generateId(), quote_no, status: 'draft', created_at: now, created_by_id: req.user?.id });
+  const q = new Quotation({ ...req.body, id: generateId(), quote_no, status: 'draft', created_by: req.user?.id, created_at: now, created_by_id: req.user?.id });
   await q.save();
   res.status(201).json({ id: q.id, quote_no: q.quote_no, customer_id: q.customer_id, customer_name: q.customer_name, items: q.items, subtotal: q.subtotal, tax_total: q.tax_total, discount: q.discount, grand_total: q.grand_total, status: q.status, valid_until: q.valid_until, notes: q.notes, created_at: q.created_at });
 });
@@ -117,7 +118,7 @@ router.post('/', validate(CreateQuotationSchema), async (req: Request, res: Resp
  *         description: Quotation not found
  */
 router.get('/:id', async (req: Request, res: Response) => {
-  const q = await Quotation.findOne({ id: req.params.id }).lean();
+  const q = await Quotation.findOne({ ...scopeFilter(req), id: req.params.id }).lean();
   if (!q) { res.status(404).json({ detail: 'Quotation not found' }); return; }
   res.json({ id: q.id, quote_no: q.quote_no, customer_id: q.customer_id, customer_name: q.customer_name, items: q.items, subtotal: q.subtotal, tax_total: q.tax_total, discount: q.discount, grand_total: q.grand_total, status: q.status, valid_until: q.valid_until, notes: q.notes, created_at: q.created_at });
 });
@@ -157,7 +158,7 @@ router.get('/:id', async (req: Request, res: Response) => {
  *         description: Quotation not found
  */
 router.patch('/:id', validate(UpdateQuotationSchema), async (req: Request, res: Response) => {
-  const q = await Quotation.findOneAndUpdate({ id: req.params.id }, { $set: req.body }, { new: true }).lean();
+  const q = await Quotation.findOneAndUpdate({ ...scopeFilter(req), id: req.params.id }, { $set: req.body }, { new: true }).lean();
   if (!q) { res.status(404).json({ detail: 'Quotation not found' }); return; }
   res.json({ id: q.id, quote_no: q.quote_no, customer_id: q.customer_id, customer_name: q.customer_name, items: q.items, subtotal: q.subtotal, tax_total: q.tax_total, discount: q.discount, grand_total: q.grand_total, status: q.status, valid_until: q.valid_until, notes: q.notes });
 });
@@ -181,7 +182,7 @@ router.patch('/:id', validate(UpdateQuotationSchema), async (req: Request, res: 
  *         description: Quotation not found
  */
 router.delete('/:id', async (req: Request, res: Response) => {
-  const q = await Quotation.findOneAndDelete({ id: req.params.id });
+  const q = await Quotation.findOneAndDelete({ ...scopeFilter(req), id: req.params.id });
   if (!q) { res.status(404).json({ detail: 'Quotation not found' }); return; }
   res.json({ ok: true });
 });

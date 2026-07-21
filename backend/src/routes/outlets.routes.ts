@@ -4,6 +4,7 @@ import { Outlet } from '../models/Outlet';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -39,7 +40,7 @@ const UpdateOutletSchema = z.object({
  *         description: Array of outlets
  */
 router.get('/', async (_req: Request, res: Response) => {
-  const outlets = await Outlet.find().lean();
+  const outlets = await Outlet.find(scopeFilter(_req)).lean();
   res.json(outlets.map((o: any) => ({ id: o.id, name: o.name, address: o.address, phone: o.phone, gstin: o.gstin, is_active: o.is_active, created_at: o.created_at })));
 });
 
@@ -55,9 +56,9 @@ router.get('/', async (_req: Request, res: Response) => {
  *         description: Active outlet details
  */
 router.get('/current', async (_req: Request, res: Response) => {
-  const outlet = await Outlet.findOne({ is_active: true }).lean();
+  const outlet = await Outlet.findOne({ ...scopeFilter(_req), is_active: true }).lean();
   if (!outlet) {
-    const anyOutlet = await Outlet.findOne().lean();
+    const anyOutlet = await Outlet.findOne(scopeFilter(_req)).lean();
     if (!anyOutlet) { res.status(404).json({ detail: 'No outlets found' }); return; }
     res.json({ id: anyOutlet.id, name: anyOutlet.name, address: anyOutlet.address, phone: anyOutlet.phone, gstin: anyOutlet.gstin, is_active: anyOutlet.is_active, created_at: anyOutlet.created_at });
     return;
@@ -84,7 +85,7 @@ router.get('/current', async (_req: Request, res: Response) => {
  *         description: Outlet not found
  */
 router.get('/:id', async (req: Request, res: Response) => {
-  const outlet = await Outlet.findOne({ id: req.params.id }).lean();
+  const outlet = await Outlet.findOne({ ...scopeFilter(req), id: req.params.id }).lean();
   if (!outlet) { res.status(404).json({ detail: 'Outlet not found' }); return; }
   res.json({ id: outlet.id, name: outlet.name, address: outlet.address, phone: outlet.phone, gstin: outlet.gstin, is_active: outlet.is_active, created_at: outlet.created_at });
 });
@@ -114,7 +115,7 @@ router.get('/:id', async (req: Request, res: Response) => {
  */
 router.post('/', validate(CreateOutletSchema), async (req: Request, res: Response) => {
   const now = new Date().toISOString();
-  const outlet = new Outlet({ ...req.body, id: generateId(), created_at: now });
+  const outlet = new Outlet({ ...req.body, id: generateId(), created_by: req.user?.id, created_at: now });
   await outlet.save();
   res.status(201).json({ id: outlet.id, name: outlet.name, address: outlet.address, phone: outlet.phone, gstin: outlet.gstin, is_active: outlet.is_active, created_at: outlet.created_at });
 });
@@ -150,7 +151,7 @@ router.post('/', validate(CreateOutletSchema), async (req: Request, res: Respons
  *         description: Outlet not found
  */
 router.patch('/:id', validate(UpdateOutletSchema), async (req: Request, res: Response) => {
-  const outlet = await Outlet.findOneAndUpdate({ id: req.params.id }, { $set: req.body }, { new: true }).lean();
+  const outlet = await Outlet.findOneAndUpdate({ ...scopeFilter(req), id: req.params.id }, { $set: req.body }, { new: true }).lean();
   if (!outlet) { res.status(404).json({ detail: 'Outlet not found' }); return; }
   res.json({ id: outlet.id, name: outlet.name, address: outlet.address, phone: outlet.phone, gstin: outlet.gstin, is_active: outlet.is_active, created_at: outlet.created_at });
 });
@@ -172,7 +173,7 @@ router.patch('/:id', validate(UpdateOutletSchema), async (req: Request, res: Res
  *         description: Outlet deleted
  */
 router.delete('/:id', async (req: Request, res: Response) => {
-  await Outlet.deleteOne({ id: req.params.id });
+  await Outlet.deleteOne({ ...scopeFilter(req), id: req.params.id });
   res.json({ ok: true });
 });
 

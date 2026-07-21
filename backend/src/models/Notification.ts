@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface INotification extends Document {
   id: string;
@@ -21,5 +22,6 @@ const NotificationSchema = new Schema<INotification>({
   read: { type: Boolean, default: false },
   created_at: { type: String, required: true },
 });
+NotificationSchema.plugin(scopePlugin);
 
 export const Notification = mongoose.model<INotification>('Notification', NotificationSchema);

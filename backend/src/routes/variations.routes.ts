@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { Variation } from '../models/Variation';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -17,8 +18,8 @@ router.use(verifyJWT, requireRoles('admin', 'manager'));
  *       200:
  *         description: Array of variation templates
  */
-router.get('/', async (_req: Request, res: Response) => {
-  const items = await Variation.find({}).lean();
+router.get('/', async (req: Request, res: Response) => {
+  const items = await Variation.find(scopeFilter(req)).lean();
   res.json(items);
 });
 
@@ -48,7 +49,7 @@ router.get('/', async (_req: Request, res: Response) => {
  */
 router.post('/', async (req: Request, res: Response) => {
   const now = new Date().toISOString();
-  const item = new Variation({ id: generateId(), ...req.body, created_at: now });
+  const item = new Variation({ id: generateId(), ...req.body, created_at: now, created_by: req.user?.id });
   await item.save();
   res.status(201).json(item.toJSON());
 });
@@ -86,7 +87,7 @@ router.post('/', async (req: Request, res: Response) => {
  *         description: Variation not found
  */
 router.patch('/:id', async (req: Request, res: Response) => {
-  const item = await Variation.findOneAndUpdate({ id: req.params.id }, { $set: req.body }, { new: true }).lean();
+  const item = await Variation.findOneAndUpdate({ ...scopeFilter(req), id: req.params.id }, { $set: req.body }, { new: true }).lean();
   if (!item) { res.status(404).json({ detail: 'Variation not found' }); return; }
   res.json(item);
 });
@@ -109,7 +110,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
  *         description: Deleted successfully
  */
 router.delete('/:id', async (req: Request, res: Response) => {
-  await Variation.deleteOne({ id: req.params.id });
+  await Variation.deleteOne({ ...scopeFilter(req), id: req.params.id });
   res.json({ ok: true });
 });
 

@@ -6,6 +6,7 @@ import { Customer } from '../models/Customer';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -42,7 +43,7 @@ const CreateNotificationSchema = z.object({
  */
 router.post('/', validate(CreateNotificationSchema), async (req: Request, res: Response) => {
   const now = new Date().toISOString();
-  const notification = new Notification({ ...req.body, id: generateId(), read: false, created_at: now });
+  const notification = new Notification({ ...req.body, id: generateId(), read: false, created_at: now, created_by: req.user!.id });
   await notification.save();
   res.status(201).json({ id: notification.id, type: notification.type, title: notification.title, message: notification.message, ref: notification.ref, read: notification.read, created_at: notification.created_at });
 });
@@ -66,7 +67,7 @@ router.post('/', validate(CreateNotificationSchema), async (req: Request, res: R
 router.get('/', async (req: Request, res: Response) => {
   const filter: any = {};
   if (req.query.unread_only === 'true') filter.read = false;
-  const notifications = await Notification.find(filter).sort({ created_at: -1 }).lean();
+  const notifications = await Notification.find({ ...scopeFilter(req), ...filter }).sort({ created_at: -1 }).lean();
   res.json(notifications.map((n: any) => ({ id: n.id, type: n.type, title: n.title, message: n.message, ref: n.ref, read: n.read, created_at: n.created_at })));
 });
 
@@ -87,8 +88,8 @@ router.get('/', async (req: Request, res: Response) => {
  *               properties:
  *                 count: { type: number }
  */
-router.get('/unread-count', async (_req: Request, res: Response) => {
-  const count = await Notification.countDocuments({ read: false });
+router.get('/unread-count', async (req: Request, res: Response) => {
+  const count = await Notification.countDocuments({ ...scopeFilter(req), read: false });
   res.json({ count });
 });
 
@@ -111,7 +112,7 @@ router.get('/unread-count', async (_req: Request, res: Response) => {
  *         description: Notification not found
  */
 router.patch('/:id/read', async (req: Request, res: Response) => {
-  const notification = await Notification.findOneAndUpdate({ id: req.params.id }, { $set: { read: true } }, { new: true }).lean();
+  const notification = await Notification.findOneAndUpdate({ ...scopeFilter(req), id: req.params.id }, { $set: { read: true } }, { new: true }).lean();
   if (!notification) { res.status(404).json({ detail: 'Notification not found' }); return; }
   res.json({ id: notification.id, type: notification.type, title: notification.title, message: notification.message, ref: notification.ref, read: notification.read, created_at: notification.created_at });
 });
@@ -127,13 +128,13 @@ router.patch('/:id/read', async (req: Request, res: Response) => {
  *       200:
  *         description: Generation result with count
  */
-router.post('/generate', async (_req: Request, res: Response) => {
+router.post('/generate', async (req: Request, res: Response) => {
   const now = new Date().toISOString();
   const created: any[] = [];
 
-  const lowStockProducts = await (Product.find({ $expr: { $lte: ['$stock', '$low_stock_threshold'] }, active: true } as any).lean() as Promise<any[]>);
+  const lowStockProducts = await (Product.find({ ...scopeFilter(req), $expr: { $lte: ['$stock', '$low_stock_threshold'] }, active: true } as any).lean() as Promise<any[]>);
   for (const product of lowStockProducts) {
-    const exists = await Notification.findOne({ type: 'low_stock', ref: product.id, read: false });
+    const exists = await Notification.findOne({ ...scopeFilter(req), type: 'low_stock', ref: product.id, read: false });
     if (!exists) {
       const n = new Notification({
         id: generateId(),
@@ -143,15 +144,16 @@ router.post('/generate', async (_req: Request, res: Response) => {
         ref: product.id,
         read: false,
         created_at: now,
+        created_by: req.user!.id,
       });
       await n.save();
       created.push(n);
     }
   }
 
-  const dueCustomers = await Customer.find({ receivable: { $gt: 0 } }).lean();
+  const dueCustomers = await Customer.find({ ...scopeFilter(req), receivable: { $gt: 0 } }).lean();
   for (const customer of dueCustomers) {
-    const exists = await Notification.findOne({ type: 'due', ref: customer.id, read: false });
+    const exists = await Notification.findOne({ ...scopeFilter(req), type: 'due', ref: customer.id, read: false });
     if (!exists) {
       const n = new Notification({
         id: generateId(),
@@ -161,6 +163,7 @@ router.post('/generate', async (_req: Request, res: Response) => {
         ref: customer.id,
         read: false,
         created_at: now,
+        created_by: req.user!.id,
       });
       await n.save();
       created.push(n);

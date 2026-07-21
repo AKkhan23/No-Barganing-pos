@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface IExpenseItem extends Document {
   id: string;
@@ -15,5 +16,6 @@ const ExpenseItemSchema = new Schema<IExpenseItem>({
   created_at: { type: String, required: true },
   updated_at: { type: String },
 });
+ExpenseItemSchema.plugin(scopePlugin);
 
 export const ExpenseItem = mongoose.model<IExpenseItem>('ExpenseItem', ExpenseItemSchema);

@@ -4,6 +4,7 @@ import { FixedAsset } from '../models/FixedAsset';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -48,7 +49,7 @@ const UpdateAssetSchema = z.object({
  *         description: Array of fixed assets
  */
 router.get('/', async (req: Request, res: Response) => {
-  const assets = await FixedAsset.find().lean();
+  const assets = await FixedAsset.find(scopeFilter(req)).lean();
   res.json(assets.map((a: any) => ({ id: a.id, name: a.name, purchase_date: a.purchase_date, purchase_price: a.purchase_price, current_value: a.current_value, depreciation_method: a.depreciation_method, depreciation_rate: a.depreciation_rate, useful_life_years: a.useful_life_years, location: a.location, category: a.category, notes: a.notes, active: a.active, created_at: a.created_at })));
 });
 
@@ -72,7 +73,7 @@ router.get('/', async (req: Request, res: Response) => {
 router.post('/', validate(CreateAssetSchema), async (req: Request, res: Response) => {
   const now = new Date().toISOString();
   const current_value = req.body.current_value ?? req.body.purchase_price;
-  const asset = new FixedAsset({ ...req.body, current_value, id: generateId(), created_at: now });
+  const asset = new FixedAsset({ ...req.body, current_value, id: generateId(), created_at: now, created_by: req.user!.id });
   await asset.save();
   res.status(201).json({ id: asset.id, name: asset.name, purchase_date: asset.purchase_date, purchase_price: asset.purchase_price, current_value: asset.current_value, depreciation_method: asset.depreciation_method, depreciation_rate: asset.depreciation_rate, useful_life_years: asset.useful_life_years, location: asset.location, category: asset.category, notes: asset.notes, active: asset.active, created_at: asset.created_at });
 });
@@ -103,7 +104,7 @@ router.post('/', validate(CreateAssetSchema), async (req: Request, res: Response
  *         description: Fixed asset not found
  */
 router.patch('/:id', validate(UpdateAssetSchema), async (req: Request, res: Response) => {
-  const asset = await FixedAsset.findOneAndUpdate({ id: req.params.id }, { $set: req.body }, { new: true }).lean();
+  const asset = await FixedAsset.findOneAndUpdate({ ...scopeFilter(req), id: req.params.id }, { $set: req.body }, { new: true }).lean();
   if (!asset) { res.status(404).json({ detail: 'Fixed asset not found' }); return; }
   res.json({ id: asset.id, name: asset.name, purchase_date: asset.purchase_date, purchase_price: asset.purchase_price, current_value: asset.current_value, depreciation_method: asset.depreciation_method, depreciation_rate: asset.depreciation_rate, useful_life_years: asset.useful_life_years, location: asset.location, category: asset.category, notes: asset.notes, active: asset.active });
 });
@@ -126,7 +127,7 @@ router.patch('/:id', validate(UpdateAssetSchema), async (req: Request, res: Resp
  *         description: Fixed asset deleted
  */
 router.delete('/:id', async (req: Request, res: Response) => {
-  await FixedAsset.deleteOne({ id: req.params.id });
+  await FixedAsset.deleteOne({ ...scopeFilter(req), id: req.params.id });
   res.json({ ok: true });
 });
 

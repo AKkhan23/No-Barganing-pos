@@ -4,6 +4,7 @@ import { InstallmentPlan } from '../models/InstallmentPlan';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -44,7 +45,7 @@ const UpdateInstallmentSchema = z.object({
  *         description: Array of installment plans
  */
 router.get('/', async (req: Request, res: Response) => {
-  const plans = await InstallmentPlan.find().lean();
+  const plans = await InstallmentPlan.find(scopeFilter(req)).lean();
   res.json(plans.map((p: any) => ({ id: p.id, order_id: p.order_id, customer_id: p.customer_id, customer_name: p.customer_name, total_amount: p.total_amount, down_payment: p.down_payment, installment_amount: p.installment_amount, total_installments: p.total_installments, installments_paid: p.installments_paid, status: p.status, due_date: p.due_date, created_at: p.created_at })));
 });
 
@@ -67,7 +68,7 @@ router.get('/', async (req: Request, res: Response) => {
  */
 router.post('/', validate(CreateInstallmentSchema), async (req: Request, res: Response) => {
   const now = new Date().toISOString();
-  const plan = new InstallmentPlan({ ...req.body, id: generateId(), status: 'active', installments_paid: 0, created_at: now });
+  const plan = new InstallmentPlan({ ...req.body, id: generateId(), status: 'active', installments_paid: 0, created_at: now, created_by: req.user!.id });
   await plan.save();
   res.status(201).json({ id: plan.id, order_id: plan.order_id, customer_id: plan.customer_id, customer_name: plan.customer_name, total_amount: plan.total_amount, down_payment: plan.down_payment, installment_amount: plan.installment_amount, total_installments: plan.total_installments, installments_paid: plan.installments_paid, status: plan.status, due_date: plan.due_date, created_at: plan.created_at });
 });
@@ -100,9 +101,9 @@ router.post('/', validate(CreateInstallmentSchema), async (req: Request, res: Re
 router.patch('/:id', validate(UpdateInstallmentSchema), async (req: Request, res: Response) => {
   const update: any = { ...req.body };
   if (update.status === 'paid') {
-    update.installments_paid = update.total_installments || (await InstallmentPlan.findOne({ id: req.params.id }))?.total_installments || 0;
+    update.installments_paid = update.total_installments || (await InstallmentPlan.findOne({ ...scopeFilter(req), id: req.params.id }))?.total_installments || 0;
   }
-  const plan = await InstallmentPlan.findOneAndUpdate({ id: req.params.id }, { $set: update }, { new: true }).lean();
+  const plan = await InstallmentPlan.findOneAndUpdate({ ...scopeFilter(req), id: req.params.id }, { $set: update }, { new: true }).lean();
   if (!plan) { res.status(404).json({ detail: 'Installment plan not found' }); return; }
   res.json({ id: plan.id, order_id: plan.order_id, customer_id: plan.customer_id, customer_name: plan.customer_name, total_amount: plan.total_amount, down_payment: plan.down_payment, installment_amount: plan.installment_amount, total_installments: plan.total_installments, installments_paid: plan.installments_paid, status: plan.status, due_date: plan.due_date, created_at: plan.created_at });
 });
@@ -125,7 +126,7 @@ router.patch('/:id', validate(UpdateInstallmentSchema), async (req: Request, res
  *         description: Installment plan deleted
  */
 router.delete('/:id', async (req: Request, res: Response) => {
-  await InstallmentPlan.deleteOne({ id: req.params.id });
+  await InstallmentPlan.deleteOne({ ...scopeFilter(req), id: req.params.id });
   res.json({ ok: true });
 });
 

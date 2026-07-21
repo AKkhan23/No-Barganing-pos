@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { Register } from '../models/Register';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -18,7 +19,7 @@ router.use(verifyJWT, requireRoles('admin', 'manager'));
  *         description: Array of registers
  */
 router.get('/', async (_req: Request, res: Response) => {
-  const items = await Register.find({}).lean();
+  const items = await Register.find(scopeFilter(_req)).lean();
   res.json(items);
 });
 
@@ -36,7 +37,7 @@ router.get('/', async (_req: Request, res: Response) => {
  *         description: No active register found
  */
 router.get('/current', async (_req: Request, res: Response) => {
-  const item = await Register.findOne({ is_active: true }).lean();
+  const item = await Register.findOne({ ...scopeFilter(_req), is_active: true }).lean();
   if (!item) { res.status(404).json({ detail: 'No active register found' }); return; }
   res.json(item);
 });
@@ -67,7 +68,7 @@ router.get('/current', async (_req: Request, res: Response) => {
  */
 router.post('/', async (req: Request, res: Response) => {
   const now = new Date().toISOString();
-  const item = new Register({ id: generateId(), ...req.body, created_at: now });
+  const item = new Register({ id: generateId(), ...req.body, created_by: req.user?.id, created_at: now });
   await item.save();
   res.status(201).json(item.toJSON());
 });
@@ -107,7 +108,7 @@ router.post('/', async (req: Request, res: Response) => {
  */
 router.patch('/:id', async (req: Request, res: Response) => {
   const item = await Register.findOneAndUpdate(
-    { id: req.params.id },
+    { ...scopeFilter(req), id: req.params.id },
     { $set: { ...req.body, updated_at: new Date().toISOString() } },
     { new: true }
   ).lean();
@@ -134,7 +135,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
  *         description: Deleted successfully
  */
 router.delete('/:id', async (req: Request, res: Response) => {
-  await Register.deleteOne({ id: req.params.id });
+  await Register.deleteOne({ ...scopeFilter(req), id: req.params.id });
   res.json({ ok: true });
 });
 

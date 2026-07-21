@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { Denomination } from '../models/Denomination';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -18,7 +19,7 @@ router.use(verifyJWT, requireRoles('admin', 'manager'));
  *         description: Array of denominations
  */
 router.get('/', async (_req: Request, res: Response) => {
-  const items = await Denomination.find({}).lean();
+  const items = await Denomination.find(scopeFilter(_req)).lean();
   res.json(items);
 });
 
@@ -48,7 +49,7 @@ router.get('/', async (_req: Request, res: Response) => {
  */
 router.post('/', async (req: Request, res: Response) => {
   const now = new Date().toISOString();
-  const item = new Denomination({ id: generateId(), ...req.body, created_at: now });
+  const item = new Denomination({ id: generateId(), ...req.body, created_at: now, created_by: req.user!.id });
   await item.save();
   res.status(201).json(item.toJSON());
 });
@@ -87,7 +88,7 @@ router.post('/', async (req: Request, res: Response) => {
  *         description: Not found
  */
 router.patch('/:id', async (req: Request, res: Response) => {
-  const item = await Denomination.findOneAndUpdate({ id: req.params.id }, { $set: req.body }, { new: true }).lean();
+  const item = await Denomination.findOneAndUpdate({ ...scopeFilter(req), id: req.params.id }, { $set: req.body }, { new: true }).lean();
   if (!item) { res.status(404).json({ detail: 'Denomination not found' }); return; }
   res.json(item);
 });
@@ -111,7 +112,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
  *         description: Deleted successfully
  */
 router.delete('/:id', async (req: Request, res: Response) => {
-  await Denomination.deleteOne({ id: req.params.id });
+  await Denomination.deleteOne({ ...scopeFilter(req), id: req.params.id });
   res.json({ ok: true });
 });
 

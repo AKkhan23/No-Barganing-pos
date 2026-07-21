@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface IServicing extends Document {
   id: string;
@@ -31,5 +32,6 @@ const ServicingSchema = new Schema<IServicing>({
   created_at: { type: String, required: true },
   updated_at: { type: String },
 });
+ServicingSchema.plugin(scopePlugin);
 
 export const Servicing = mongoose.model<IServicing>('Servicing', ServicingSchema);

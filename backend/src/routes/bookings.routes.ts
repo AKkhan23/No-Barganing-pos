@@ -7,6 +7,7 @@ import { StockMovement } from '../models/StockMovement';
 import { generateId, generateInvoiceNo } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 router.use(verifyJWT);
@@ -55,7 +56,7 @@ const CreateBookingSchema = z.object({
 router.post('/', validate(CreateBookingSchema), async (req: Request, res: Response) => {
   try {
     const now = new Date().toISOString();
-    const booking = new Booking({ ...req.body, id: generateId(), status: 'open', created_by_id: req.user!.id, created_by_name: req.user!.name, created_at: now });
+    const booking = new Booking({ ...req.body, id: generateId(), status: 'open', created_by_id: req.user!.id, created_by_name: req.user!.name, created_at: now, created_by: req.user!.id });
     await booking.save();
     res.status(201).json({ id: booking.id, customer_id: booking.customer_id, customer_name: booking.customer_name, items: booking.items, token_amount: booking.token_amount, deposit: booking.deposit, status: booking.status, note: booking.note, created_at: booking.created_at });
   } catch (err: any) { res.status(500).json({ detail: err.message }); }
@@ -80,7 +81,8 @@ router.post('/', validate(CreateBookingSchema), async (req: Request, res: Respon
 router.get('/', async (req: Request, res: Response) => {
   const filter: any = {};
   if (req.query.status) filter.status = req.query.status;
-  const bookings = await Booking.find(filter).sort({ created_at: -1 }).lean();
+  const sf = scopeFilter(req);
+  const bookings = await Booking.find({ ...sf, ...filter }).sort({ created_at: -1 }).lean();
   res.json(bookings.map((b: any) => ({ id: b.id, customer_id: b.customer_id, customer_name: b.customer_name, items: b.items, token_amount: b.token_amount, deposit: b.deposit, status: b.status, note: b.note, created_by_id: b.created_by_id, created_by_name: b.created_by_name, created_at: b.created_at })));
 });
 
@@ -103,7 +105,7 @@ router.get('/', async (req: Request, res: Response) => {
  *         description: Booking not found
  */
 router.get('/:id', async (req: Request, res: Response) => {
-  const booking = await Booking.findOne({ id: req.params.id }).lean();
+  const booking = await Booking.findOne({ ...scopeFilter(req), id: req.params.id }).lean();
   if (!booking) { res.status(404).json({ detail: 'Booking not found' }); return; }
   res.json({ id: booking.id, customer_id: booking.customer_id, customer_name: booking.customer_name, items: booking.items, token_amount: booking.token_amount, deposit: booking.deposit, status: booking.status, note: booking.note, created_by_id: booking.created_by_id, created_by_name: booking.created_by_name, created_at: booking.created_at });
 });
@@ -130,7 +132,7 @@ router.get('/:id', async (req: Request, res: Response) => {
  */
 router.post('/:id/convert', async (req: Request, res: Response) => {
   try {
-    const booking = await Booking.findOne({ id: req.params.id });
+    const booking = await Booking.findOne({ ...scopeFilter(req), id: req.params.id });
     if (!booking) { res.status(404).json({ detail: 'Booking not found' }); return; }
     if (booking.status !== 'open') { res.status(400).json({ detail: 'Booking is already converted or cancelled' }); return; }
     const now = new Date().toISOString();
@@ -155,18 +157,18 @@ router.post('/:id/convert', async (req: Request, res: Response) => {
       grand_total: grandTotal, total: grandTotal, paid: 0, due: grandTotal,
       amount_paid: 0, change_due: 0, payment_mode: 'cash', payment_method: 'cash',
       cashier_id: req.user!.id, cashier_name: req.user!.name, status: 'completed',
-      created_by_id: req.user!.id, created_at: now,
+      created_by_id: req.user!.id, created_at: now, created_by: req.user!.id,
     });
     await order.save();
     booking.status = 'converted';
     await booking.save();
     for (const item of booking.items) {
-      await Product.updateOne({ id: item.product_id }, { $inc: { stock: -item.quantity } });
+      await Product.updateOne({ ...scopeFilter(req), id: item.product_id }, { $inc: { stock: -item.quantity } });
       await StockMovement.create({
         id: generateId(), product_id: item.product_id, product_name: item.name,
         type: 'sale', quantity: -item.quantity, change: -item.quantity,
         reference: invoiceNo, note: `Converted from booking ${booking.id}`,
-        user_id: req.user!.id, user_name: req.user!.name, created_by_id: req.user!.id, created_at: now,
+        user_id: req.user!.id, user_name: req.user!.name, created_by_id: req.user!.id, created_at: now, created_by: req.user!.id,
       });
     }
     res.json({ booking: { id: booking.id, status: booking.status }, order: { id: order.id, invoice_no: order.invoice_no, grand_total: order.grand_total } });

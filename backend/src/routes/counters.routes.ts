@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { Counter } from '../models/Counter';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -25,7 +26,7 @@ function buildFilter(id: string) {
  *         description: Array of counters
  */
 router.get('/', async (_req: Request, res: Response) => {
-  const items = await Counter.find({}).lean();
+  const items = await Counter.find(scopeFilter(_req)).lean();
   const mapped = [];
   for (const c of items) {
     if (!c.id) {
@@ -67,7 +68,7 @@ router.get('/', async (_req: Request, res: Response) => {
  */
 router.post('/', async (req: Request, res: Response) => {
   const now = new Date().toISOString();
-  const item = new Counter({ id: generateId(), ...req.body, created_at: now });
+  const item = new Counter({ id: generateId(), ...req.body, created_at: now, created_by: req.user!.id });
   await item.save();
   res.status(201).json(item.toJSON());
 });
@@ -108,7 +109,8 @@ router.post('/', async (req: Request, res: Response) => {
  *         description: Not found
  */
 router.patch('/:id', async (req: Request, res: Response) => {
-  const item = await Counter.findOneAndUpdate(buildFilter(req.params.id), { $set: req.body }, { new: true }).lean();
+  const sf = scopeFilter(req);
+  const item = await Counter.findOneAndUpdate({ $and: [buildFilter(req.params.id), sf] }, { $set: req.body }, { new: true }).lean();
   if (!item) { res.status(404).json({ detail: 'Counter not found' }); return; }
   res.json({ id: item.id, name: item.name, outlet_id: item.outlet_id, printer_id: item.printer_id, description: item.description, created_at: item.created_at, updated_at: item.updated_at });
 });
@@ -134,7 +136,7 @@ router.patch('/:id', async (req: Request, res: Response) => {
  *         description: Not found
  */
 router.delete('/:id', async (req: Request, res: Response) => {
-  let r = await Counter.deleteOne(buildFilter(req.params.id));
+  let r = await Counter.deleteOne({ $and: [buildFilter(req.params.id), scopeFilter(req)] });
   if (r.deletedCount === 0) {
     r = await Counter.collection.deleteOne({ $or: [{ _id: req.params.id as any }, { id: req.params.id }] });
   }

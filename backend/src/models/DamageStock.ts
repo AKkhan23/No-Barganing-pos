@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface IDamageStock extends Document {
   id: string;
@@ -25,5 +26,6 @@ const DamageStockSchema = new Schema<IDamageStock>({
   created_by_id: { type: String },
   created_by_name: { type: String },
 });
+DamageStockSchema.plugin(scopePlugin);
 
 export const DamageStock = mongoose.model<IDamageStock>('DamageStock', DamageStockSchema);

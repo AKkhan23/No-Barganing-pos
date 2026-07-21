@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface ILedgerEntry extends Document {
   id: string;
@@ -31,5 +32,6 @@ const LedgerEntrySchema = new Schema<ILedgerEntry>({
   created_by_name: { type: String },
   created_at: { type: String, required: true },
 });
+LedgerEntrySchema.plugin(scopePlugin);
 
 export const LedgerEntry = mongoose.model<ILedgerEntry>('LedgerEntry', LedgerEntrySchema);

@@ -4,6 +4,7 @@ import { ShiftReport } from '../models/ShiftReport';
 import { generateId } from '../utils/invoice';
 import { verifyJWT } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 router.use(verifyJWT);
@@ -45,7 +46,7 @@ const CloseShiftSchema = z.object({
  *         description: Existing open shift returned
  */
 router.post('/', validate(OpenShiftSchema), async (req: Request, res: Response) => {
-  const existing = await ShiftReport.findOne({ user_id: req.user!.id, status: 'open' }).lean();
+  const existing = await ShiftReport.findOne({ ...scopeFilter(req), user_id: req.user!.id, status: 'open' }).lean();
   if (existing) {
     res.json({ id: existing.id, outlet_id: existing.outlet_id, user_id: existing.user_id, user_name: existing.user_name, opened_at: existing.opened_at, opening_cash: existing.opening_cash, note: existing.note, status: existing.status, created_at: existing.created_at });
     return;
@@ -60,6 +61,7 @@ router.post('/', validate(OpenShiftSchema), async (req: Request, res: Response) 
     opening_cash: req.body.opening_cash,
     note: req.body.note,
     status: 'open',
+    created_by: req.user?.id,
     created_at: now,
   });
   await shift.save();
@@ -80,7 +82,7 @@ router.post('/', validate(OpenShiftSchema), async (req: Request, res: Response) 
  *         description: No open shift found
  */
 router.get('/current', async (req: Request, res: Response) => {
-  const shift = await ShiftReport.findOne({ user_id: req.user!.id, status: 'open' }).lean();
+  const shift = await ShiftReport.findOne({ ...scopeFilter(req), user_id: req.user!.id, status: 'open' }).lean();
   if (!shift) { res.status(404).json({ detail: 'No open shift found' }); return; }
   res.json({ id: shift.id, outlet_id: shift.outlet_id, user_id: shift.user_id, user_name: shift.user_name, opened_at: shift.opened_at, opening_cash: shift.opening_cash, note: shift.note, status: shift.status, created_at: shift.created_at });
 });
@@ -119,7 +121,7 @@ router.post('/:id/close', validate(CloseShiftSchema), async (req: Request, res: 
   const variance = closing_cash - expected_cash;
   const now = new Date().toISOString();
   const shift = await ShiftReport.findOneAndUpdate(
-    { id: req.params.id, status: 'open' },
+    { ...scopeFilter(req), id: req.params.id, status: 'open' },
     { $set: { closing_cash, expected_cash, variance, note, closed_at: now, status: 'closed' } },
     { new: true }
   ).lean();

@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface IBookingItem {
   product_id: string;
@@ -49,5 +50,6 @@ const BookingSchema = new Schema<IBooking>({
   created_by_id: { type: String, required: true },
   created_by_name: { type: String, required: true },
 });
+BookingSchema.plugin(scopePlugin);
 
 export const Booking = mongoose.model<IBooking>('Booking', BookingSchema);

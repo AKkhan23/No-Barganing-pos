@@ -27,11 +27,15 @@ export async function seedData(): Promise<void> {
   if (!existingAdmin) {
     await User.create({
       id: generateId(), email: adminEmail, name: 'Store Admin',
-      role: 'admin', active: true,
+      role: 'super_admin', active: true,
       password_hash: hashPassword(env.ADMIN_PASSWORD),
       created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
     });
     logger.info('Admin user created');
+  } else if (existingAdmin.role !== 'super_admin') {
+    existingAdmin.role = 'super_admin';
+    await existingAdmin.save();
+    logger.info('Admin user role upgraded to super_admin');
   }
 
   const existingRoles = await Role.countDocuments({});

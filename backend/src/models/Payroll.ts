@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface IPayroll extends Document {
   id: string;
@@ -31,5 +32,6 @@ const PayrollSchema = new Schema<IPayroll>({
   paid_via: { type: String, enum: ['cash','bank','upi','wallet'] },
   created_at: { type: String, required: true },
 });
+PayrollSchema.plugin(scopePlugin);
 
 export const Payroll = mongoose.model<IPayroll>('Payroll', PayrollSchema);

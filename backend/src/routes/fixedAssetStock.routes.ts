@@ -5,6 +5,7 @@ import { FixedAsset } from '../models/FixedAsset';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -20,13 +21,13 @@ const CreateMovementSchema = z.object({
 
 router.post('/', validate(CreateMovementSchema), async (req: Request, res: Response) => {
   try {
-    const asset = await FixedAsset.findOne({ id: req.body.asset_id }).lean();
+    const asset = await FixedAsset.findOne({ ...scopeFilter(req), id: req.body.asset_id }).lean();
     if (!asset) {
       res.status(404).json({ detail: 'Fixed asset not found' });
       return;
     }
     if (req.body.type === 'out') {
-      const movements = await FixedAssetStock.find({ asset_id: req.body.asset_id }).lean();
+      const movements = await FixedAssetStock.find({ ...scopeFilter(req), asset_id: req.body.asset_id }).lean();
       const totalIn = movements.filter(m => m.type === 'in').reduce((s, m) => s + m.quantity, 0);
       const totalOut = movements.filter(m => m.type === 'out').reduce((s, m) => s + m.quantity, 0);
       if (req.body.quantity > (totalIn - totalOut)) {
@@ -40,6 +41,7 @@ router.post('/', validate(CreateMovementSchema), async (req: Request, res: Respo
       id: generateId(),
       asset_name: asset.name,
       created_at: now,
+      created_by: req.user!.id,
     });
     await movement.save();
     res.status(201).json({
@@ -56,7 +58,7 @@ router.get('/', async (req: Request, res: Response) => {
   try {
     const filter: any = {};
     if (req.query.asset_id) filter.asset_id = req.query.asset_id;
-    const movements = await FixedAssetStock.find(filter).sort({ created_at: -1 }).lean();
+    const movements = await FixedAssetStock.find({ ...scopeFilter(req), ...filter }).sort({ created_at: -1 }).lean();
     res.json(movements.map(m => ({
       id: m.id, asset_id: m.asset_id, asset_name: m.asset_name,
       type: m.type, quantity: m.quantity, quantity_unit: m.quantity_unit,
@@ -69,12 +71,12 @@ router.get('/', async (req: Request, res: Response) => {
 
 router.get('/asset/:assetId', async (req: Request, res: Response) => {
   try {
-    const asset = await FixedAsset.findOne({ id: req.params.assetId }).lean();
+    const asset = await FixedAsset.findOne({ ...scopeFilter(req), id: req.params.assetId }).lean();
     if (!asset) {
       res.status(404).json({ detail: 'Fixed asset not found' });
       return;
     }
-    const movements = await FixedAssetStock.find({ asset_id: req.params.assetId }).lean();
+    const movements = await FixedAssetStock.find({ ...scopeFilter(req), asset_id: req.params.assetId }).lean();
     const totalIn = movements.filter(m => m.type === 'in').reduce((s, m) => s + m.quantity, 0);
     const totalOut = movements.filter(m => m.type === 'out').reduce((s, m) => s + m.quantity, 0);
     res.json({ asset_id: req.params.assetId, asset_name: asset.name, total_in: totalIn, total_out: totalOut, current_balance: totalIn - totalOut });
@@ -85,7 +87,7 @@ router.get('/asset/:assetId', async (req: Request, res: Response) => {
 
 router.get('/summary', async (req: Request, res: Response) => {
   try {
-    const movements = await FixedAssetStock.find().lean();
+    const movements = await FixedAssetStock.find(scopeFilter(req)).lean();
     const grouped: Record<string, { asset_id: string; asset_name: string; total_in: number; total_out: number }> = {};
     for (const m of movements) {
       if (!grouped[m.asset_id]) {
@@ -103,7 +105,7 @@ router.get('/summary', async (req: Request, res: Response) => {
 
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
-    await FixedAssetStock.deleteOne({ id: req.params.id });
+    await FixedAssetStock.deleteOne({ ...scopeFilter(req), id: req.params.id });
     res.json({ ok: true });
   } catch (err: any) {
     res.status(400).json({ detail: err.message });

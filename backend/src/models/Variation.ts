@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface IVariation extends Document {
   id: string;
@@ -15,5 +16,6 @@ const VariationSchema = new Schema<IVariation>({
   created_at: { type: String, required: true },
   updated_at: { type: String },
 });
+VariationSchema.plugin(scopePlugin);
 
 export const Variation = mongoose.model<IVariation>('Variation', VariationSchema);

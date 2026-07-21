@@ -3,6 +3,7 @@ import { StockBatch } from '../models/StockBatch';
 import { Product } from '../models/Product';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -24,7 +25,7 @@ router.use(verifyJWT, requireRoles('admin', 'manager'));
  *         description: Array of batches for the product
  */
 router.get('/product/:productId', async (req: Request, res: Response) => {
-  const batches = await StockBatch.find({ product_id: req.params.productId }).sort({ expiry_date: 1, created_at: 1 }).lean();
+  const batches = await StockBatch.find({ ...scopeFilter(req), product_id: req.params.productId }).sort({ expiry_date: 1, created_at: 1 }).lean();
   res.json(batches);
 });
 
@@ -41,7 +42,7 @@ router.get('/product/:productId', async (req: Request, res: Response) => {
  */
 router.get('/expired', async (req: Request, res: Response) => {
   const today = new Date().toISOString().slice(0, 10);
-  const batches = await StockBatch.find({ expiry_date: { $lte: today }, quantity: { $gt: 0 } }).sort({ expiry_date: 1 }).lean();
+  const batches = await StockBatch.find({ ...scopeFilter(req), expiry_date: { $lte: today }, quantity: { $gt: 0 } }).sort({ expiry_date: 1 }).lean();
   res.json(batches);
 });
 
@@ -74,12 +75,12 @@ router.get('/expired', async (req: Request, res: Response) => {
  */
 router.post('/', async (req: Request, res: Response) => {
   const { product_id, batch_no, expiry_date, mfg_date, quantity, cost_price } = req.body;
-  const product = await Product.findOne({ id: product_id }).lean();
+  const product = await Product.findOne({ ...scopeFilter(req), id: product_id }).lean();
   if (!product) { res.status(404).json({ detail: 'Product not found' }); return; }
-  const existing = await StockBatch.findOne({ product_id, batch_no }).lean();
+  const existing = await StockBatch.findOne({ ...scopeFilter(req), product_id, batch_no }).lean();
   if (existing) {
-    await StockBatch.updateOne({ product_id, batch_no }, { $inc: { quantity: Number(quantity) || 0 } });
-    const updated = await StockBatch.findOne({ product_id, batch_no }).lean();
+    await StockBatch.updateOne({ ...scopeFilter(req), product_id, batch_no }, { $inc: { quantity: Number(quantity) || 0 } });
+    const updated = await StockBatch.findOne({ ...scopeFilter(req), product_id, batch_no }).lean();
     res.json(updated);
     return;
   }
@@ -93,9 +94,10 @@ router.post('/', async (req: Request, res: Response) => {
     quantity: Number(quantity) || 0,
     cost_price: Number(cost_price) || 0,
     created_at: new Date().toISOString(),
+    created_by: req.user!.id,
   });
   await batch.save();
-  await Product.findOneAndUpdate({ id: product_id }, { $inc: { stock: Number(quantity) || 0 } });
+  await Product.findOneAndUpdate({ ...scopeFilter(req), id: product_id }, { $inc: { stock: Number(quantity) || 0 } });
   res.status(201).json(batch.toJSON());
 });
 
@@ -130,7 +132,7 @@ router.post('/', async (req: Request, res: Response) => {
  *         description: Batch not found
  */
 router.patch('/:id', async (req: Request, res: Response) => {
-  const batch = await StockBatch.findOneAndUpdate({ id: req.params.id }, { $set: req.body }, { new: true }).lean();
+  const batch = await StockBatch.findOneAndUpdate({ ...scopeFilter(req), id: req.params.id }, { $set: req.body }, { new: true }).lean();
   if (!batch) { res.status(404).json({ detail: 'Batch not found' }); return; }
   res.json(batch);
 });
@@ -154,10 +156,10 @@ router.patch('/:id', async (req: Request, res: Response) => {
  *         description: Batch not found
  */
 router.delete('/:id', async (req: Request, res: Response) => {
-  const batch = await StockBatch.findOne({ id: req.params.id }).lean();
+  const batch = await StockBatch.findOne({ ...scopeFilter(req), id: req.params.id }).lean();
   if (!batch) { res.status(404).json({ detail: 'Batch not found' }); return; }
-  await Product.findOneAndUpdate({ id: batch.product_id }, { $inc: { stock: -batch.quantity } });
-  await StockBatch.deleteOne({ id: req.params.id });
+  await Product.findOneAndUpdate({ ...scopeFilter(req), id: batch.product_id }, { $inc: { stock: -batch.quantity } });
+  await StockBatch.deleteOne({ ...scopeFilter(req), id: req.params.id });
   res.json({ ok: true });
 });
 
@@ -191,10 +193,10 @@ router.post('/deduct-fifo', async (req: Request, res: Response) => {
   const needed = Number(quantity) || 0;
   if (needed <= 0) { res.status(400).json({ detail: 'Invalid quantity' }); return; }
 
-  const product = await Product.findOne({ id: product_id }).lean();
+  const product = await Product.findOne({ ...scopeFilter(req), id: product_id }).lean();
   if (!product) { res.status(404).json({ detail: 'Product not found' }); return; }
 
-  const batches = await StockBatch.find({ product_id, quantity: { $gt: 0 } }).sort({ expiry_date: 1, created_at: 1 }).lean();
+  const batches = await StockBatch.find({ ...scopeFilter(req), product_id, quantity: { $gt: 0 } }).sort({ expiry_date: 1, created_at: 1 }).lean();
   let remaining = needed;
   const deducted: any[] = [];
   const today = new Date().toISOString().slice(0, 10);
@@ -204,7 +206,7 @@ router.post('/deduct-fifo', async (req: Request, res: Response) => {
     if (batch.expiry_date && batch.expiry_date <= today) continue;
 
     const deduct = Math.min(remaining, batch.quantity);
-    await StockBatch.updateOne({ id: batch.id }, { $inc: { quantity: -deduct } });
+    await StockBatch.updateOne({ ...scopeFilter(req), id: batch.id }, { $inc: { quantity: -deduct } });
     remaining -= deduct;
     deducted.push({ batch_id: batch.id, batch_no: batch.batch_no, quantity: deduct });
   }
@@ -214,7 +216,7 @@ router.post('/deduct-fifo', async (req: Request, res: Response) => {
     return;
   }
 
-  await Product.findOneAndUpdate({ id: product_id }, { $inc: { stock: -needed } });
+  await Product.findOneAndUpdate({ ...scopeFilter(req), id: product_id }, { $inc: { stock: -needed } });
   res.json({ deducted, product_id, quantity: needed });
 });
 
@@ -238,17 +240,19 @@ router.post('/deduct-fifo', async (req: Request, res: Response) => {
  */
 router.get('/check-expiry/:productId', async (req: Request, res: Response) => {
   const today = new Date().toISOString().slice(0, 10);
-  const product = await Product.findOne({ id: req.params.productId }).lean();
+  const product = await Product.findOne({ ...scopeFilter(req), id: req.params.productId }).lean();
   if (!product) { res.status(404).json({ detail: 'Product not found' }); return; }
 
+  const sf = scopeFilter(req);
   const expiredBatches = await StockBatch.find({
+    ...sf,
     product_id: req.params.productId,
     expiry_date: { $lte: today, $ne: '' },
     quantity: { $gt: 0 },
   }).sort({ expiry_date: 1 }).lean();
 
   const totalExpired = expiredBatches.reduce((s, b) => s + b.quantity, 0);
-  const totalBatches = await StockBatch.find({ product_id: req.params.productId, quantity: { $gt: 0 } }).lean();
+  const totalBatches = await StockBatch.find({ ...sf, product_id: req.params.productId, quantity: { $gt: 0 } }).lean();
   const hasNonExpired = totalBatches.some(b => !b.expiry_date || b.expiry_date > today);
 
   res.json({

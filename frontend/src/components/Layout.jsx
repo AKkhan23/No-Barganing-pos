@@ -126,7 +126,7 @@ const GROUPS = [
     { to: "/roles", key: "roles", label: "Roles", icon: ShieldCheck, roles: ["admin"] },
   ]},
   { label: "Authentication", items: [
-    { to: "/users", key: "users", label: "Employees", icon: UserCog, roles: ["admin"] },
+    { to: "/users", key: "users", label: "Users", icon: UserCog, roles: ["admin"] },
     { to: "/profile", key: "profile", label: "My Profile", icon: UserPlus, roles: ["admin", "manager", "cashier"] },
   ]},
 ];
@@ -138,7 +138,7 @@ export default function Layout() {
   const { t, i18n } = useTranslation();
   const items = GROUPS.map((g) => ({
     ...g,
-    items: g.items.filter((n) => n.roles?.includes(user?.role)),
+    items: g.items.filter((n) => user?.role === 'super_admin' || n.roles?.includes(user?.role)),
   })).filter((g) => g.items.length > 0);
   const [openGroups, setOpenGroups] = useState({});
   const [navSearch, setNavSearch] = useState("");

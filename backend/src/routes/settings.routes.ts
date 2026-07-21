@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { Settings } from '../models/Settings';
 import { verifyJWT, requireRoles } from '../middleware/auth';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 
@@ -16,7 +17,7 @@ const router = Router();
  *         description: Settings object
  */
 router.get('/', verifyJWT, async (_req: Request, res: Response) => {
-  let settings = await Settings.findOne({}).lean();
+  let settings = await Settings.findOne(scopeFilter(_req)).lean();
   if (!settings) {
     res.json({
       id: 'default', store_name: 'No Bargaining Mart', address: '', phone: '', gstin: '',
@@ -67,7 +68,7 @@ router.get('/', verifyJWT, async (_req: Request, res: Response) => {
  */
 router.put('/', verifyJWT, requireRoles('admin'), async (req: Request, res: Response) => {
   const update = { ...req.body, updated_at: new Date().toISOString() };
-  const settings = await Settings.findOneAndUpdate({}, { $set: update }, { upsert: true, new: true }).lean();
+  const settings = await Settings.findOneAndUpdate({ ...scopeFilter(req) }, { $set: update }, { upsert: true, new: true }).lean();
   res.json({ ...settings, _id: undefined, __v: undefined });
 });
 
@@ -103,11 +104,11 @@ router.patch('/:group', verifyJWT, requireRoles('admin'), async (req: Request, r
     res.status(400).json({ detail: `Invalid config group: ${group}` });
     return;
   }
-  let settings = await Settings.findOne({});
+  let settings = await Settings.findOne(scopeFilter(req));
   if (!settings) {
     const now = new Date().toISOString();
     settings = await Settings.create({
-      id: 'default',
+      id: 'default', created_by: req.user?.id,
       store_name: 'No Bargaining Mart',
       address: '',
       phone: '',
@@ -128,7 +129,7 @@ router.patch('/:group', verifyJWT, requireRoles('admin'), async (req: Request, r
     });
   }
   const updated = await Settings.findOneAndUpdate(
-    {},
+    { ...scopeFilter(req) },
     { $set: { [group]: req.body, updated_at: new Date().toISOString() } },
     { new: true }
   ).lean();

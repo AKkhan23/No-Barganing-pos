@@ -7,6 +7,7 @@ import { Income } from '../models/Income';
 import { SaleReturn } from '../models/SaleReturn';
 import { Order } from '../models/Order';
 import { verifyJWT, requireRoles } from '../middleware/auth';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -24,11 +25,13 @@ router.use(verifyJWT, requireRoles('admin', 'manager'));
  */
 router.get('/trial-balance', async (_req: Request, res: Response) => {
   try {
+    const sf = scopeFilter(_req);
     const entries = await LedgerEntry.aggregate([
+      { $match: sf },
       { $group: { _id: '$account', total_debit: { $sum: '$debit' }, total_credit: { $sum: '$credit' } } },
     ]);
     const result = await Promise.all(entries.map(async (e: any) => {
-      const acct = await Account.findOne({ id: e._id }).lean();
+      const acct = await Account.findOne({ ...sf, id: e._id }).lean();
       return { account: e._id, account_name: acct?.name || '', total_debit: e.total_debit, total_credit: e.total_credit };
     }));
     const totalDebit = result.reduce((s: number, r: any) => s + r.total_debit, 0);
@@ -50,20 +53,22 @@ router.get('/trial-balance', async (_req: Request, res: Response) => {
  */
 router.get('/balance-sheet', async (_req: Request, res: Response) => {
   try {
+    const sf = scopeFilter(_req);
     const entries = await LedgerEntry.aggregate([
+      { $match: sf },
       { $group: { _id: '$account', total_debit: { $sum: '$debit' }, total_credit: { $sum: '$credit' } } },
     ]);
     const assets: any[] = [];
     const liabilities: any[] = [];
     for (const e of entries) {
-      const acct = await Account.findOne({ id: e._id }).lean();
+      const acct = await Account.findOne({ ...sf, id: e._id }).lean();
       const balance = e.total_debit - e.total_credit;
       const item = { account: e._id, account_name: acct?.name || '', balance: Math.abs(balance) };
       if (balance >= 0) assets.push(item);
       else liabilities.push(item);
     }
-    const totalRevenue = await Order.aggregate([{ $group: { _id: null, total: { $sum: '$grand_total' } } }]);
-    const totalExpenses = await Expense.aggregate([{ $group: { _id: null, total: { $sum: '$amount' } } }]);
+    const totalRevenue = await Order.aggregate([{ $match: sf }, { $group: { _id: null, total: { $sum: '$grand_total' } } }]);
+    const totalExpenses = await Expense.aggregate([{ $match: sf }, { $group: { _id: null, total: { $sum: '$amount' } } }]);
     const equity = (totalRevenue[0]?.total || 0) - (totalExpenses[0]?.total || 0);
     const totalAssets = assets.reduce((s: number, a: any) => s + a.balance, 0) + (equity > 0 ? equity : 0);
     const totalLiabilities = liabilities.reduce((s: number, l: any) => s + l.balance, 0) + (equity < 0 ? Math.abs(equity) : 0);
@@ -84,11 +89,12 @@ router.get('/balance-sheet', async (_req: Request, res: Response) => {
  */
 router.get('/balance-statement', async (_req: Request, res: Response) => {
   try {
-    const orders = await Order.aggregate([{ $group: { _id: null, total: { $sum: '$grand_total' } } }]);
-    const purchases = await PurchaseOrder.aggregate([{ $group: { _id: null, total: { $sum: '$total' } } }]);
-    const expenses = await Expense.aggregate([{ $group: { _id: null, total: { $sum: '$amount' } } }]);
-    const incomes = await Income.aggregate([{ $group: { _id: null, total: { $sum: '$amount' } } }]);
-    const returns = await SaleReturn.aggregate([{ $group: { _id: null, total: { $sum: '$total' } } }]);
+    const sf = scopeFilter(_req);
+    const orders = await Order.aggregate([{ $match: sf }, { $group: { _id: null, total: { $sum: '$grand_total' } } }]);
+    const purchases = await PurchaseOrder.aggregate([{ $match: sf }, { $group: { _id: null, total: { $sum: '$total' } } }]);
+    const expenses = await Expense.aggregate([{ $match: sf }, { $group: { _id: null, total: { $sum: '$amount' } } }]);
+    const incomes = await Income.aggregate([{ $match: sf }, { $group: { _id: null, total: { $sum: '$amount' } } }]);
+    const returns = await SaleReturn.aggregate([{ $match: sf }, { $group: { _id: null, total: { $sum: '$total' } } }]);
     const totalRevenue = (orders[0]?.total || 0);
     const totalCOGS = (purchases[0]?.total || 0);
     const totalExpenses = (expenses[0]?.total || 0);
@@ -114,8 +120,10 @@ router.get('/balance-statement', async (_req: Request, res: Response) => {
  */
 router.get('/account_balances', async (_req: Request, res: Response) => {
   try {
-    const accounts = await Account.find().lean();
+    const sf = scopeFilter(_req);
+    const accounts = await Account.find(sf).lean();
     const entries = await LedgerEntry.aggregate([
+      { $match: sf },
       { $group: { _id: '$account', total_debit: { $sum: '$debit' }, total_credit: { $sum: '$credit' } } },
     ]);
     const result = accounts.map((a: any) => {
@@ -139,10 +147,11 @@ router.get('/account_balances', async (_req: Request, res: Response) => {
  */
 router.get('/income_statement', async (_req: Request, res: Response) => {
   try {
-    const revenue = await Order.aggregate([{ $group: { _id: null, total: { $sum: '$grand_total' } } }]);
-    const purchases = await PurchaseOrder.aggregate([{ $group: { _id: null, total: { $sum: '$total' } } }]);
-    const expenses = await Expense.aggregate([{ $group: { _id: null, total: { $sum: '$amount' } } }]);
-    const incomes = await Income.aggregate([{ $group: { _id: null, total: { $sum: '$amount' } } }]);
+    const sf = scopeFilter(_req);
+    const revenue = await Order.aggregate([{ $match: sf }, { $group: { _id: null, total: { $sum: '$grand_total' } } }]);
+    const purchases = await PurchaseOrder.aggregate([{ $match: sf }, { $group: { _id: null, total: { $sum: '$total' } } }]);
+    const expenses = await Expense.aggregate([{ $match: sf }, { $group: { _id: null, total: { $sum: '$amount' } } }]);
+    const incomes = await Income.aggregate([{ $match: sf }, { $group: { _id: null, total: { $sum: '$amount' } } }]);
     const totalRevenue = revenue[0]?.total || 0;
     const totalCOGS = purchases[0]?.total || 0;
     const totalExpenses = expenses[0]?.total || 0;
@@ -166,8 +175,9 @@ router.get('/income_statement', async (_req: Request, res: Response) => {
  */
 router.get('/cash_flow', async (_req: Request, res: Response) => {
   try {
+    const sf = scopeFilter(_req);
     const flow = await LedgerEntry.aggregate([
-      { $match: { account: { $in: ['cash', 'bank', 'upi'] } } },
+      { $match: { ...sf, account: { $in: ['cash', 'bank', 'upi'] } } },
       { $group: { _id: { account: '$account', date: { $dateToString: { format: '%Y-%m-%d', date: '$date' } } }, debit: { $sum: '$debit' }, credit: { $sum: '$credit' } } },
       { $sort: { '_id.date': 1 } },
     ]);
@@ -188,7 +198,7 @@ router.get('/cash_flow', async (_req: Request, res: Response) => {
  */
 router.get('/aging_summary', async (_req: Request, res: Response) => {
   try {
-    const orders = await Order.find().sort({ created_at: -1 }).limit(100).lean();
+    const orders = await Order.find(scopeFilter(_req)).sort({ created_at: -1 }).limit(100).lean();
     const now = new Date();
     const buckets = { '0-30': 0, '31-60': 0, '61-90': 0, '90+': 0 };
     orders.forEach((o: any) => {

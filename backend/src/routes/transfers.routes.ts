@@ -6,6 +6,7 @@ import { Account } from '../models/Account';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import { scopeFilter } from '../middleware/scope';
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -36,7 +37,7 @@ const CreateTransferSchema = z.object({
  *         description: Array of transfers
  */
 router.get('/', async (req: Request, res: Response) => {
-  const filter: any = {};
+  const filter: any = { ...scopeFilter(req) };
   if (req.query.from_account) { filter.from_account = req.query.from_account; }
   if (req.query.to_account) { filter.to_account = req.query.to_account; }
   const transfers = await Transfer.find(filter).sort({ created_at: -1 }).lean();
@@ -73,9 +74,9 @@ router.get('/', async (req: Request, res: Response) => {
 router.post('/', validate(CreateTransferSchema), async (req: Request, res: Response) => {
   const now = new Date().toISOString();
 
-  const fromAccount = await Account.findOne({ id: req.body.from_account });
+  const fromAccount = await Account.findOne({ ...scopeFilter(req), id: req.body.from_account });
   if (!fromAccount) { res.status(404).json({ detail: 'From account not found' }); return; }
-  const toAccount = await Account.findOne({ id: req.body.to_account });
+  const toAccount = await Account.findOne({ ...scopeFilter(req), id: req.body.to_account });
   if (!toAccount) { res.status(404).json({ detail: 'To account not found' }); return; }
   if (fromAccount.current_balance < req.body.amount) { res.status(400).json({ detail: 'Insufficient balance in from account' }); return; }
 
@@ -83,6 +84,7 @@ router.post('/', validate(CreateTransferSchema), async (req: Request, res: Respo
     ...req.body,
     id: generateId(),
     created_at: now,
+    created_by: req.user?.id,
   });
   await transfer.save();
 
@@ -100,6 +102,7 @@ router.post('/', validate(CreateTransferSchema), async (req: Request, res: Respo
     reference: `Transfer-${transfer.id}`,
     note: req.body.note || `Transfer to ${toAccount.name}`,
     created_at: now,
+    created_by: req.user?.id,
   });
   await debitEntry.save();
 
@@ -112,6 +115,7 @@ router.post('/', validate(CreateTransferSchema), async (req: Request, res: Respo
     reference: `Transfer-${transfer.id}`,
     note: req.body.note || `Transfer from ${fromAccount.name}`,
     created_at: now,
+    created_by: req.user?.id,
   });
   await creditEntry.save();
 

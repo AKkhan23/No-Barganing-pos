@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface ISupplierPayment extends Document {
   id: string;
@@ -25,5 +26,6 @@ const SupplierPaymentSchema = new Schema<ISupplierPayment>({
   created_by_id: { type: String },
   created_by_name: { type: String },
 });
+SupplierPaymentSchema.plugin(scopePlugin);
 
 export const SupplierPayment = mongoose.model<ISupplierPayment>('SupplierPayment', SupplierPaymentSchema);

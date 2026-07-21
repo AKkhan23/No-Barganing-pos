@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface IAttendance extends Document {
   id: string;
@@ -29,5 +30,6 @@ const AttendanceSchema = new Schema<IAttendance>({
   total_hours: { type: Number, default: 0 },
   created_at: { type: String, required: true },
 });
+AttendanceSchema.plugin(scopePlugin);
 
 export const Attendance = mongoose.model<IAttendance>('Attendance', AttendanceSchema);

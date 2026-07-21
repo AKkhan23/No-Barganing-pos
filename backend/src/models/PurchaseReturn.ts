@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { scopePlugin } from '../plugins/scopePlugin';
 
 export interface IPRItem {
   product_id: string;
@@ -51,5 +52,6 @@ const PurchaseReturnSchema = new Schema<IPurchaseReturn>({
   created_by_id: { type: String },
   created_by_name: { type: String },
 });
+PurchaseReturnSchema.plugin(scopePlugin);
 
 export const PurchaseReturn = mongoose.model<IPurchaseReturn>('PurchaseReturn', PurchaseReturnSchema);
