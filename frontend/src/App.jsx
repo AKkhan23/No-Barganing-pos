@@ -77,7 +77,7 @@ function ProtectedShell({ roles }) {
   const { user, loading } = useAuth();
   if (loading) return <Loading />;
   if (!user) return <Navigate to="/login" replace />;
-  if (roles && !roles.includes(user.role)) return <Navigate to="/pos" replace />;
+  if (roles && user.role !== 'super_admin' && !roles.includes(user.role)) return <Navigate to="/pos" replace />;
   return <Layout />;
 }
 
