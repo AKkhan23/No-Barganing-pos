@@ -50,7 +50,7 @@ const LoginSchema = z.object({
  *       403:
  *         description: Account is inactive
  */
-router.post('/login', validate(LoginSchema), async (req: Request, res: Response) => {
+router.post('/login', async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email: email.toLowerCase() });
