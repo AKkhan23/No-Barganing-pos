@@ -432,7 +432,7 @@ export default function Products() {
           allProducts={items}
           onClose={() => setModal(null)}
           onSave={onSave}
-          onBrandCreated={() => api.get("/brands").then(r => setBrands(r.data || [])).catch(() => {})}
+          onBrandCreated={(b) => setBrands(prev => [...prev, b])}
         />
       )}
       {labelFor && <BarcodeLabel product={labelFor} onClose={() => setLabelFor(null)} />}
