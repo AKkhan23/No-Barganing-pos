@@ -51,23 +51,7 @@ const LoginSchema = z.object({
  *         description: Account is inactive
  */
 router.post('/login', async (req: Request, res: Response) => {
-  try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email: email.toLowerCase() });
-    if (!user || !verifyPassword(password, user.password_hash)) {
-      res.status(401).json({ detail: 'Invalid email or password' });
-      return;
-    }
-    if (!user.active) {
-      res.status(403).json({ detail: 'Account is inactive' });
-      return;
-    }
-    const jwtPayload = { id: user.id, email: user.email, role: user.role, name: user.name };
-    const token = signToken(jwtPayload);
-    res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
-  } catch (err: any) {
-    res.status(500).json({ detail: `Login error: ${err?.message || err?.name || typeof err || 'unknown'}` });
-  }
+  res.json({ ok: true, body: req.body ? 'received' : 'no body' });
 });
 
 /**
