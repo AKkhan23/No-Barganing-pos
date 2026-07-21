@@ -99,7 +99,7 @@ export default function Accounts() {
                   <td className="p-3 font-semibold flex items-center gap-2"><Wallet className="w-4 h-4 text-zinc-500" />{a.name}</td>
                   <td className="p-3 text-xs uppercase font-mono">{a.type}</td>
                   <td className="p-3 font-mono text-right">{formatMoney(a.opening_balance)}</td>
-                  <td className="p-3 font-mono text-right font-bold">{formatMoney(a.balance ?? a.opening_balance)}</td>
+                  <td className="p-3 font-mono text-right font-bold">{formatMoney(a.current_balance ?? a.opening_balance)}</td>
                   <td className="p-3 text-right">
                     <button
                       onClick={() => setModal({ edit: a, form: { ...a, opening_balance: String(a.opening_balance) } })}

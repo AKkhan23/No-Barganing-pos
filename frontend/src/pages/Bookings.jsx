@@ -57,14 +57,14 @@ export default function Bookings() {
                   <td className="p-3 font-mono text-xs">{formatDate(b.created_at || b.date)}</td>
                   <td className="p-3 font-mono text-right">{formatMoney(b.token_amount)}</td>
                   <td className="p-3 font-mono text-right">{formatMoney(b.deposit)}</td>
-                  <td className="p-3 font-mono text-right font-bold">{formatMoney(b.balance)}</td>
+                  <td className="p-3 font-mono text-right font-bold">{formatMoney((b.token_amount || 0) - (b.deposit || 0))}</td>
                   <td className="p-3 text-center">
-                    <span className={`font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 border ${b.converted ? "text-green-700 bg-green-50 border-green-300" : "text-[#E60000] bg-red-50 border-red-300"}`}>
-                      {b.converted ? t("page.converted") : t("page.open")}
+                    <span className={`font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 border ${b.status === "converted" ? "text-green-700 bg-green-50 border-green-300" : "text-[#E60000] bg-red-50 border-red-300"}`}>
+                      {b.status === "converted" ? t("page.converted") : t("page.open")}
                     </span>
                   </td>
                   <td className="p-3 text-right">
-                    {!b.converted && (
+                    {b.status !== "converted" && (
                       <button onClick={async () => {
                         try {
                           await api.post(`/bookings/${b.id}/convert`);

@@ -136,6 +136,23 @@ router.get('/', async (req: Request, res: Response) => {
  *       422:
  *         description: Invalid paid_via value
  */
+router.patch('/:id', async (req: Request, res: Response) => {
+  const update: any = { updated_at: new Date().toISOString() };
+  if (req.body.base !== undefined) update.base = req.body.base;
+  if (req.body.bonus !== undefined) update.bonus = req.body.bonus;
+  if (req.body.deduction !== undefined) update.deduction = req.body.deduction;
+  if (req.body.net !== undefined) update.net = req.body.net;
+  if (req.body.month !== undefined) update.month = req.body.month;
+  const payroll = await Payroll.findOneAndUpdate({ id: req.params.id }, { $set: update }, { new: true }).lean();
+  if (!payroll) { res.status(404).json({ detail: 'Payroll entry not found' }); return; }
+  res.json({ id: payroll.id, user_id: payroll.user_id, user_name: payroll.user_name, month: payroll.month, base: payroll.base, bonus: payroll.bonus, deduction: payroll.deduction, net: payroll.net, paid: payroll.paid, paid_via: payroll.paid_via });
+});
+
+router.delete('/:id', async (req: Request, res: Response) => {
+  await Payroll.deleteOne({ id: req.params.id });
+  res.json({ ok: true });
+});
+
 router.post('/:id/mark-paid', async (req: Request, res: Response) => {
   const { paid_via } = req.body;
   if (!['cash', 'bank', 'upi', 'wallet'].includes(paid_via)) { res.status(422).json({ detail: 'paid_via must be cash/bank/upi/wallet' }); return; }

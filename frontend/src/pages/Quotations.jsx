@@ -63,7 +63,7 @@ export default function Quotations() {
                   <td className="p-3 font-semibold">{q.customer_name}</td>
                   <td className="p-3 text-right font-mono font-bold text-[#E60000]">{formatMoney(q.grand_total || q.total)}</td>
                   <td className="p-3 text-xs">{formatDate(q.date || q.created_at)}</td>
-                  <td className="p-3 text-xs">{q.expiry_date ? formatDate(q.expiry_date) : "-"}</td>
+                    <td className="p-3 text-xs">{q.valid_until ? formatDate(q.valid_until) : "-"}</td>
                   <td className="p-3">
                     <span className={`px-2 py-0.5 text-[10px] font-bold uppercase ${q.status === "approved" ? "bg-green-100 text-green-800" : q.status === "converted" ? "bg-blue-100 text-blue-800" : q.status === "expired" ? "bg-red-100 text-red-800" : "bg-yellow-100 text-yellow-800"}`}>{q.status || "draft"}</span>
                   </td>
@@ -92,13 +92,13 @@ export default function Quotations() {
                 <div><span className="text-[10px] font-mono uppercase text-zinc-500">{t("page.customer")}</span><p className="font-semibold">{selected.customer_name}</p></div>
                 <div><span className="text-[10px] font-mono uppercase text-zinc-500">{t("page.date")}</span><p>{formatDate(selected.date || selected.created_at)}</p></div>
                 {selected.customer_phone && <div><span className="text-[10px] font-mono uppercase text-zinc-500">{t("page.phone")}</span><p>{selected.customer_phone}</p></div>}
-                {selected.expiry_date && <div><span className="text-[10px] font-mono uppercase text-zinc-500">{t("page.expiry")}</span><p>{formatDate(selected.expiry_date)}</p></div>}
+                {selected.valid_until && <div><span className="text-[10px] font-mono uppercase text-zinc-500">{t("page.expiry")}</span><p>{formatDate(selected.valid_until)}</p></div>}
               </div>
               {selected.items && selected.items.length > 0 && (
                 <div><h4 className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2">{t("page.items")}</h4>
                 <table className="w-full text-sm border-2 border-zinc-200"><thead className="bg-zinc-100 text-[10px] uppercase tracking-widest"><tr><th className="p-2 text-left">{t("page.product")}</th><th className="p-2 text-right">{t("page.qty")}</th><th className="p-2 text-right">{t("page.rate")}</th><th className="p-2 text-right">{t("page.amount")}</th></tr></thead>
                 <tbody>{selected.items.map((item, i) => (
-                  <tr key={i} className="border-t border-zinc-200"><td className="p-2">{item.product_name}</td><td className="p-2 text-right font-mono">{item.quantity}</td><td className="p-2 text-right font-mono">{formatMoney(item.rate)}</td><td className="p-2 text-right font-mono font-bold">{formatMoney(item.amount || item.quantity * item.rate)}</td></tr>
+                  <tr key={i} className="border-t border-zinc-200"><td className="p-2">{item.product_name}</td><td className="p-2 text-right font-mono">{item.quantity}</td><td className="p-2 text-right font-mono">{formatMoney(item.price)}</td><td className="p-2 text-right font-mono font-bold">{formatMoney(item.total || item.quantity * item.price)}</td></tr>
                 ))}</tbody></table></div>
               )}
               <div className="border-t-2 border-zinc-200 pt-3 text-right"><span className="text-sm text-zinc-500">{t("page.total_amount")}: </span><span className="text-2xl font-black">{formatMoney(selected.grand_total || selected.total)}</span></div>

@@ -6,7 +6,7 @@ import api from "@/lib/api";
 import { formatDate, formatMoney } from "@/lib/format";
 import { PageShell } from "@/pages/Dashboard";
 
-const EMPTY = { product_name: "", customer_name: "", customer_phone: "", purchase_date: "", warranty_period_months: 12, expiry_date: "", notes: "" };
+const EMPTY = { product_name: "", customer_name: "", sale_date: "", warranty_period_days: 365, expiry_date: "", notes: "" };
 
 export default function Warranties() {
   const { t } = useTranslation();
@@ -25,13 +25,13 @@ export default function Warranties() {
   const filtered = list.filter((x) => {
     if (!q) return true;
     const s = q.toLowerCase();
-    return (x.product_name || "").toLowerCase().includes(s) || (x.customer_name || "").toLowerCase().includes(s) || (x.customer_phone || "").includes(s);
+    return (x.product_name || "").toLowerCase().includes(s) || (x.customer_name || "").toLowerCase().includes(s);
   });
 
   const recalcExpiry = (f) => {
-    if (f.purchase_date && f.warranty_period_months) {
-      const d = new Date(f.purchase_date);
-      d.setMonth(d.getMonth() + Number(f.warranty_period_months));
+    if (f.sale_date && f.warranty_period_days) {
+      const d = new Date(f.sale_date);
+      d.setDate(d.getDate() + Number(f.warranty_period_days));
       return { ...f, expiry_date: d.toISOString().slice(0, 10) };
     }
     return f;
@@ -85,8 +85,8 @@ export default function Warranties() {
                 return (
                   <tr key={w.id} className="border-t border-zinc-200 hover:bg-zinc-50">
                     <td className="p-3 font-semibold">{w.product_name}</td>
-                    <td className="p-3">{w.customer_name}{w.customer_phone ? ` (${w.customer_phone})` : ""}</td>
-                    <td className="p-3 text-xs">{w.purchase_date ? formatDate(w.purchase_date) : "-"}</td>
+                    <td className="p-3">{w.customer_name}</td>
+                    <td className="p-3 text-xs">{w.sale_date ? formatDate(w.sale_date) : "-"}</td>
                     <td className="p-3 text-xs">{w.expiry_date ? formatDate(w.expiry_date) : "-"}</td>
                     <td className="p-3 text-xs font-mono">{daysLeft !== null ? (expired ? `${t("page.expired")} ${Math.abs(daysLeft)}d` : `${daysLeft} ${t("page.days_left")}`) : "-"}</td>
                     <td className="p-3">
@@ -111,9 +111,8 @@ export default function Warranties() {
               <div className="grid grid-cols-2 gap-4">
                 <label className="col-span-2"><span className="label">{t("page.product_name")} *</span><input className="input" value={modal.form.product_name} onChange={e => setModal({ ...modal, form: { ...modal.form, product_name: e.target.value } })} /></label>
                 <label className="col-span-2"><span className="label">{t("page.customer_name")} *</span><input className="input" value={modal.form.customer_name} onChange={e => setModal({ ...modal, form: { ...modal.form, customer_name: e.target.value } })} /></label>
-                <label className="col-span-2"><span className="label">{t("page.customer_phone")}</span><input className="input" value={modal.form.customer_phone} onChange={e => setModal({ ...modal, form: { ...modal.form, customer_phone: e.target.value } })} /></label>
-                <label><span className="label">{t("page.purchase_date")} *</span><input type="date" className="input" value={modal.form.purchase_date} onChange={e => setModal({ ...modal, form: recalcExpiry({ ...modal.form, purchase_date: e.target.value }) })} /></label>
-                <label><span className="label">{t("page.warranty_months")}</span><input type="number" className="input" value={modal.form.warranty_period_months} onChange={e => setModal({ ...modal, form: recalcExpiry({ ...modal.form, warranty_period_months: e.target.value }) })} /></label>
+                <label><span className="label">{t("page.sale_date")} *</span><input type="date" className="input" value={modal.form.sale_date} onChange={e => setModal({ ...modal, form: recalcExpiry({ ...modal.form, sale_date: e.target.value }) })} /></label>
+                <label><span className="label">{t("page.warranty_days")}</span><input type="number" className="input" value={modal.form.warranty_period_days} onChange={e => setModal({ ...modal, form: recalcExpiry({ ...modal.form, warranty_period_days: e.target.value }) })} /></label>
                 <label className="col-span-2"><span className="label">{t("page.expiry_date")}</span><input type="date" className="input bg-zinc-100" value={modal.form.expiry_date} readOnly /></label>
               </div>
               <div className="flex justify-end gap-3 pt-4 border-t-2 border-zinc-200">

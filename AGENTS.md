@@ -4,15 +4,21 @@
 
 ## Complete Status (up to Customer Dues)
 
-### ✅ COMPLETED — This Session (Customer Dues + Fixes)
-- **Customer Dues flow** — POS partial payment ab kaam karta hai:
-  - **POS.jsx** — Cash partial payment validation hata di (₹200 order ₹50 pay → order banega)
-  - **POS.jsx** — `customer_id`, `customer_name`, `customer_phone` ab payload me bhejta hai
-  - **orders.routes.ts** — Jab `due > 0` aur customer select nahi, to Customer record auto-create/update karega
-  - **customerDues.routes.ts** — Poori file rewrite: GET aggregate karta hai Orders table se (purane + naye dono due dikhenge), POST /receive-payment `customer_name` se kaam karta hai aur order due bhi reduce karta hai
-  - **CustomerDues.jsx** — API call ab `customer_name` body me bhejta hai
-- **Suppliers.jsx** — Pre-existing bug fix: `SupplierModal` me `useTranslation()` add kiya (tha missing → page blank)
-- **Backend build** — `tsc --noEmit` ✅ pass
+### ✅ COMPLETED — This Session (BarcodeScanner + Socket + Mobile)
+- **BarcodeScanner.jsx** — Complete rewrite using `html5-qrcode` for live camera barcode decoding:
+  - Back camera (`facingMode: "environment"`) priority
+  - Red scanning line animation (up-down)
+  - Beep sound on successful scan (AudioContext)
+  - Green flash overlay on detection
+  - Manual entry + image upload fallback
+  - **3 sec debounce** → changed to **5 sec cooldown** on same code (bar bar detect nahi hota)
+  - Scanner **band nahi hota** detect hone par — sirf X se close hota hai
+  - Bigger scanner area (380px height), brighter UI (white card, lighter overlay)
+- **POS.jsx** — `setScannerOpen(false)` removed from `onDetect` → scanner stays open for continuous scanning
+- **BarcodeScanner design** — Compact, bright, clean white/black theme
+- **Socket CORS fix** — `backend/src/services/socket.ts` ab `env.CORS_ORIGINS` use karta hai (default `*`), kisi bhi domain se connect ho sakta hai
+- **Cross-device sync** — Socket.io ready (emit `product:scanned`, listen `product:scanned`), kaam karega jab `VITE_BACKEND_URL` sahi set ho Vercel pe
+- **Build** — frontend `npm run build` ✅ pass, backend `tsc --noEmit` ✅ pass
 
 ### ✅ COMPLETED - Backend (Previous Sessions)
 - 39+ routes in `app.ts` with `/api/...` prefixes
@@ -198,6 +204,10 @@ git reset HEAD .
 | Wipe Demo Data | DELETE /wipe/demo-data | Clears all demo collections |
 | Wipe Transactional | DELETE /wipe/transactional | Clears orders, payments, transactions only |
 | Wipe All Data | DELETE /wipe/all | Factory reset including users |
+
+## Deployed URLs
+- Frontend (Vercel): https://no-barganing-pos.vercel.app
+- Backend (Render): https://no-barganing-pos.onrender.com
 
 ## Reference / Deployed Site
 - URL: https://pos.webimaticsolutions.com/Dashboard/dashboard.html

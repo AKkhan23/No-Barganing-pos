@@ -28,7 +28,7 @@ export default function SaleReturns() {
           <div className="bg-white border-2 border-zinc-200 overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-zinc-100 text-zinc-900 uppercase text-[10px] tracking-widest">
-                <tr><th className="p-3 text-left">{t("page.date")}</th><th className="p-3 text-left">{t("page.order_id")}</th><th className="p-3 text-left">{t("page.customer")}</th><th className="p-3 text-left">{t("page.product")}</th><th className="p-3 text-right">{t("page.quantity")}</th><th className="p-3 text-right">{t("page.refund_amount")}</th><th className="p-3 text-left">{t("page.reason")}</th><th className="p-3 text-left">{t("page.status")}</th></tr>
+                <tr><th className="p-3 text-left">{t("page.date")}</th><th className="p-3 text-left">{t("page.order_id")}</th><th className="p-3 text-left">{t("page.customer")}</th><th className="p-3 text-left">{t("page.product")}</th><th className="p-3 text-right">{t("page.quantity")}</th><th className="p-3 text-right">{t("page.refund_amount")}</th><th className="p-3 text-left">{t("page.note")}</th></tr>
               </thead>
               <tbody>
                 {returns.map((r) => (
@@ -36,12 +36,12 @@ export default function SaleReturns() {
                     <td className="p-3 text-xs font-mono">{formatDate(r.created_at)}</td>
                     <td className="p-3 font-mono text-xs">#{r.order_id}</td>
                     <td className="p-3">{r.customer_name || "-"}</td>
-                    <td className="p-3">{r.product_name || "-"}</td>
-                    <td className="p-3 text-right font-mono">{r.quantity}</td>
-                    <td className="p-3 text-right font-mono text-[#E60000] font-bold">{formatMoney(r.refund_amount)}</td>
-                    <td className="p-3 text-xs">{r.reason || "-"}</td>
+                    <td className="p-3">{r.items?.[0]?.name || "-"}{r.items?.length > 1 ? ` +${r.items.length - 1}` : ""}</td>
+                    <td className="p-3 text-right font-mono">{r.items?.reduce((s, i) => s + i.quantity, 0) || 0}</td>
+                    <td className="p-3 text-right font-mono text-[#E60000] font-bold">{formatMoney(r.total)}</td>
+                    <td className="p-3 text-xs">{r.note || "-"}</td>
                     <td className="p-3">
-                      <span className={`px-2 py-0.5 text-[10px] font-bold uppercase ${r.status === "completed" ? "bg-green-100 text-green-800" : r.status === "pending" ? "bg-yellow-100 text-yellow-800" : "bg-red-100 text-red-800"}`}>{r.status || "pending"}</span>
+                      <span className="px-2 py-0.5 text-[10px] font-bold uppercase bg-green-100 text-green-800">completed</span>
                     </td>
                   </tr>
                 ))}

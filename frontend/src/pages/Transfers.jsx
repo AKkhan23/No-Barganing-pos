@@ -20,7 +20,7 @@ export default function Transfers() {
   const filtered = list.filter((x) => {
     if (!q) return true;
     const s = q.toLowerCase();
-    return (x.from_location || "").toLowerCase().includes(s) || (x.to_location || "").toLowerCase().includes(s) || (x.product_name || "").toLowerCase().includes(s);
+    return (x.from_account || "").toLowerCase().includes(s) || (x.to_account || "").toLowerCase().includes(s);
   });
 
   return (
@@ -35,23 +35,19 @@ export default function Transfers() {
         <div className="bg-white border-2 border-zinc-200 overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-zinc-100 text-zinc-900 uppercase text-[10px] tracking-widest">
-              <tr><th className="p-3 text-left">{t("page.date")}</th><th className="p-3 text-left">{t("page.product")}</th><th className="p-3 text-right">{t("page.quantity")}</th><th className="p-3 text-left">{t("page.from")}</th><th className="p-3 text-left">{t("page.to")}</th><th className="p-3 text-left">{t("page.status")}</th><th className="p-3 text-left">{t("page.note")}</th></tr>
+              <tr><th className="p-3 text-left">{t("page.date")}</th><th className="p-3 text-left">{t("page.from_account")}</th><th className="p-3 text-left">{t("page.to_account")}</th><th className="p-3 text-right">{t("page.amount")}</th><th className="p-3 text-left">{t("page.note")}</th></tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} className="text-center py-8"><Loader2 className="w-5 h-5 animate-spin inline" /></td></tr>
+                <tr><td colSpan={5} className="text-center py-8"><Loader2 className="w-5 h-5 animate-spin inline" /></td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={7} className="text-center py-8 text-zinc-400"><ArrowRightLeft className="w-8 h-8 mx-auto mb-2 opacity-30" /><p>{t("page.no_transfers")}</p></td></tr>
+                <tr><td colSpan={5} className="text-center py-8 text-zinc-400"><ArrowRightLeft className="w-8 h-8 mx-auto mb-2 opacity-30" /><p>{t("page.no_transfers")}</p></td></tr>
               ) : filtered.map((tr) => (
                 <tr key={tr.id} className="border-t border-zinc-200 hover:bg-zinc-50">
                   <td className="p-3 text-xs font-mono">{formatDate(tr.created_at)}</td>
-                  <td className="p-3 font-semibold">{tr.product_name || "-"}</td>
-                  <td className="p-3 text-right font-mono">{tr.quantity}</td>
-                  <td className="p-3 text-xs">{tr.from_location || "-"}</td>
-                  <td className="p-3 text-xs">{tr.to_location || "-"}</td>
-                  <td className="p-3">
-                    <span className={`px-2 py-0.5 text-[10px] font-bold uppercase ${tr.status === "completed" ? "bg-green-100 text-green-800" : tr.status === "pending" ? "bg-yellow-100 text-yellow-800" : "bg-blue-100 text-blue-800"}`}>{tr.status || "pending"}</span>
-                  </td>
+                  <td className="p-3 font-semibold">{tr.from_account || "-"}</td>
+                  <td className="p-3 font-semibold">{tr.to_account || "-"}</td>
+                  <td className="p-3 text-right font-mono font-bold">{formatMoney(tr.amount)}</td>
                   <td className="p-3 text-xs">{tr.note || "-"}</td>
                 </tr>
               ))}

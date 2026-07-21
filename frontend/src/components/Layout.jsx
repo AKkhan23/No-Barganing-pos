@@ -174,17 +174,6 @@ export default function Layout() {
   useEffect(() => {
     loadOutlets();
     loadNotifs();
-    if (localStorage.getItem("pos_outlet") && !localStorage.getItem("pos_outlet_name")) {
-      api.get("/outlets").then((r) => {
-        const sel = (r.data || []).find((o) => String(o.id) === localStorage.getItem("pos_outlet"));
-        if (sel) {
-          localStorage.setItem("pos_outlet_name", sel.name || "");
-          localStorage.setItem("pos_outlet_address", sel.address || "");
-          localStorage.setItem("pos_outlet_phone", sel.phone || "");
-          localStorage.setItem("pos_outlet_gstin", sel.gstin || "");
-        }
-      }).catch(() => {});
-    }
     const onOutletsChanged = () => loadOutlets();
     window.addEventListener("outlets-changed", onOutletsChanged);
     const onClickOutside = () => setOutletOpen(false);

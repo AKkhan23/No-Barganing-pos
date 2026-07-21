@@ -93,12 +93,11 @@ export default function POS() {
 
   const reload = useCallback(async () => {
     const safeGet = async (url, fallback = []) => { try { const r = await api.get(url); return r.data ?? fallback; } catch { return fallback; } };
-    const [products, categories, customers, settings, outlets, promotions, counters, deliveryPartners] = await Promise.all([
+    const [products, categories, customers, settings, promotions, counters, deliveryPartners] = await Promise.all([
       safeGet("/products"),
       safeGet("/categories"),
       safeGet("/customers"),
       safeGet("/settings", null),
-      safeGet("/outlets"),
       safeGet("/promotions?active_only=true"),
       safeGet("/counters"),
       safeGet("/delivery-partners"),
@@ -110,14 +109,6 @@ export default function POS() {
     setPromotions(promotions);
     setCounters(counters);
     setDeliveryPartners(deliveryPartners);
-    const outletId = localStorage.getItem("pos_outlet");
-    const selected = (outlets || []).find((x) => String(x.id) === outletId);
-    if (selected) {
-      localStorage.setItem("pos_outlet_name", selected.name || "");
-      localStorage.setItem("pos_outlet_address", selected.address || "");
-      localStorage.setItem("pos_outlet_phone", selected.phone || "");
-      localStorage.setItem("pos_outlet_gstin", selected.gstin || "");
-    }
   }, []);
 
   useEffect(() => { reload(); }, [reload]);

@@ -10,9 +10,7 @@ import { isWeightUnit, formatStock } from "../lib/sellBy";
 const UPDATE_FIELDS = [
   { value: "price", label: "Price" },
   { value: "stock", label: "Stock" },
-  { value: "cost_price", label: "Cost Price" },
-  { value: "mrp", label: "MRP" },
-  { value: "discount_percent", label: "Discount %" },
+  { value: "cost", label: "Cost" },
 ];
 
 export default function BulkItemUpdate() {
