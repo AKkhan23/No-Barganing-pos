@@ -66,8 +66,7 @@ router.post('/login', async (req: Request, res: Response) => {
     const token = signToken(jwtPayload);
     res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
   } catch (err: any) {
-    console.error('Login error:', err?.message || err);
-    res.status(500).json({ detail: err?.message || 'Internal server error' });
+    res.status(500).json({ detail: `Login error: ${err?.message || err?.name || typeof err || 'unknown'}` });
   }
 });
 
