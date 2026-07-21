@@ -150,7 +150,7 @@ router.post('/change-password', verifyJWT, async (req: Request, res: Response) =
   res.json({ ok: true });
 });
 
-router.use(verifyJWT, requireRoles('admin'));
+router.use(verifyJWT, requireRoles('super_admin'));
 
 /**
  * @openapi

@@ -147,13 +147,11 @@ export async function seedData(): Promise<void> {
   const adminUser = await User.findOne({ email: adminEmail });
   if (adminUser) {
     const modelNames = mongoose.modelNames().filter(n => n !== 'User' && n !== 'Role');
-    const seedModels = ['Category', 'Unit', 'Brand', 'Rack', 'Variation', 'Settings'];
     for (const name of modelNames) {
       const Model = mongoose.model(name);
-      const coll = Model.collection.name;
       await Model.updateMany(
-        { created_by: { $exists: false } },
-        { $set: { created_by: seedModels.includes(name) ? null : adminUser.id } }
+        { $or: [{ created_by: { $exists: false } }, { created_by: adminUser.id }] },
+        { $set: { created_by: null } }
       );
     }
     logger.info('created_by backfill complete');

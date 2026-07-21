@@ -158,8 +158,11 @@ function App() {
 
           {/* Admin only */}
           <Route element={<ProtectedShell roles={["admin"]} />}>
-            <Route path="/users" element={<Users />} />
             <Route path="/settings" element={<Settings />} />
+          </Route>
+          {/* Super Admin only */}
+          <Route element={<ProtectedShell roles={["super_admin"]} />}>
+            <Route path="/users" element={<Users />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/pos" replace />} />

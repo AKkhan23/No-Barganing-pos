@@ -126,7 +126,7 @@ const GROUPS = [
     { to: "/roles", key: "roles", label: "Roles", icon: ShieldCheck, roles: ["admin"] },
   ]},
   { label: "Authentication", items: [
-    { to: "/users", key: "users", label: "Users", icon: UserCog, roles: ["admin"] },
+    { to: "/users", key: "users", label: "Users", icon: UserCog, roles: ["super_admin"] },
     { to: "/profile", key: "profile", label: "My Profile", icon: UserPlus, roles: ["admin", "manager", "cashier"] },
   ]},
 ];
