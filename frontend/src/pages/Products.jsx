@@ -534,6 +534,8 @@ function ProductModal({ initial, edit, cats, units, brands, racks, variations, a
   const [parentProductId, setParentProductId] = useState("");
   const [brandDialogOpen, setBrandDialogOpen] = useState(false);
   const [newBrandName, setNewBrandName] = useState("");
+  const [localBrands, setLocalBrands] = useState(brands);
+  useEffect(() => { setLocalBrands(brands); }, [brands]);
   const skuTouched = useRef(false);
   const upd = (k, v) => {
     if (k === "sku") skuTouched.current = true;
@@ -683,7 +685,7 @@ function ProductModal({ initial, edit, cats, units, brands, racks, variations, a
                   <SelectContent className="max-h-48 border border-zinc-200 rounded bg-white shadow-lg">
                     {f.k === "category" && cats.map((c) => <SelectItem key={c.id || c.name} value={c.name} className="text-sm">{c.name}</SelectItem>)}
                     {f.k === "unit" && (units.length ? units : UNITS).map((u) => <SelectItem key={u.unit_name || u} value={u.unit_name || u} className="text-sm">{u.unit_name || u}</SelectItem>)}
-                    {f.k === "brand" && <>{brands.map((b) => <SelectItem key={b.id || b.name} value={b.name} className="text-sm">{b.name}</SelectItem>)}<Separator className="my-1" /><SelectItem value="__add_brand__" className="text-sm text-[#E60000] font-medium">+ Add Brand</SelectItem></>}
+                    {f.k === "brand" && <>{localBrands.map((b) => <SelectItem key={b.id || b.name} value={b.name} className="text-sm">{b.name}</SelectItem>)}<Separator className="my-1" /><SelectItem value="__add_brand__" className="text-sm text-[#E60000] font-medium">+ Add Brand</SelectItem></>}
                     {f.k === "rack" && racks.map((r) => <SelectItem key={r.id || r.name} value={r.name} className="text-sm">{r.name}</SelectItem>)}
                     {f.k === "sell_by" && (units.length ? units : UNITS).map((u) => {
                       const val = u.unit_name || u;
@@ -861,13 +863,19 @@ function ProductModal({ initial, edit, cats, units, brands, racks, variations, a
                 <Button variant="outline" size="sm" onClick={() => { setBrandDialogOpen(false); setNewBrandName(""); }}>Cancel</Button>
                 <Button size="sm" className="bg-[#E60000] hover:bg-[#cc0000]" onClick={async () => {
                   if (!newBrandName.trim()) return;
+                  const name = newBrandName.trim();
+                  const tempBrand = { id: "new", name, created_at: new Date().toISOString() };
+                  setLocalBrands((prev) => [...prev, tempBrand]);
+                  upd("brand", name);
+                  setBrandDialogOpen(false);
+                  setNewBrandName("");
                   try {
-                    const { data } = await api.post("/brands", { name: newBrandName.trim() });
+                    const { data } = await api.post("/brands", { name });
+                    setLocalBrands((prev) => prev.map((b) => b.id === "new" ? data : b));
                     if (onBrandCreated) onBrandCreated(data);
-                    upd("brand", data.name);
-                    setBrandDialogOpen(false);
-                    setNewBrandName("");
                   } catch (e) {
+                    setLocalBrands((prev) => prev.filter((b) => b.id !== "new"));
+                    upd("brand", "");
                     toast.error(e?.response?.data?.detail || "Failed to create brand");
                   }
                 }}>Save</Button>
