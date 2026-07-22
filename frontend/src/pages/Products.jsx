@@ -535,7 +535,6 @@ function ProductModal({ initial, edit, cats, units, brands, racks, variations, a
   const [brandDialogOpen, setBrandDialogOpen] = useState(false);
   const [newBrandName, setNewBrandName] = useState("");
   const [localBrands, setLocalBrands] = useState(brands);
-  useEffect(() => { setLocalBrands(brands); }, [brands]);
   const skuTouched = useRef(false);
   const upd = (k, v) => {
     if (k === "sku") skuTouched.current = true;
