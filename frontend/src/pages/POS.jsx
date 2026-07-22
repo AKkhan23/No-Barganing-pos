@@ -1100,6 +1100,8 @@ function CheckoutModal({ total, paymentMode, setPaymentMode, amountPaid, setAmou
 function ReceiptModal({ order, settings, cashier, onClose }) {
   const { t } = useTranslation();
   const sym = settings?.currency_symbol || "₹";
+  const [waPhone, setWaPhone] = useState("");
+  const [waSending, setWaSending] = useState(false);
   const print = () => window.print();
   const outletName = localStorage.getItem("pos_outlet_name") || settings?.store_name || "Store";
   const outletAddress = localStorage.getItem("pos_outlet_address") || settings?.address || "";
@@ -1110,6 +1112,36 @@ function ReceiptModal({ order, settings, cashier, onClose }) {
   const now = new Date(order.created_at);
   const dateStr = now.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
   const timeStr = now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+
+  const sendWA = async () => {
+    if (!waPhone.trim()) { toast.error("Enter customer phone"); return; }
+    setWaSending(true);
+    try {
+      const itemsList = order.items.map((i) => `${i.name} x${i.quantity} = ${formatMoney(i.line_total, sym)}`).join("\n");
+      const msg = [
+        `*${outletName}*`,
+        outletAddress && `📍 ${outletAddress}`,
+        outletPhone && `📞 ${outletPhone}`,
+        `🧾 ${order.invoice_no}`,
+        `📅 ${dateStr} ${timeStr}`,
+        `─────────────────`,
+        `*ITEMS:*`,
+        itemsList,
+        `─────────────────`,
+        `*Total: ${formatMoney(itemsTotal, sym)}*`,
+        order.discount_amount > 0 && `Discount: -${formatMoney(order.discount_amount, sym)}`,
+        `*Net Payable: ${formatMoney(netPayable, sym)}*`,
+        `Paid: ${formatMoney(order.amount_paid, sym)}`,
+        `Change: ${formatMoney(order.change_due, sym)}`,
+        settings?.receipt_footer && `\n${settings.receipt_footer}`,
+      ].filter(Boolean).join("\n");
+      await api.post("/whatsapp/send", { phone: waPhone.trim(), message: msg, invoice_no: order.invoice_no });
+      toast.success("Receipt sent on WhatsApp");
+      setWaPhone("");
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Failed to send");
+    } finally { setWaSending(false); }
+  };
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4 print:bg-white print:p-0">
       <style>{`
@@ -1208,13 +1240,24 @@ function ReceiptModal({ order, settings, cashier, onClose }) {
             {settings.receipt_footer || t("page.thank_you")}
           </div>
         </div>
-        <div className="p-3 border-t-2 border-zinc-200 flex gap-2 print-hide print:hidden">
-          <button onClick={print} data-testid="receipt-print" className="flex-1 h-11 bg-zinc-950 text-white text-xs font-bold uppercase tracking-widest">
-            {t("page.print")}
-          </button>
-          <button onClick={onClose} data-testid="receipt-done" className="flex-1 h-11 bg-[#E60000] text-white text-xs font-bold uppercase tracking-widest">
-            {t("page.done")}
-          </button>
+        <div className="p-3 border-t-2 border-zinc-200 flex flex-col gap-2 print-hide print:hidden">
+          <div className="flex gap-2">
+            <input type="text" value={waPhone} onChange={(e) => setWaPhone(e.target.value)}
+              placeholder="Customer phone (e.g. 919876543210)"
+              className="flex-1 h-11 text-sm border border-zinc-300 px-3 rounded focus:outline-none focus:ring-2 focus:ring-[#E60000]/30" />
+            <button onClick={sendWA} disabled={waSending}
+              className="h-11 px-4 bg-green-600 text-white text-xs font-bold uppercase tracking-widest rounded hover:bg-green-700 disabled:opacity-50">
+              {waSending ? "..." : "WhatsApp"}
+            </button>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={print} data-testid="receipt-print" className="flex-1 h-11 bg-zinc-950 text-white text-xs font-bold uppercase tracking-widest">
+              {t("page.print")}
+            </button>
+            <button onClick={onClose} data-testid="receipt-done" className="flex-1 h-11 bg-[#E60000] text-white text-xs font-bold uppercase tracking-widest">
+              {t("page.done")}
+            </button>
+          </div>
         </div>
       </div>
     </div>

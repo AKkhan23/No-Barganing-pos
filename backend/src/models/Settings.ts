@@ -47,6 +47,7 @@ export interface ISettings extends Document {
     api_key: string;
     phone_number_id: string;
     business_account_id: string;
+    api_url: string;
   };
   payment_gateway: {
     provider: string;
@@ -131,6 +132,7 @@ const SettingsSchema = new Schema<ISettings>({
       api_key: '',
       phone_number_id: '',
       business_account_id: '',
+      api_url: '',
     },
   },
   payment_gateway: {

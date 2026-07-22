@@ -292,6 +292,10 @@ export default function Settings() {
           <label className={labelClass}>Business Account ID</label>
           <input className={inputClass} value={wc.business_account_id ?? ""} onChange={(e) => handleChange("whatsapp_config.business_account_id", e.target.value)} />
         </div>
+        <div>
+          <label className={labelClass}>API URL (optional, for custom provider)</label>
+          <input className={inputClass} value={wc.api_url ?? ""} onChange={(e) => handleChange("whatsapp_config.api_url", e.target.value)} placeholder="https://your-api.com/send" />
+        </div>
         <div className="md:col-span-2 pt-2">
           <button className={btnClass} onClick={() => saveGroup("whatsapp_config", data.whatsapp_config)}><Save className="w-4 h-4" /> {t("common.save")}</button>
         </div>
