@@ -537,7 +537,7 @@ function ProductModal({ initial, edit, cats, units, brands, racks, variations, a
   const skuTouched = useRef(false);
   const upd = (k, v) => {
     if (k === "sku") skuTouched.current = true;
-    setForm({ ...form, [k]: v });
+    setForm((prev) => ({ ...prev, [k]: v }));
   };
 
   useEffect(() => {
