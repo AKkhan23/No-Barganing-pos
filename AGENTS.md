@@ -2,6 +2,13 @@
 
 ## Code Word to Resume: "start no bargaining"
 
+## Complete Status (up to Fix AdvancedReports + Toast Duration)
+
+### ✅ COMPLETED — This Session (AdvancedReports + Toast Fixes)
+- **AdvancedReports.jsx** — Fixed double `/api` prefix in `api.get()` calls. axios `baseURL` already adds `/api`, so paths like `/api/advanced-reports/z-report` became `/api/api/advanced-reports/z-report` (404). Fixed to `/advanced-reports/z-report`.
+- **Toast duration** — `<Toaster>` in Layout.jsx now has `duration={1500}` (was default 4000ms)
+- **Unused import** — Removed `toast` import from AdvancedReports.jsx (was only used in removed error toast)
+
 ## Complete Status (up to Customer Dues)
 
 ### ✅ COMPLETED — This Session (BarcodeScanner + Socket + Mobile)

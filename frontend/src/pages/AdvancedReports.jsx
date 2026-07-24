@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Loader2, Search } from "lucide-react";
-import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import api from "../lib/api";
 import { formatMoney, formatDate } from "../lib/format";
@@ -58,12 +57,12 @@ function useFetch(endpoint, params, deps) {
     setLoading(true);
     const cleaned = {};
     Object.entries(params || {}).forEach(([k, v]) => { if (v !== "" && v !== null && v !== undefined) cleaned[k] = v; });
-    api.get(endpoint, { params: cleaned }).then((r) => setData(r.data)).catch((e) => { toast.error("Failed to load report"); setData(null); }).finally(() => setLoading(false));
+    api.get(endpoint, { params: cleaned }).then((r) => setData(r.data)).catch(() => { setData(null); }).finally(() => setLoading(false));
   }, deps || [endpoint]);
   return { data, loading };
 }
 
-const endpointFor = (tab) => `/api/advanced-reports${tab.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")}`;
+const endpointFor = (tab) => `/advanced-reports${tab.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")}`;
 
 const TABS = [
   "Z Report", "Daily Summary", "Due Sales", "Final Due", "Service Sales",
@@ -75,7 +74,7 @@ const TABS = [
 ];
 
 function ZReportTab({ date }) {
-  const { data, loading } = useFetch("/api/advanced-reports/z-report", { date }, [date]);
+  const { data, loading } = useFetch("/advanced-reports/z-report", { date }, [date]);
   if (loading) return loadingSpinner();
   if (!data) return noData();
   const pm = data.payment_methods || data.payments || data.paymentModes || [];
@@ -117,7 +116,7 @@ function ZReportTab({ date }) {
 }
 
 function DailySummaryTab({ date }) {
-  const { data, loading } = useFetch("/api/advanced-reports/daily-summary", { date }, [date]);
+  const { data, loading } = useFetch("/advanced-reports/daily-summary", { date }, [date]);
   if (loading) return loadingSpinner();
   if (!data) return noData();
   const rows = data.hours || data.hourly || data.records || data.details || (Array.isArray(data) ? data : []);
@@ -139,7 +138,7 @@ function DailySummaryTab({ date }) {
 }
 
 function DueSalesTab({ startDate, endDate }) {
-  const { data, loading } = useFetch("/api/advanced-reports/due-sales", { start_date: startDate, end_date: endDate }, [startDate, endDate]);
+  const { data, loading } = useFetch("/advanced-reports/due-sales", { start_date: startDate, end_date: endDate }, [startDate, endDate]);
   if (loading) return loadingSpinner();
   if (!data) return noData();
   const rows = data.orders || data.due_orders || data.records || (Array.isArray(data) ? data : []);
@@ -162,7 +161,7 @@ function DueSalesTab({ startDate, endDate }) {
 }
 
 function FinalDueTab() {
-  const { data, loading } = useFetch("/api/advanced-reports/final-due-sales", {}, []);
+  const { data, loading } = useFetch("/advanced-reports/final-due-sales", {}, []);
   if (loading) return loadingSpinner();
   if (!data) return noData();
   const rows = data.customers || data.due_customers || data.records || (Array.isArray(data) ? data : []);
@@ -185,7 +184,7 @@ function FinalDueTab() {
 
 function ServiceSalesTab({ startDate, endDate }) {
   const [status, setStatus] = useState("");
-  const { data, loading } = useFetch("/api/advanced-reports/service-sales", { start_date: startDate, end_date: endDate, status }, [startDate, endDate, status]);
+  const { data, loading } = useFetch("/advanced-reports/service-sales", { start_date: startDate, end_date: endDate, status }, [startDate, endDate, status]);
   if (loading) return loadingSpinner();
   if (!data) return noData();
   const rows = data.services || data.records || data.orders || (Array.isArray(data) ? data : []);
@@ -215,7 +214,7 @@ function ServiceSalesTab({ startDate, endDate }) {
 }
 
 function ComboServiceTab() {
-  const { data, loading } = useFetch("/api/advanced-reports/combo-service", {}, []);
+  const { data, loading } = useFetch("/advanced-reports/combo-service", {}, []);
   if (loading) return loadingSpinner();
   if (!data) return noData();
   const rows = data.services || data.groups || data.records || (Array.isArray(data) ? data : []);
@@ -238,7 +237,7 @@ function ComboServiceTab() {
 
 function ExpiryStockTab() {
   const [days, setDays] = useState(30);
-  const { data, loading } = useFetch("/api/advanced-reports/expiry-stock", { days }, [days]);
+  const { data, loading } = useFetch("/advanced-reports/expiry-stock", { days }, [days]);
   if (loading) return loadingSpinner();
   if (!data) return noData();
   const rows = data.products || data.items || data.stock || (Array.isArray(data) ? data : []);
@@ -264,7 +263,7 @@ function ExpiryStockTab() {
 }
 
 function EmployeeSalesTab({ startDate, endDate }) {
-  const { data, loading } = useFetch("/api/advanced-reports/employee-sales", { start_date: startDate, end_date: endDate }, [startDate, endDate]);
+  const { data, loading } = useFetch("/advanced-reports/employee-sales", { start_date: startDate, end_date: endDate }, [startDate, endDate]);
   if (loading) return loadingSpinner();
   if (!data) return noData();
   const rows = data.employees || data.records || data.sales || (Array.isArray(data) ? data : []);
@@ -287,7 +286,7 @@ function EmployeeSalesTab({ startDate, endDate }) {
 }
 
 function CustomerDueReceiveTab({ startDate, endDate }) {
-  const { data, loading } = useFetch("/api/advanced-reports/customer-due-receive", { start_date: startDate, end_date: endDate }, [startDate, endDate]);
+  const { data, loading } = useFetch("/advanced-reports/customer-due-receive", { start_date: startDate, end_date: endDate }, [startDate, endDate]);
   if (loading) return loadingSpinner();
   if (!data) return noData();
   const rows = data.payments || data.receives || data.records || (Array.isArray(data) ? data : []);
@@ -310,7 +309,7 @@ function CustomerDueReceiveTab({ startDate, endDate }) {
 
 function AttendanceTab({ startDate, endDate }) {
   const [status, setStatus] = useState("");
-  const { data, loading } = useFetch("/api/advanced-reports/attendance-report", { start_date: startDate, end_date: endDate, status }, [startDate, endDate, status]);
+  const { data, loading } = useFetch("/advanced-reports/attendance-report", { start_date: startDate, end_date: endDate, status }, [startDate, endDate, status]);
   if (loading) return loadingSpinner();
   if (!data) return noData();
   const rows = data.attendance || data.records || data.entries || (Array.isArray(data) ? data : []);
@@ -343,7 +342,7 @@ function AttendanceTab({ startDate, endDate }) {
 }
 
 function ProductProfitTab({ startDate, endDate }) {
-  const { data, loading } = useFetch("/api/advanced-reports/product-profit", { start_date: startDate, end_date: endDate }, [startDate, endDate]);
+  const { data, loading } = useFetch("/advanced-reports/product-profit", { start_date: startDate, end_date: endDate }, [startDate, endDate]);
   if (loading) return loadingSpinner();
   if (!data) return noData();
   const rows = data.products || data.items || data.records || (Array.isArray(data) ? data : []);
@@ -367,7 +366,7 @@ function ProductProfitTab({ startDate, endDate }) {
 }
 
 function ProductSalesTab({ startDate, endDate }) {
-  const { data, loading } = useFetch("/api/advanced-reports/product-sales", { start_date: startDate, end_date: endDate }, [startDate, endDate]);
+  const { data, loading } = useFetch("/advanced-reports/product-sales", { start_date: startDate, end_date: endDate }, [startDate, endDate]);
   if (loading) return loadingSpinner();
   if (!data) return noData();
   const rows = data.products || data.items || data.records || (Array.isArray(data) ? data : []);
@@ -390,7 +389,7 @@ function ProductSalesTab({ startDate, endDate }) {
 }
 
 function TaxReportTab({ startDate, endDate }) {
-  const { data, loading } = useFetch("/api/advanced-reports/tax-report", { start_date: startDate, end_date: endDate }, [startDate, endDate]);
+  const { data, loading } = useFetch("/advanced-reports/tax-report", { start_date: startDate, end_date: endDate }, [startDate, endDate]);
   if (loading) return loadingSpinner();
   if (!data) return noData();
   const rows = data.tax_rates || data.taxes || data.rates || data.records || (Array.isArray(data) ? data : []);
@@ -414,7 +413,7 @@ function TaxReportTab({ startDate, endDate }) {
 
 function DetailedSalesTab({ startDate, endDate }) {
   const [limit, setLimit] = useState(100);
-  const { data, loading } = useFetch("/api/advanced-reports/detailed-sales", { start_date: startDate, end_date: endDate, limit }, [startDate, endDate, limit]);
+  const { data, loading } = useFetch("/advanced-reports/detailed-sales", { start_date: startDate, end_date: endDate, limit }, [startDate, endDate, limit]);
   if (loading) return loadingSpinner();
   if (!data) return noData();
   const rows = data.orders || data.sales || data.records || data.details || (Array.isArray(data) ? data : []);
@@ -442,7 +441,7 @@ function DetailedSalesTab({ startDate, endDate }) {
 }
 
 function PurchaseByDateTab({ startDate, endDate }) {
-  const { data, loading } = useFetch("/api/advanced-reports/purchase-by-date", { start_date: startDate, end_date: endDate }, [startDate, endDate]);
+  const { data, loading } = useFetch("/advanced-reports/purchase-by-date", { start_date: startDate, end_date: endDate }, [startDate, endDate]);
   if (loading) return loadingSpinner();
   if (!data) return noData();
   const rows = data.purchases || data.records || data.entries || (Array.isArray(data) ? data : []);
@@ -464,7 +463,7 @@ function PurchaseByDateTab({ startDate, endDate }) {
 }
 
 function ProductPurchaseTab({ startDate, endDate }) {
-  const { data, loading } = useFetch("/api/advanced-reports/product-purchase", { start_date: startDate, end_date: endDate }, [startDate, endDate]);
+  const { data, loading } = useFetch("/advanced-reports/product-purchase", { start_date: startDate, end_date: endDate }, [startDate, endDate]);
   if (loading) return loadingSpinner();
   if (!data) return noData();
   const rows = data.products || data.items || data.records || (Array.isArray(data) ? data : []);
@@ -490,7 +489,7 @@ function SalaryTab({ startDate, endDate }) {
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
   const [status, setStatus] = useState("");
-  const { data, loading } = useFetch("/api/advanced-reports/salary-report", { month, year, status }, [month, year, status]);
+  const { data, loading } = useFetch("/advanced-reports/salary-report", { month, year, status }, [month, year, status]);
   if (loading) return loadingSpinner();
   if (!data) return noData();
   const rows = data.salaries || data.records || data.employees || (Array.isArray(data) ? data : []);
@@ -527,7 +526,7 @@ function SalaryTab({ startDate, endDate }) {
 
 function InstallmentsTab({ startDate, endDate }) {
   const [status, setStatus] = useState("");
-  const { data, loading } = useFetch("/api/advanced-reports/installment-report", { status }, [status]);
+  const { data, loading } = useFetch("/advanced-reports/installment-report", { status }, [status]);
   if (loading) return loadingSpinner();
   if (!data) return noData();
   const rows = data.installments || data.records || data.entries || (Array.isArray(data) ? data : []);
@@ -558,7 +557,7 @@ function InstallmentsTab({ startDate, endDate }) {
 }
 
 function InstallmentDueTab() {
-  const { data, loading } = useFetch("/api/advanced-reports/installment-due", {}, []);
+  const { data, loading } = useFetch("/advanced-reports/installment-due", {}, []);
   if (loading) return loadingSpinner();
   if (!data) return noData();
   const rows = data.installments || data.due || data.overdue || data.records || (Array.isArray(data) ? data : []);
@@ -583,7 +582,7 @@ function ItemTracingTab({ startDate, endDate }) {
   const [productSearch, setProductSearch] = useState("");
   const [productId, setProductId] = useState("");
   const [products, setProducts] = useState([]);
-  const { data, loading } = useFetch(productId ? "/api/advanced-reports/item-tracing" : null, { product_id: productId, start_date: startDate, end_date: endDate }, [productId, startDate, endDate]);
+  const { data, loading } = useFetch(productId ? "/advanced-reports/item-tracing" : null, { product_id: productId, start_date: startDate, end_date: endDate }, [productId, startDate, endDate]);
 
   useEffect(() => {
     api.get("/products").then((r) => setProducts(Array.isArray(r.data) ? r.data : r.data?.products || [])).catch(() => {});
@@ -634,7 +633,7 @@ function PriceHistoryTab() {
   const [productSearch, setProductSearch] = useState("");
   const [productId, setProductId] = useState("");
   const [products, setProducts] = useState([]);
-  const { data, loading } = useFetch(productId ? "/api/advanced-reports/price-history" : null, { product_id: productId }, [productId]);
+  const { data, loading } = useFetch(productId ? "/advanced-reports/price-history" : null, { product_id: productId }, [productId]);
 
   useEffect(() => {
     api.get("/products").then((r) => setProducts(Array.isArray(r.data) ? r.data : r.data?.products || [])).catch(() => {});
@@ -685,7 +684,7 @@ function PriceHistoryTab() {
 }
 
 function StockReportTab() {
-  const { data, loading } = useFetch("/api/advanced-reports/stock-report", {}, []);
+  const { data, loading } = useFetch("/advanced-reports/stock-report", {}, []);
   if (loading) return loadingSpinner();
   if (!data) return noData();
   const rows = data.products || data.stock || data.items || (Array.isArray(data) ? data : []);
