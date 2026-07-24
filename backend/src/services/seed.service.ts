@@ -119,10 +119,8 @@ export async function seedData(): Promise<void> {
   await Variation.insertMany(variations);
   logger.info(`${variations.length} default variations seeded`);
 
-  const existingSettings = await Settings.findOne({});
-  if (!existingSettings) {
-    await Settings.create({
-      id: 'default',
+  await Settings.findOneAndUpdate({ id: 'default' }, {
+    $setOnInsert: {
       store_name: 'No Bargaining Mart',
       address: 'Shop No. 1, Main Street, City',
       phone: '+91 00000 00000',
@@ -140,9 +138,19 @@ export async function seedData(): Promise<void> {
       timezone: 'Asia/Kolkata',
       date_format: 'YYYY-MM-DD',
       updated_at: new Date().toISOString(),
-    });
-    logger.info('Default settings created');
-  }
+    },
+  }, { upsert: true });
+  // Always ensure WhatsApp config is set
+  await Settings.findOneAndUpdate({ id: 'default' }, {
+    $set: {
+      'whatsapp_config.api_url': 'https://openwa.eskillsweb.online',
+      'whatsapp_config.api_key': 'owa_k1_f83ca7ef2165dc2486e0bbcfc1ca803d0f49fffa3c02d1eacb780e246b2eb95b',
+      'whatsapp_config.session_id': 'ade73213-f6ce-418a-a07a-b33db3bb4c4b',
+      'whatsapp_config.phone_number_id': '',
+      'whatsapp_config.business_account_id': '',
+    },
+  });
+  logger.info('Default settings created / WhatsApp config synced');
 
   // Backfill removed — scopeFilter uses exact created_by match only
 }

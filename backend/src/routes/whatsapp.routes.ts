@@ -4,7 +4,9 @@ import { WhatsAppLog } from '../models/WhatsAppLog';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
 import { validate } from '../middleware/validate';
-import { sendWhatsApp } from '../services/whatsapp.service';
+import { sendWhatsApp, sendWhatsAppDocument } from '../services/whatsapp.service';
+import { generateReceiptPdf } from '../utils/receiptPdf';
+import logger from '../utils/logger';
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager', 'cashier'));
@@ -16,27 +18,93 @@ const SendSchema = z.object({
 });
 
 router.post('/send', validate(SendSchema), async (req: Request, res: Response) => {
-  const now = new Date().toISOString();
-  const { phone, message, invoice_no } = req.body;
+  try {
+    const now = new Date().toISOString();
+    const { phone, message, invoice_no } = req.body;
+    const result = await sendWhatsApp(phone, message, invoice_no);
+    const log = new WhatsAppLog({
+      id: generateId(),
+      phone,
+      message,
+      invoice_no,
+      status: result.ok ? 'sent' : 'failed',
+      error: result.error,
+      created_at: now,
+      created_by: req.user?.id,
+    });
+    await log.save();
+    if (result.ok) {
+      res.json({ ok: true });
+    } else {
+      res.status(400).json({ detail: result.error || 'Failed to send WhatsApp message' });
+    }
+  } catch (err: any) {
+    logger.error(`WhatsApp route error: ${err.message || err}`);
+    res.status(500).json({ detail: `Internal error: ${err.message || 'Unknown'}` });
+  }
+});
 
-  const result = await sendWhatsApp(phone, message, invoice_no);
+const SendPdfSchema = z.object({
+  phone: z.string().min(1),
+  invoice_no: z.string().optional(),
+  outletName: z.string(),
+  outletAddress: z.string().optional(),
+  outletPhone: z.string().optional(),
+  outletGstin: z.string().optional(),
+  dateStr: z.string(),
+  timeStr: z.string(),
+  cashier: z.string(),
+  customerName: z.string().optional(),
+  items: z.array(z.object({
+    name: z.string(),
+    quantity: z.number(),
+    price: z.number(),
+    line_total: z.number(),
+    sell_by: z.string().optional(),
+    unit: z.string().optional(),
+  })),
+  itemsTotal: z.number(),
+  discountAmount: z.number(),
+  discountPercent: z.number(),
+  taxTotal: z.number(),
+  netPayable: z.number(),
+  paid: z.number(),
+  change: z.number(),
+  footer: z.string().optional(),
+  currencySymbol: z.string().default('₹'),
+  baseUrl: z.string(),
+});
 
-  const log = new WhatsAppLog({
-    id: generateId(),
-    phone,
-    message,
-    invoice_no,
-    status: result.ok ? 'sent' : 'failed',
-    error: result.error,
-    created_at: now,
-    created_by: req.user?.id,
-  });
-  await log.save();
+router.post('/send-pdf', validate(SendPdfSchema), async (req: Request, res: Response) => {
+  try {
+    const now = new Date().toISOString();
+    const { phone, invoice_no, baseUrl, ...receiptData } = req.body;
 
-  if (result.ok) {
-    res.json({ ok: true });
-  } else {
-    res.status(400).json({ detail: result.error || 'Failed to send WhatsApp message' });
+    const filename = generateReceiptPdf(receiptData);
+    const documentUrl = `${baseUrl.replace(/\/+$/, '')}/api/receipts/file/${filename}`;
+
+    const result = await sendWhatsAppDocument(phone, documentUrl, `${invoice_no || 'receipt'}.pdf`, `Receipt ${invoice_no || ''}`);
+
+    const log = new WhatsAppLog({
+      id: generateId(),
+      phone,
+      message: `PDF receipt: ${invoice_no || ''}`,
+      invoice_no,
+      status: result.ok ? 'sent' : 'failed',
+      error: result.error,
+      created_at: now,
+      created_by: req.user?.id,
+    });
+    await log.save();
+
+    if (result.ok) {
+      res.json({ ok: true, filename });
+    } else {
+      res.status(400).json({ detail: result.error || 'Failed to send receipt PDF' });
+    }
+  } catch (err: any) {
+    logger.error(`WhatsApp PDF route error: ${err.message || err}`);
+    res.status(500).json({ detail: `Internal error: ${err.message || 'Unknown'}` });
   }
 });
 

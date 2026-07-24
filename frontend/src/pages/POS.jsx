@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import api, { formatApiErrorDetail } from "../lib/api";
+import api, { formatApiErrorDetail, BACKEND_URL } from "../lib/api";
 import { queuedPost } from "../lib/offlineQueue";
 import { formatMoney } from "../lib/format";
 import { isWeightUnit, formatStock, formatQty, hasSubUnit, getSubUnit, getDisplayUnit, isKgUnit } from "../lib/sellBy";
@@ -1102,13 +1102,14 @@ function ReceiptModal({ order, settings, cashier, onClose }) {
   const sym = settings?.currency_symbol || "₹";
   const [waPhone, setWaPhone] = useState("");
   const [waSending, setWaSending] = useState(false);
+  const [waPdfSending, setWaPdfSending] = useState(false);
   const print = () => window.print();
   const outletName = localStorage.getItem("pos_outlet_name") || settings?.store_name || "Store";
   const outletAddress = localStorage.getItem("pos_outlet_address") || settings?.address || "";
   const outletPhone = localStorage.getItem("pos_outlet_phone") || settings?.phone || "";
   const outletGstin = localStorage.getItem("pos_outlet_gstin") || settings?.gstin || "";
   const itemsTotal = order.items.reduce((s, i) => s + (i.line_total || 0), 0);
-  const netPayable = order.total || itemsTotal - (order.discount_amount || 0);
+  const netPayable = order.total || itemsTotal - (order.discount_amount || 0) + (order.tax_total || 0);
   const now = new Date(order.created_at);
   const dateStr = now.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
   const timeStr = now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
@@ -1130,6 +1131,7 @@ function ReceiptModal({ order, settings, cashier, onClose }) {
         `─────────────────`,
         `*Total: ${formatMoney(itemsTotal, sym)}*`,
         order.discount_amount > 0 && `Discount: -${formatMoney(order.discount_amount, sym)}`,
+        order.tax_total > 0 && `Tax: +${formatMoney(order.tax_total, sym)}`,
         `*Net Payable: ${formatMoney(netPayable, sym)}*`,
         `Paid: ${formatMoney(order.amount_paid, sym)}`,
         `Change: ${formatMoney(order.change_due, sym)}`,
@@ -1139,8 +1141,50 @@ function ReceiptModal({ order, settings, cashier, onClose }) {
       toast.success("Receipt sent on WhatsApp");
       setWaPhone("");
     } catch (e) {
-      toast.error(e?.response?.data?.detail || "Failed to send");
+      const detail = e?.response?.data?.detail || "Failed to send";
+      toast.error(detail.includes("WhatsApp") ? `${detail} ⚙️` : detail);
     } finally { setWaSending(false); }
+  };
+  const sendPDF = async () => {
+    if (!waPhone.trim()) { toast.error("Enter customer phone"); return; }
+    setWaPdfSending(true);
+    try {
+      const baseUrl = BACKEND_URL || `${window.location.protocol}//${window.location.host}`;
+      await api.post("/whatsapp/send-pdf", {
+        phone: waPhone.trim(),
+        invoice_no: order.invoice_no,
+        baseUrl,
+        outletName,
+        outletAddress,
+        outletPhone,
+        outletGstin,
+        dateStr, timeStr,
+        cashier,
+        customerName: order.customer_name,
+        items: order.items.map((i) => ({
+          name: i.name,
+          quantity: Number(i.quantity) || 0,
+          price: i.price || 0,
+          line_total: i.line_total || 0,
+          sell_by: i.sell_by,
+          unit: i.unit,
+        })),
+        itemsTotal,
+        discountAmount: order.discount_amount || 0,
+        discountPercent: order.discount_percent || 0,
+        taxTotal: order.tax_total || 0,
+        netPayable,
+        paid: order.amount_paid || 0,
+        change: order.change_due || 0,
+        footer: settings?.receipt_footer,
+        currencySymbol: sym,
+      });
+      toast.success("Receipt PDF sent on WhatsApp");
+      setWaPhone("");
+    } catch (e) {
+      const detail = e?.response?.data?.detail || "Failed to send PDF";
+      toast.error(detail.includes("WhatsApp") ? `${detail} ⚙️` : detail);
+    } finally { setWaPdfSending(false); }
   };
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4 print:bg-white print:p-0">
@@ -1226,6 +1270,11 @@ function ReceiptModal({ order, settings, cashier, onClose }) {
                 <span>{t("page.discount")} ({order.discount_percent}%)</span><span>-{formatMoney(order.discount_amount, sym)}</span>
               </div>
             )}
+            {order.tax_total > 0 && (
+              <div className="flex justify-between">
+                <span>{t("page.tax")}</span><span>+{formatMoney(order.tax_total, sym)}</span>
+              </div>
+            )}
             <div className="flex justify-between font-black text-sm border-t border-zinc-900 pt-1 mt-1">
               <span>{t("page.net_payable")}</span><span>{formatMoney(netPayable, sym)}</span>
             </div>
@@ -1247,7 +1296,11 @@ function ReceiptModal({ order, settings, cashier, onClose }) {
               className="flex-1 h-11 text-sm border border-zinc-300 px-3 rounded focus:outline-none focus:ring-2 focus:ring-[#E60000]/30" />
             <button onClick={sendWA} disabled={waSending}
               className="h-11 px-4 bg-green-600 text-white text-xs font-bold uppercase tracking-widest rounded hover:bg-green-700 disabled:opacity-50">
-              {waSending ? "..." : "WhatsApp"}
+              {waSending ? "..." : "Text"}
+            </button>
+            <button onClick={sendPDF} disabled={waPdfSending}
+              className="h-11 px-4 bg-blue-600 text-white text-xs font-bold uppercase tracking-widest rounded hover:bg-blue-700 disabled:opacity-50">
+              {waPdfSending ? "..." : "PDF"}
             </button>
           </div>
           <div className="flex gap-2">

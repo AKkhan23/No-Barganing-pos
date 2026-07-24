@@ -28,7 +28,7 @@ router.get('/', verifyJWT, async (_req: Request, res: Response) => {
       invoice_settings: { prefix: 'INV-', next_number: 1000, template: 'standard', show_logo: true, show_tax: true, show_discount: true, show_customer_info: true, terms_conditions: 'No Bargaining! Fixed Prices.' },
       email_config: { smtp_host: '', smtp_port: 587, smtp_user: '', smtp_pass: '', smtp_from: '', smtp_secure: false },
       sms_config: { provider: 'twilio', api_key: '', api_secret: '', sender_id: '' },
-      whatsapp_config: { api_key: '', phone_number_id: '', business_account_id: '' },
+      whatsapp_config: { api_key: '', phone_number_id: '', business_account_id: '', api_url: '', session_id: '' },
       payment_gateway: { provider: 'razorpay', api_key: '', api_secret: '', merchant_id: '', sandbox_mode: true },
       printer_config: { type: 'thermal', interface: 'usb', ip_address: '', port: 9100, characters_per_line: 42 },
       whitelabel: { app_name: 'No Bargaining POS', app_logo: '', primary_color: '#dc2626', favicon: '', login_background: '', footer_text: 'Powered by No Bargaining POS' },

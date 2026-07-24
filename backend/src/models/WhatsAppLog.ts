@@ -7,6 +7,7 @@ export interface IWhatsAppLog extends Document {
   message: string;
   invoice_no?: string;
   status: string;
+  error?: string;
   created_at: string;
 }
 
@@ -16,6 +17,7 @@ const WhatsAppLogSchema = new Schema<IWhatsAppLog>({
   message: { type: String, required: true },
   invoice_no: { type: String },
   status: { type: String, default: 'stubbed' },
+  error: { type: String },
   created_at: { type: String, required: true },
 });
 WhatsAppLogSchema.plugin(scopePlugin);

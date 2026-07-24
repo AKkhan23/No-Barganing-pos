@@ -2,12 +2,29 @@
 
 ## Code Word to Resume: "start no bargaining"
 
-## Complete Status (up to Fix AdvancedReports + Toast Duration)
+## Complete Status (up to Fix WhatsApp + AdvancedReports + Toast)
 
-### ✅ COMPLETED — This Session (AdvancedReports + Toast Fixes)
+### ✅ COMPLETED — This Session (WhatsApp fix + AdvancedReports + Toast)
 - **AdvancedReports.jsx** — Fixed double `/api` prefix in `api.get()` calls. axios `baseURL` already adds `/api`, so paths like `/api/advanced-reports/z-report` became `/api/api/advanced-reports/z-report` (404). Fixed to `/advanced-reports/z-report`.
 - **Toast duration** — `<Toaster>` in Layout.jsx now has `duration={1500}` (was default 4000ms)
 - **Unused import** — Removed `toast` import from AdvancedReports.jsx (was only used in removed error toast)
+- **WhatsApp fix** — `backend/src/services/whatsapp.service.ts`:
+  - Custom API URL ko `api_key` ke bina kaam karne diya (pehle `api_key` mandatory tha for ALL flows)
+  - Order changed: Custom API URL pehle check hota hai, phir WhatsApp Cloud API
+  - Open WA support: `session_id` ho to URL construct karta hai `{base}/api/{session}/send-text` aur payload `{to, text}` format me bhejta hai
+  - Error message ab clear hai: "Provide API URL (Settings > WhatsApp) or API Key + Phone Number ID"
+- **Backend default settings** — `api_url: ''`, `session_id: ''` add kiye default `whatsapp_config` me (settings.routes.ts)
+- **Seed data** — `seed.service.ts` ab `upsert` karta hai settings with WhatsApp config: URL `https://openwa.eskillsweb.online`, API key + session ID set
+- **POS.jsx** — WhatsApp error toast me gear icon (`⚙️`) lagaya taake user ko Settings configure karne ka signal mile
+- **Receipt/WhatsApp message (POS.jsx)** — Discount aur Tax lines add ki dono WhatsApp message aur thermal receipt me
+- **i18n** — `page.tax`, `page.discount`, `page.subtotal`, `page.net_payable`, `page.paid`, `page.change` keys add ki in English
+- **netPayable formula** — Fixed: `itemsTotal - discount + tax` (pehle tax add nahi hota tha)
+- **WhatsApp 500 fix** — `sendWhatsApp` me Open WA endpoint sahi kiya: `/api/sessions/{id}/messages/send-text` with payload `{ chatId: "phone@c.us", text }` using `X-API-Key` header
+- **PDF Receipt via WhatsApp** — New feature:
+  - `backend/src/utils/receiptPdf.ts` — pdfkit se exact thermal receipt jaisa PDF generate karta hai (Courier font, item table, discount/tax lines)
+  - `backend/src/routes/receipt.routes.ts` — PDF serve karta hai `/api/receipts/file/:filename`
+  - `backend/src/routes/whatsapp.routes.ts` — new `POST /api/whatsapp/send-pdf` endpoint jo PDF generate karta hai aur Open WA ke send-document endpoint se bhejta hai
+  - `POS.jsx` — Receipt modal me "Text" aur "PDF" do buttons hai. PDF click karne par exact receipt PDF WhatsApp pe bhejta hai
 
 ## Complete Status (up to Customer Dues)
 
