@@ -66,12 +66,16 @@ export default function Products() {
   const confirm = useConfirm();
 
   const load = async () => {
-    const [p, c, u, b, r, v] = await Promise.all([
-      api.get("/products"), api.get("/categories"), api.get("/units"),
-      api.get("/brands"), api.get("/racks"), api.get("/variations"),
-    ]);
-    setItems(p.data); setCats(c.data); setUnits(u.data || []);
-    setBrands(b.data || []); setRacks(r.data || []); setVariations(v.data || []);
+    try {
+      const [p, c, u, b, r, v] = await Promise.all([
+        api.get("/products"), api.get("/categories"), api.get("/units"),
+        api.get("/brands"), api.get("/racks"), api.get("/variations"),
+      ]);
+      setItems(p.data); setCats(c.data); setUnits(u.data || []);
+      setBrands(b.data || []); setRacks(r.data || []); setVariations(v.data || []);
+    } catch {
+      toast.error("Failed to load products — backend may be down");
+    }
   };
   useEffect(() => {
     api.post("/products/backfill-repack-parents").catch(() => {});
