@@ -83,7 +83,7 @@ export function generateReceiptPdf(data: ReceiptData): string {
   const MARGIN = 20;
   const CONTENT_W = PAGE_W - MARGIN * 2;
 
-  const estHeight = 260 + items.length * 20 + (footer ? 40 : 0);
+  const estHeight = 260 + items.length * 20 + (footer ? 40 : 0) + 40;
 
   const doc = new PDFDocument({
     size: [PAGE_W, Math.max(estHeight, 500)],
@@ -100,7 +100,7 @@ export function generateReceiptPdf(data: ReceiptData): string {
       doc.registerFont("NotoSans-Bold", boldPath);
       FONT = "NotoSans";
       FONT_BOLD = "NotoSans-Bold";
-    } catch { }
+    } catch {}
   }
 
   const stream = fs.createWriteStream(filepath);
@@ -155,11 +155,7 @@ export function generateReceiptPdf(data: ReceiptData): string {
   y += 10;
 
   const metaRow = (label: string, value: string) => {
-    doc
-      .font(FONT)
-      .fontSize(9)
-      .fillColor(COLORS.label)
-      .text(label, MARGIN, y);
+    doc.font(FONT).fontSize(9).fillColor(COLORS.label).text(label, MARGIN, y);
     doc
       .font(FONT_BOLD)
       .fillColor(COLORS.value)
@@ -189,7 +185,12 @@ export function generateReceiptPdf(data: ReceiptData): string {
   y += 10;
 
   const colW = { name: 110, qty: 60, rate: 60, amount: CONTENT_W - 230 };
-  const colX = { name: MARGIN, qty: MARGIN + 110, rate: MARGIN + 170, amount: MARGIN + 230 };
+  const colX = {
+    name: MARGIN,
+    qty: MARGIN + 110,
+    rate: MARGIN + 170,
+    amount: MARGIN + 230,
+  };
 
   doc.font(FONT).fontSize(9).fillColor(COLORS.value);
   items.forEach((i) => {
@@ -262,7 +263,30 @@ export function generateReceiptPdf(data: ReceiptData): string {
   if (footer) {
     doc.font(FONT).fontSize(8).fillColor(COLORS.footerBlue);
     cen(footer, y);
+    y += 14;
   }
+
+  y += 6;
+
+  const stripH = 34;
+  doc.rect(0, y, PAGE_W, stripH).fill("#1a1a2e");
+  const brandStr = "AIMFORTECH SOLUTIONS";
+  const byStr = "Powered by ";
+  doc.font(FONT).fontSize(7);
+  const pw = doc.widthOfString(byStr);
+  doc.font(FONT_BOLD).fontSize(12);
+  const bw = doc.widthOfString(brandStr);
+  const totalW = pw + bw;
+  const startX = MARGIN + (CONTENT_W - totalW) / 2;
+  doc.font(FONT).fontSize(7).fillColor("#8899aa");
+  doc.text(byStr, startX, y + 10, { width: pw });
+  doc.font(FONT_BOLD).fontSize(12).fillColor("#e0f7fa");
+  doc.text(brandStr, startX + pw, y + 7, {
+    width: bw,
+    characterSpacing: 1.5,
+  });
+
+  y += stripH;
 
   doc.end();
   return filename;
