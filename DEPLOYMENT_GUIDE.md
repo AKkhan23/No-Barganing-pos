@@ -61,12 +61,13 @@ docker run -p 8001:8001 --env-file .env nobargaining-backend
 3. Build command: `npm run build` · Output: `build`.
 4. **Environment variable** (Project → Settings → Environment Variables):
    ```
-   REACT_APP_BACKEND_URL=https://<your-backend-domain>
+   VITE_BACKEND_URL=https://<your-backend-domain>
    ```
    Must point to the deployed backend URL from step 2 (no trailing slash).
+   > Already configured in `.env.production` — just redeploy Vercel to pick it up.
 5. Deploy. Vercel gives you `https://<project>.vercel.app`.
 
-> Rebuild needed if you change `REACT_APP_BACKEND_URL` — Vercel reads env at build time.
+> Rebuild needed if you change `VITE_BACKEND_URL` — Vercel reads env at build time.
 
 ---
 

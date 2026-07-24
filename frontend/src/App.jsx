@@ -58,16 +58,20 @@ const Roles = lazy(() => import("@/pages/Roles"));
 const PaymentMethods = lazy(() => import("@/pages/PaymentMethods"));
 const Registers = lazy(() => import("@/pages/Registers"));
 const Deposits = lazy(() => import("@/pages/Deposits"));
+
 const Servicing = lazy(() => import("@/pages/Servicing"));
 const CheckInOut = lazy(() => import("@/pages/CheckInOut"));
 const UserProfile = lazy(() => import("@/pages/UserProfile"));
 const BulkItemUpdate = lazy(() => import("@/pages/BulkItemUpdate"));
+
 const AdvancedReports = lazy(() => import("@/pages/AdvancedReports"));
 const FixedAssetStock = lazy(() => import("@/pages/FixedAssetStock"));
 
 const Loading = () => (
   <div className="min-h-screen flex items-center justify-center bg-zinc-50">
-    <div className="font-mono text-xs uppercase tracking-widest text-zinc-500">Loading…</div>
+    <div className="font-mono text-xs uppercase tracking-widest text-zinc-500">
+      Loading…
+    </div>
   </div>
 );
 
@@ -77,7 +81,8 @@ function ProtectedShell({ roles }) {
   const { user, loading } = useAuth();
   if (loading) return <Loading />;
   if (!user) return <Navigate to="/login" replace />;
-  if (roles && user.role !== 'super_admin' && !roles.includes(user.role)) return <Navigate to="/pos" replace />;
+  if (roles && user.role !== "super_admin" && !roles.includes(user.role))
+    return <Navigate to="/pos" replace />;
   return <Layout />;
 }
 
@@ -85,90 +90,105 @@ function App() {
   return (
     <AuthProvider>
       <ConfirmProvider>
-      <BrowserRouter>
-        <Suspense fallback={<Loading />}>
-        <Routes>
-          <Route path="/login" element={<Login />} />
+        <BrowserRouter>
+          <Suspense fallback={<Loading />}>
+            <Routes>
+              <Route path="/login" element={<Login />} />
 
-          {/* Any role */}
-          <Route element={<ProtectedShell roles={ALL} />}>
-            <Route path="/" element={<Navigate to="/pos" replace />} />
-            <Route path="/pos" element={<POS />} />
-            <Route path="/orders" element={<Orders />} />
-            <Route path="/customers" element={<Customers />} />
-            <Route path="/bookings" element={<Bookings />} />
-            <Route path="/attendance" element={<Attendance />} />
-            <Route path="/notifications" element={<Notifications />} />
-            <Route path="/check-in-out" element={<CheckInOut />} />
-            <Route path="/profile" element={<UserProfile />} />
-          </Route>
+              {/* Any role */}
+              <Route element={<ProtectedShell roles={ALL} />}>
+                <Route path="/" element={<Navigate to="/pos" replace />} />
+                <Route path="/pos" element={<POS />} />
+                <Route path="/orders" element={<Orders />} />
+                <Route path="/customers" element={<Customers />} />
+                <Route path="/bookings" element={<Bookings />} />
+                <Route path="/attendance" element={<Attendance />} />
+                <Route path="/notifications" element={<Notifications />} />
+                <Route path="/check-in-out" element={<CheckInOut />} />
+                <Route path="/profile" element={<UserProfile />} />
+              </Route>
 
-          {/* Admin + Manager */}
-          <Route element={<ProtectedShell roles={["admin", "manager"]} />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/categories" element={<Categories />} />
-            <Route path="/stock" element={<StockMovements />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/sale-returns" element={<SaleReturns />} />
-            <Route path="/suppliers" element={<Suppliers />} />
-            <Route path="/purchases" element={<Purchases />} />
-            <Route path="/purchase-returns" element={<PurchaseReturns />} />
-            <Route path="/damage-stock" element={<DamageStock />} />
-            <Route path="/accounts" element={<Accounts />} />
-            <Route path="/customer-dues" element={<CustomerDues />} />
-            <Route path="/supplier-payments" element={<SupplierPayments />} />
-            <Route path="/transfers" element={<Transfers />} />
-            <Route path="/expenses" element={<Expenses />} />
-            <Route path="/income" element={<Income />} />
-            <Route path="/payroll" element={<Payroll />} />
-            <Route path="/bi" element={<DashboardV2 />} />
-            <Route path="/accounting" element={<TrialBalance />} />
-            <Route path="/trial-balance" element={<TrialBalance />} />
-            <Route path="/balance-sheet" element={<BalanceSheet />} />
-            <Route path="/profit-loss" element={<ProfitLoss />} />
-            <Route path="/outlets" element={<Outlets />} />
-            <Route path="/promotions" element={<Promotions />} />
-            <Route path="/customer-groups" element={<CustomerGroups />} />
-            <Route path="/delivery-partners" element={<DeliveryPartners />} />
-            <Route path="/warranties" element={<Warranties />} />
-            <Route path="/fixed-assets" element={<FixedAssets />} />
-            <Route path="/installments" element={<Installments />} />
-            <Route path="/quotations" element={<Quotations />} />
-            <Route path="/barcode-labels" element={<BarcodeLabels />} />
-            <Route path="/brands" element={<Brands />} />
-            <Route path="/units" element={<Units />} />
-            <Route path="/racks" element={<Racks />} />
-            <Route path="/variations" element={<Variations />} />
-            <Route path="/counters" element={<Counters />} />
-            <Route path="/denominations" element={<Denominations />} />
-            <Route path="/multiple-currencies" element={<MultipleCurrencies />} />
-            <Route path="/expense-items" element={<ExpenseItems />} />
-            <Route path="/income-items" element={<IncomeItems />} />
-            <Route path="/accounting-reports" element={<AccountingReports />} />
-            <Route path="/roles" element={<Roles />} />
-            <Route path="/payment-methods" element={<PaymentMethods />} />
-            <Route path="/registers" element={<Registers />} />
-            <Route path="/deposits" element={<Deposits />} />
-            <Route path="/servicing" element={<Servicing />} />
-            <Route path="/bulk-item-update" element={<BulkItemUpdate />} />
-            <Route path="/advanced-reports" element={<AdvancedReports />} />
-            <Route path="/fixed-asset-stock" element={<FixedAssetStock />} />
-          </Route>
+              {/* Admin + Manager */}
+              <Route element={<ProtectedShell roles={["admin", "manager"]} />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/products" element={<Products />} />
+                <Route path="/categories" element={<Categories />} />
+                <Route path="/stock" element={<StockMovements />} />
+                <Route path="/reports" element={<Reports />} />
+                <Route path="/sale-returns" element={<SaleReturns />} />
+                <Route path="/suppliers" element={<Suppliers />} />
+                <Route path="/purchases" element={<Purchases />} />
+                <Route path="/purchase-returns" element={<PurchaseReturns />} />
+                <Route path="/damage-stock" element={<DamageStock />} />
+                <Route path="/accounts" element={<Accounts />} />
+                <Route path="/customer-dues" element={<CustomerDues />} />
+                <Route
+                  path="/supplier-payments"
+                  element={<SupplierPayments />}
+                />
+                <Route path="/transfers" element={<Transfers />} />
+                <Route path="/expenses" element={<Expenses />} />
+                <Route path="/income" element={<Income />} />
+                <Route path="/payroll" element={<Payroll />} />
+                <Route path="/bi" element={<DashboardV2 />} />
+                <Route path="/accounting" element={<TrialBalance />} />
+                <Route path="/trial-balance" element={<TrialBalance />} />
+                <Route path="/balance-sheet" element={<BalanceSheet />} />
+                <Route path="/profit-loss" element={<ProfitLoss />} />
+                <Route path="/outlets" element={<Outlets />} />
+                <Route path="/promotions" element={<Promotions />} />
+                <Route path="/customer-groups" element={<CustomerGroups />} />
+                <Route
+                  path="/delivery-partners"
+                  element={<DeliveryPartners />}
+                />
+                <Route path="/warranties" element={<Warranties />} />
+                <Route path="/fixed-assets" element={<FixedAssets />} />
+                <Route path="/installments" element={<Installments />} />
+                <Route path="/quotations" element={<Quotations />} />
+                <Route path="/barcode-labels" element={<BarcodeLabels />} />
+                <Route path="/brands" element={<Brands />} />
+                <Route path="/units" element={<Units />} />
+                <Route path="/racks" element={<Racks />} />
+                <Route path="/variations" element={<Variations />} />
+                <Route path="/counters" element={<Counters />} />
+                <Route path="/denominations" element={<Denominations />} />
+                <Route
+                  path="/multiple-currencies"
+                  element={<MultipleCurrencies />}
+                />
+                <Route path="/expense-items" element={<ExpenseItems />} />
+                <Route path="/income-items" element={<IncomeItems />} />
+                <Route
+                  path="/accounting-reports"
+                  element={<AccountingReports />}
+                />
+                <Route path="/roles" element={<Roles />} />
+                <Route path="/payment-methods" element={<PaymentMethods />} />
+                <Route path="/registers" element={<Registers />} />
+                <Route path="/deposits" element={<Deposits />} />
+                <Route path="/servicing" element={<Servicing />} />
+                <Route path="/bulk-item-update" element={<BulkItemUpdate />} />
+                <Route path="/advanced-reports" element={<AdvancedReports />} />
+                <Route
+                  path="/fixed-asset-stock"
+                  element={<FixedAssetStock />}
+                />
+              </Route>
 
-          {/* Admin only */}
-          <Route element={<ProtectedShell roles={["admin"]} />}>
-            <Route path="/settings" element={<Settings />} />
-          </Route>
-          {/* Super Admin only */}
-          <Route element={<ProtectedShell roles={["super_admin"]} />}>
-            <Route path="/users" element={<Users />} />
-          </Route>
+              {/* Admin only */}
+              <Route element={<ProtectedShell roles={["admin"]} />}>
+                <Route path="/settings" element={<Settings />} />
+              </Route>
+              {/* Super Admin only */}
+              <Route element={<ProtectedShell roles={["super_admin"]} />}>
+                <Route path="/users" element={<Users />} />
+              </Route>
 
-          <Route path="*" element={<Navigate to="/pos" replace />} />
-        </Routes>
-        </Suspense>
-      </BrowserRouter>
+              <Route path="*" element={<Navigate to="/pos" replace />} />
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
       </ConfirmProvider>
     </AuthProvider>
   );

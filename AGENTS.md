@@ -86,6 +86,18 @@
 - ~200 additional page-specific keys added to English section (fallbackLng: "en")
 - Converted files: Attendance, Accounts, BIDashboard, BarcodeLabels, BalanceSheet, Bookings, CustomerDues, CustomerGroups, DamageStock, DeliveryPartners, Expenses, FixedAssets, Income, Installments, Login, Notifications, Payroll, ProfitLoss, Promotions, PurchaseReturns, Purchases, Quotations, Reports, SaleReturns, StockMovements, SupplierPayments, Transfers, TrialBalance, Users, Warranties, AccountingReports, DashboardV2
 
+### ✅ COMPLETED — Fix Vercel/Render Deployment Issues (Session #2)
+- **Root cause identified**: `VITE_BACKEND_URL` Vercel env variable set nahi tha — frontend API calls Vercel pe hi ja rahi thi (jo HTML return karta hai), Render backend tak nahi pahunch rahi thi
+- **`.env.production`** created with `VITE_BACKEND_URL=https://no-barganing-pos.onrender.com` — build time pe Vite ise embed karta hai
+- **Login page** — `useEffect` ab `/api/health` ping karta hai page load hote hi (Render ko cold start se jagaata hai)
+- **AuthProvider** — cleanup function add kiya (component unmount hone pe state update cancel)
+- **DEPLOYMENT_GUIDE.md** — `REACT_APP_BACKEND_URL` → `VITE_BACKEND_URL` fixed
+- **Frontend build** ✅ pass (env var correctly embedded in built JS)
+- **Backend CORS** — ✅ working (tested OPTIONS preflight with authorization header)
+- **Backend API** — ✅ working (login/me endpoints tested with curl)
+- **Render cold start** — Login page ab Render backend ko pehle se ping karke warm-up karta hai
+- **Next step**: User ko Vercel pe redeploy karna hai (push to git ya manual deploy)
+
 ### ⏳ NEXT SESSION — Sidebar walkthrough continues from:
 1. **Deposit** → Deposits
 2. **Accounting** → Accounts, Trial Balance, Balance Sheet, Profit & Loss, Accounting Reports

@@ -18,18 +18,24 @@ export function AuthProvider({ children }) {
     if (cached) {
       try { setUser(JSON.parse(cached)); } catch { localStorage.removeItem('pos_user'); }
     }
+    let cancelled = false;
     api
       .get("/auth/me")
       .then((r) => {
+        if (cancelled) return;
         setUser(r.data);
         localStorage.setItem("pos_user", JSON.stringify(r.data));
       })
       .catch(() => {
+        if (cancelled) return;
         localStorage.removeItem("pos_token");
         localStorage.removeItem("pos_user");
         setUser(false);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
   }, []);
 
   const login = async (email, password) => {

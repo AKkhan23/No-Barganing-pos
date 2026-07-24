@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, Navigate } from "react-router-dom";
 import { Store, LogIn, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "../lib/auth";
-import { formatApiErrorDetail } from "../lib/api";
+import api, { formatApiErrorDetail } from "../lib/api";
 
 export default function Login() {
   const { t } = useTranslation();
@@ -14,6 +14,10 @@ export default function Login() {
   const [showPw, setShowPw] = useState(false);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    api.get("/health").catch(() => {});
+  }, []);
 
   if (!loading && user) return <Navigate to="/pos" replace />;
 
