@@ -147,6 +147,25 @@
 - User may report new bugs (especially missing i18n keys)
 - No known blockers
 
+### ✅ COMPLETED — This Session (CORS crash fix)
+- **Root cause**: `app.ts:73` — `env.CORS_ORIGINS.split(',')` crashes with `TypeError` when `CORS_ORIGINS` env var is NOT set in Render dashboard (undefined). Server never starts, Render proxy responds without CORS headers → `No 'Access-Control-Allow-Origin' header` error in browser.
+- **Fix**: Changed to `const corsValue = env.CORS_ORIGINS || '*'; const corsOrigins = corsValue === '*' ? true : corsValue.split(',');` — falls back to `*` when env var missing
+- **Also fixed**: `credentials` option now uses `!isWildcard` instead of checking `env.CORS_ORIGINS !== '*'` (which was also wrong when undefined)
+
+### ✅ COMPLETED — This Session (PDF Receipt Font & Layout Fix)
+- **receiptPdf.ts** — Fixed all 8 PDF issues:
+  1. ₹ symbol `¹` → NotoSans TTF font registered (NotoSans-Regular.ttf + NotoSans-Bold.ttf in `assets/fonts/`, fallback to Helvetica if missing)
+  2. Page width narrow (226pt) → 340pt with 20pt margins (already fixed previously)
+  3. Dot leaders × → metaRow uses separate left/right align without dots
+  4. `%` separators → `hr()` uses `doc.moveTo().lineTo().dash(2)` drawn dashed line
+  5. Black header + X close icon → `doc.rect()` black bar with white "RECEIPT" and `×`
+  6. Color coding → green address, blue phone/GST, blue footer
+  7. Net Payable bold/big → `bold ? 13 : 10` font size + NotoSans-Bold
+  8. Item name text wrapping → name truncation with `widthOfString` until fit + `..` suffix
+
+### ⏳ NEXT
+- User to push code → Render auto-deploys → verify frontend works
+
 ## Running Instructions
 - Backend: `backend-ts\` → `npm run dev` (port 8001)
 - Frontend: `frontend\` → `npm start` (port 3000)

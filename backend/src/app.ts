@@ -70,8 +70,10 @@ import fixedAssetStockRoutes from './routes/fixedAssetStock.routes';
 
 const app = express();
 
-const corsOrigins = env.CORS_ORIGINS === '*' ? true : env.CORS_ORIGINS.split(',');
-app.use(cors({ origin: corsOrigins, credentials: env.CORS_ORIGINS !== '*' }));
+const corsValue = env.CORS_ORIGINS || '*';
+const isWildcard = corsValue === '*';
+const corsOrigins = isWildcard ? true : corsValue.split(',');
+app.use(cors({ origin: corsOrigins, credentials: !isWildcard }));
 app.use((req, _res, next) => {
   console.log(`[CORS] ${req.method} ${req.url} | Origin: ${req.headers.origin || 'same-origin'} | Host: ${req.headers.host}`);
   next();
