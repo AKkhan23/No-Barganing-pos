@@ -90,22 +90,17 @@ export function generateReceiptPdf(data: ReceiptData): string {
     margin: 0,
   });
 
-  let fontOk = true;
+  let FONT = "Helvetica";
+  let FONT_BOLD = "Helvetica-Bold";
   const regularPath = path.join(FONTS_DIR, "NotoSans.ttf");
   const boldPath = path.join(FONTS_DIR, "NotoSans-Bold.ttf");
   if (fs.existsSync(regularPath) && fs.existsSync(boldPath)) {
     try {
       doc.registerFont("NotoSans", regularPath);
       doc.registerFont("NotoSans-Bold", boldPath);
-    } catch {
-      fontOk = false;
-    }
-  } else {
-    fontOk = false;
-  }
-  if (!fontOk) {
-    doc.registerFont("NotoSans", "Helvetica");
-    doc.registerFont("NotoSans-Bold", "Helvetica");
+      FONT = "NotoSans";
+      FONT_BOLD = "NotoSans-Bold";
+    } catch { }
   }
 
   const stream = fs.createWriteStream(filepath);
@@ -118,17 +113,17 @@ export function generateReceiptPdf(data: ReceiptData): string {
   let y = 0;
 
   doc.rect(0, 0, PAGE_W, 40).fill(COLORS.headerBg);
-  doc.fillColor(COLORS.headerText).font("NotoSans-Bold").fontSize(11);
+  doc.fillColor(COLORS.headerText).font(FONT_BOLD).fontSize(11);
   doc.text("RECEIPT", MARGIN, 14);
   doc.fontSize(14).text("×", PAGE_W - MARGIN - 10, 10);
 
   y = 55;
 
-  doc.fillColor(COLORS.title).font("NotoSans-Bold").fontSize(18);
+  doc.fillColor(COLORS.title).font(FONT_BOLD).fontSize(18);
   cen(outletName, y);
   y += 24;
 
-  doc.font("NotoSans").fontSize(9);
+  doc.font(FONT).fontSize(9);
   if (outletAddress) {
     doc.fillColor(COLORS.subtitleGreen);
     cen(outletAddress, y);
@@ -161,12 +156,12 @@ export function generateReceiptPdf(data: ReceiptData): string {
 
   const metaRow = (label: string, value: string) => {
     doc
-      .font("NotoSans")
+      .font(FONT)
       .fontSize(9)
       .fillColor(COLORS.label)
       .text(label, MARGIN, y);
     doc
-      .font("NotoSans-Bold")
+      .font(FONT_BOLD)
       .fillColor(COLORS.value)
       .text(value, MARGIN, y, { width: CONTENT_W, align: "right" });
     y += 16;
@@ -181,7 +176,7 @@ export function generateReceiptPdf(data: ReceiptData): string {
   hr(y);
   y += 14;
 
-  doc.font("NotoSans-Bold").fontSize(9).fillColor(COLORS.label);
+  doc.font(FONT_BOLD).fontSize(9).fillColor(COLORS.label);
   doc.text("Items", MARGIN, y, { width: 110 });
   doc.text("Qty", MARGIN + 110, y, { width: 60, align: "center" });
   doc.text("Rate", MARGIN + 170, y, { width: 60, align: "right" });
@@ -196,7 +191,7 @@ export function generateReceiptPdf(data: ReceiptData): string {
   const colW = { name: 110, qty: 60, rate: 60, amount: CONTENT_W - 230 };
   const colX = { name: MARGIN, qty: MARGIN + 110, rate: MARGIN + 170, amount: MARGIN + 230 };
 
-  doc.font("NotoSans").fontSize(9).fillColor(COLORS.value);
+  doc.font(FONT).fontSize(9).fillColor(COLORS.value);
   items.forEach((i) => {
     const qtyStr = Number.isInteger(i.quantity)
       ? String(i.quantity)
@@ -230,7 +225,7 @@ export function generateReceiptPdf(data: ReceiptData): string {
     color = COLORS.value,
     bold = false,
   ) => {
-    doc.font(bold ? "NotoSans-Bold" : "NotoSans").fontSize(bold ? 13 : 10);
+    doc.font(bold ? FONT_BOLD : FONT).fontSize(bold ? 13 : 10);
     doc
       .fillColor(COLORS.label)
       .text(label, MARGIN, y, { width: CONTENT_W * 0.5 });
@@ -265,7 +260,7 @@ export function generateReceiptPdf(data: ReceiptData): string {
   y += 14;
 
   if (footer) {
-    doc.font("NotoSans").fontSize(8).fillColor(COLORS.footerBlue);
+    doc.font(FONT).fontSize(8).fillColor(COLORS.footerBlue);
     cen(footer, y);
   }
 

@@ -162,6 +162,7 @@
   6. Color coding → green address, blue phone/GST, blue footer
   7. Net Payable bold/big → `bold ? 13 : 10` font size + NotoSans-Bold
   8. Item name text wrapping → name truncation with `widthOfString` until fit + `..` suffix
+- **500 fix**: `registerFont` fallback was passing `"Helvetica"` as file path (crashes). Changed to `FONT`/`FONT_BOLD` variables: default `"Helvetica"/"Helvetica-Bold"`, updated to `"NotoSans"/"NotoSans-Bold"` only when TTF successfully loaded.
 
 ### ⏳ NEXT
 - User to push code → Render auto-deploys → verify frontend works
