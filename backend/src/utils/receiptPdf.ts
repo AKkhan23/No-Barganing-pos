@@ -42,7 +42,8 @@ interface ReceiptData {
 export function generateReceiptPdf(data: ReceiptData): string {
   const { outletName, outletAddress, outletPhone, outletGstin, invoiceNo, dateStr, timeStr, cashier, customerName, items, itemsTotal, discountAmount, discountPercent, taxTotal, netPayable, paid, change, footer, currencySymbol } = data;
 
-  const filename = `receipt-${invoiceNo.replace(/[^a-zA-Z0-9_-]/g, '')}-${Date.now()}.pdf`;
+  const safeInvoice = (invoiceNo || 'receipt').replace(/[^a-zA-Z0-9_-]/g, '');
+  const filename = `receipt-${safeInvoice}-${Date.now()}.pdf`;
   const filepath = path.join(UPLOAD_DIR, filename);
 
   const doc = new PDFDocument({

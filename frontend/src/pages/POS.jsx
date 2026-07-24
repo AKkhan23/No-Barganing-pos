@@ -1159,7 +1159,7 @@ function ReceiptModal({ order, settings, cashier, onClose }) {
         outletPhone,
         outletGstin,
         dateStr, timeStr,
-        cashier,
+        cashier: cashier || 'Admin',
         customerName: order.customer_name,
         items: order.items.map((i) => ({
           name: i.name,

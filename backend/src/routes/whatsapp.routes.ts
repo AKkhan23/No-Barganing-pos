@@ -79,8 +79,9 @@ router.post('/send-pdf', validate(SendPdfSchema), async (req: Request, res: Resp
   try {
     const now = new Date().toISOString();
     const { phone, invoice_no, baseUrl, ...receiptData } = req.body;
+    const pdfData = { ...receiptData, invoiceNo: receiptData.invoiceNo || invoice_no || '' };
 
-    const filename = generateReceiptPdf(receiptData);
+    const filename = generateReceiptPdf(pdfData);
     const documentUrl = `${baseUrl.replace(/\/+$/, '')}/api/receipts/file/${filename}`;
 
     const result = await sendWhatsAppDocument(phone, documentUrl, `${invoice_no || 'receipt'}.pdf`, `Receipt ${invoice_no || ''}`);
