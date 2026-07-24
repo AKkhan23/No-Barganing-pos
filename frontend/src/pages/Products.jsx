@@ -673,7 +673,7 @@ function ProductModal({ initial, edit, cats, units, brands, racks, variations, a
             <div key={f.k} className={f.span === 2 ? "md:col-span-2" : ""}>
               <label className="block text-xs font-semibold text-zinc-600 mb-1">{f.label}{f.req && " *"}</label>
               {f.select ? (
-                <Select value={form[f.k] || ""} onValueChange={(v) => {
+                <Select key={f.k === "brand" ? `brand-${localBrands.length}` : undefined} value={form[f.k] || ""} onValueChange={(v) => {
                   if (f.k === "brand" && v === "__add_brand__") { setBrandDialogOpen(true); return; }
                   upd(f.k, v);
                 }}>
