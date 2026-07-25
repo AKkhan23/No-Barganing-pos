@@ -885,9 +885,8 @@ function WeightModal({ product, onClose, onSubmit, sym, isMobile }) {
 
   const bottomSheet = isMobile;
   return (
-    <div className={`fixed inset-0 z-50 ${bottomSheet ? "flex items-end" : "flex items-center justify-center p-4"}`}>
-      {!bottomSheet && <div className="absolute inset-0 bg-black/60" onClick={onClose} />}
-      <div className={`${bottomSheet ? "w-full max-h-[85vh] rounded-t-2xl overflow-hidden" : "w-full max-w-sm"} bg-white border-2 border-zinc-900 ${bottomSheet ? "border-b-0" : ""}`} data-testid="weight-modal">
+    <div className={`fixed inset-0 z-50 bg-black/60 ${bottomSheet ? "flex items-end" : "flex items-center justify-center p-4"}`} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} className={`${bottomSheet ? "w-full max-h-[85vh] rounded-t-2xl overflow-hidden" : "w-full max-w-sm"} bg-white border-2 border-zinc-900 ${bottomSheet ? "border-b-0" : ""}`} data-testid="weight-modal">
         <div className={`flex items-center justify-between p-4 bg-zinc-950 text-white`}>
           {bottomSheet && <button onClick={onClose} className="p-1 hover:bg-zinc-800"><ChevronDown className="w-5 h-5" strokeWidth={3} /></button>}
           <div className={bottomSheet ? "text-center flex-1" : ""}>
