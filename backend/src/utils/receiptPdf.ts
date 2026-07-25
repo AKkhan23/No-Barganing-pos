@@ -274,15 +274,15 @@ export function generateReceiptPdf(data: ReceiptData): string {
   const byStr = "Powered by ";
   doc.font(FONT).fontSize(8);
   const pw = doc.widthOfString(byStr);
-  doc.font(FONT_BOLD).fontSize(11);
+  doc.font(FONT).fontSize(9);
   const bw = doc.widthOfString(brandStr);
   const totalW = pw + bw;
   const startX = MARGIN + (CONTENT_W - totalW) / 2;
   const remW = PAGE_W - MARGIN - (startX + pw);
   doc.font(FONT).fontSize(8).fillColor("#8899aa");
-  doc.text(byStr, startX, y + 10, { width: pw });
-  doc.font(FONT_BOLD).fontSize(11).fillColor("#e0f7fa");
-  doc.text(brandStr, startX + pw, y + 8, { width: remW });
+  doc.text(byStr, startX, y + 11, { width: pw });
+  doc.font(FONT).fontSize(9).fillColor("#b0bec5");
+  doc.text(brandStr, startX + pw, y + 10, { width: remW });
 
   y += stripH;
 

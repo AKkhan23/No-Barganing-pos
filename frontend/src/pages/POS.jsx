@@ -1291,7 +1291,7 @@ function ReceiptModal({ order, settings, cashier, onClose }) {
           </div>
           <div className="mt-2 bg-[#1a1a2e] text-center py-2 px-3 rounded-sm">
             <span className="text-[7px] text-[#8899aa]">Powered by </span>
-            <span className="text-[10px] text-[#e0f7fa] font-bold tracking-[1.5px]">AIMFORTECH SOLUTIONS</span>
+            <span className="text-[9px] text-[#b0bec5] font-medium tracking-[1px]">AIMFORTECH SOLUTIONS</span>
           </div>
         </div>
         <div className="p-3 border-t-2 border-zinc-200 flex flex-col gap-2 print-hide print:hidden">
