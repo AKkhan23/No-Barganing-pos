@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import {
   Search, ScanBarcode, Plus, Minus, Trash2, User, Wallet,
   CreditCard, Smartphone, Banknote, Receipt, X, Check, Mic,
-  ShoppingCart, ArrowLeftFromLine, ChevronDown,
+  ShoppingCart, ArrowLeftFromLine, ChevronDown, Loader2,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -1000,6 +1000,7 @@ function MiniSelect({ value, onChange, options, placeholder }) {
 
 function CheckoutModal({ total, paymentMode, setPaymentMode, amountPaid, setAmountPaid, change, onClose, onSubmit, sym, counters, selectedCounter, setSelectedCounter, deliveryPartners, selectedDeliveryPartner, setSelectedDeliveryPartner }) {
   const { t } = useTranslation();
+  const [submitting, setSubmitting] = useState(false);
   const quicks = [total, Math.ceil(total / 100) * 100, Math.ceil(total / 500) * 500, Math.ceil(total / 1000) * 1000];
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
@@ -1083,12 +1084,13 @@ function CheckoutModal({ total, paymentMode, setPaymentMode, amountPaid, setAmou
           </div>
 
           <button
-            onClick={onSubmit}
+            onClick={async () => { setSubmitting(true); try { await onSubmit(); } finally { setSubmitting(false); } }}
+            disabled={submitting}
             data-testid="checkout-confirm"
-            className="w-full h-14 bg-[#E60000] hover:bg-red-700 text-white font-bold uppercase tracking-widest flex items-center justify-center gap-2"
+            className="w-full h-14 bg-[#E60000] hover:bg-red-700 text-white font-bold uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-60"
           >
-            <Check className="w-5 h-5" strokeWidth={2.5} />
-            {t("page.complete_sale")}
+            {submitting ? <Loader2 className="w-5 h-5 animate-spin" strokeWidth={2.5} /> : <Check className="w-5 h-5" strokeWidth={2.5} />}
+            {submitting ? "Processing..." : t("page.complete_sale")}
           </button>
         </div>
       </div>

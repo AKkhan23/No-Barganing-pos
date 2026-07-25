@@ -94,6 +94,9 @@ const OrderSchema = new Schema<IOrder>({
   delivery_partner_name: { type: String },
   created_at: { type: String, required: true },
 });
+OrderSchema.index({ created_at: -1 });
+OrderSchema.index({ customer_name: 1 });
+OrderSchema.index({ invoice_no: 1 });
 OrderSchema.plugin(scopePlugin);
 
 export const Order = mongoose.model<IOrder>('Order', OrderSchema);

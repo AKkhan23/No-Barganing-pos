@@ -26,6 +26,8 @@ const SupplierSchema = new Schema<ISupplier>({
   outlet_id: { type: String },
   created_at: { type: String, required: true },
 });
+SupplierSchema.index({ name: 1 });
+SupplierSchema.index({ phone: 1 });
 SupplierSchema.plugin(scopePlugin);
 
 export const Supplier = mongoose.model<ISupplier>('Supplier', SupplierSchema);

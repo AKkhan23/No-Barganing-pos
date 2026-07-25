@@ -20,6 +20,8 @@ const CheckInOutSchema = new Schema<ICheckInOut>({
   note: { type: String, default: '' },
   created_at: { type: String, required: true },
 });
+CheckInOutSchema.index({ user_id: 1, created_at: -1 });
+CheckInOutSchema.index({ user_id: 1, action: 1, timestamp: -1 });
 CheckInOutSchema.plugin(scopePlugin);
 
 export const CheckInOut = mongoose.model<ICheckInOut>('CheckInOut', CheckInOutSchema);

@@ -26,6 +26,8 @@ const SupplierPaymentSchema = new Schema<ISupplierPayment>({
   created_by_id: { type: String },
   created_by_name: { type: String },
 });
+SupplierPaymentSchema.index({ supplier_id: 1, created_at: -1 });
+SupplierPaymentSchema.index({ created_at: -1 });
 SupplierPaymentSchema.plugin(scopePlugin);
 
 export const SupplierPayment = mongoose.model<ISupplierPayment>('SupplierPayment', SupplierPaymentSchema);

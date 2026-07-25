@@ -54,6 +54,8 @@ const PurchaseOrderSchema = new Schema<IPurchaseOrder>({
   created_by_name: { type: String },
   created_at: { type: String, required: true },
 });
+PurchaseOrderSchema.index({ supplier_id: 1, created_at: -1 });
+PurchaseOrderSchema.index({ created_at: -1 });
 PurchaseOrderSchema.plugin(scopePlugin);
 
 export const PurchaseOrder = mongoose.model<IPurchaseOrder>('PurchaseOrder', PurchaseOrderSchema);

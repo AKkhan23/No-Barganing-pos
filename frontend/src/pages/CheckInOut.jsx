@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { LogIn, LogOut, Search, Clock, Users, Trash2 } from "lucide-react";
+import { LogIn, LogOut, Search, Clock, Users, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import api from "../lib/api";
 import { PageShell } from "./Dashboard";
@@ -122,8 +122,8 @@ export default function CheckInOut() {
                     : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-500/30"
               }`}
             >
-              {isCheckedIn ? <LogOut className="w-5 h-5" strokeWidth={2.5} /> : <LogIn className="w-5 h-5" strokeWidth={2.5} />}
-              {isCheckedIn ? "Check Out" : "Check In"}
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" strokeWidth={2.5} /> : isCheckedIn ? <LogOut className="w-5 h-5" strokeWidth={2.5} /> : <LogIn className="w-5 h-5" strokeWidth={2.5} />}
+              {loading ? "Processing..." : isCheckedIn ? "Check Out" : "Check In"}
             </button>
             <div className="flex-1 w-full">
               <input

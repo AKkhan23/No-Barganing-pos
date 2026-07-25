@@ -32,6 +32,8 @@ const LedgerEntrySchema = new Schema<ILedgerEntry>({
   created_by_name: { type: String },
   created_at: { type: String, required: true },
 });
+LedgerEntrySchema.index({ party_id: 1, created_at: -1 });
+LedgerEntrySchema.index({ reference: 1 });
 LedgerEntrySchema.plugin(scopePlugin);
 
 export const LedgerEntry = mongoose.model<ILedgerEntry>('LedgerEntry', LedgerEntrySchema);
