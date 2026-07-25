@@ -232,15 +232,15 @@ export function generateReceiptPdf(data: ReceiptData): string {
   };
 
   totalRow("Subtotal", fmt(itemsTotal));
+  if (taxTotal > 0) {
+    totalRow("Tax", `+${fmt(taxTotal)}`);
+  }
   if (discountAmount > 0) {
     totalRow(
       `Discount (${discountPercent}%)`,
       `-${fmt(discountAmount)}`,
       COLORS.discountRed,
     );
-  }
-  if (taxTotal > 0) {
-    totalRow("Tax", `+${fmt(taxTotal)}`);
   }
 
   hr(y);

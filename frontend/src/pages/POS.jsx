@@ -1109,8 +1109,8 @@ function ReceiptModal({ order, settings, cashier, onClose }) {
   const outletAddress = localStorage.getItem("pos_outlet_address") || settings?.address || "";
   const outletPhone = localStorage.getItem("pos_outlet_phone") || settings?.phone || "";
   const outletGstin = localStorage.getItem("pos_outlet_gstin") || settings?.gstin || "";
-  const itemsTotal = order.items.reduce((s, i) => s + (i.line_total || 0), 0);
-  const netPayable = order.total || itemsTotal - (order.discount_amount || 0) + (order.tax_total || 0);
+  const itemsSubtotal = order.items.reduce((s, i) => s + (i.price || 0) * (i.quantity || 0), 0);
+  const netPayable = order.total || (itemsSubtotal + (order.tax_total || 0) - (order.discount_amount || 0));
   const now = new Date(order.created_at);
   const dateStr = now.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
   const timeStr = now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
@@ -1119,7 +1119,7 @@ function ReceiptModal({ order, settings, cashier, onClose }) {
     if (!waPhone.trim()) { toast.error("Enter customer phone"); return; }
     setWaSending(true);
     try {
-      const itemsList = order.items.map((i) => `${i.name} x${i.quantity} = ${formatMoney(i.line_total, sym)}`).join("\n");
+      const itemsList = order.items.map((i) => `${i.name} x${i.quantity} = ${formatMoney((i.price || 0) * (i.quantity || 0), sym)}`).join("\n");
       const msg = [
         `*${outletName}*`,
         outletAddress && `📍 ${outletAddress}`,
@@ -1130,9 +1130,9 @@ function ReceiptModal({ order, settings, cashier, onClose }) {
         `*ITEMS:*`,
         itemsList,
         `─────────────────`,
-        `*Total: ${formatMoney(itemsTotal, sym)}*`,
-        order.discount_amount > 0 && `Discount: -${formatMoney(order.discount_amount, sym)}`,
+        `Subtotal: ${formatMoney(itemsSubtotal, sym)}`,
         order.tax_total > 0 && `Tax: +${formatMoney(order.tax_total, sym)}`,
+        order.discount_amount > 0 && `Discount: -${formatMoney(order.discount_amount, sym)}`,
         `*Net Payable: ${formatMoney(netPayable, sym)}*`,
         `Paid: ${formatMoney(order.amount_paid, sym)}`,
         `Change: ${formatMoney(order.change_due, sym)}`,
@@ -1166,11 +1166,11 @@ function ReceiptModal({ order, settings, cashier, onClose }) {
           name: i.name,
           quantity: Number(i.quantity) || 0,
           price: i.price || 0,
-          line_total: i.line_total || 0,
+          line_total: (i.price || 0) * (Number(i.quantity) || 0),
           sell_by: i.sell_by,
           unit: i.unit,
         })),
-        itemsTotal,
+        itemsTotal: itemsSubtotal,
         discountAmount: order.discount_amount || 0,
         discountPercent: order.discount_percent || 0,
         taxTotal: order.tax_total || 0,
@@ -1249,13 +1249,13 @@ function ReceiptModal({ order, settings, cashier, onClose }) {
                   const qty = Number(i.quantity) || 0;
                   const qtyDisplay = isWeightUnit(i.sell_by) ? formatQty(qty, i.sell_by) : (qty + (i.unit && i.unit !== "pcs" ? ` ${i.unit}` : ""));
                   const rate = i.price;
-                  const lineTotal = i.line_total || (rate * qty);
+                  const lineAmt = (rate || 0) * qty;
                   return (
                     <tr key={idx}>
                       <td className="py-0.5 pr-1 max-w-[100px] truncate">{cleanName}</td>
                       <td className="text-right py-0.5 whitespace-nowrap">{qtyDisplay}</td>
                       <td className="text-right py-0.5 whitespace-nowrap">{formatMoney(rate, sym)}</td>
-                      <td className="text-right py-0.5 whitespace-nowrap">{formatMoney(lineTotal, sym)}</td>
+                      <td className="text-right py-0.5 whitespace-nowrap">{formatMoney(lineAmt, sym)}</td>
                     </tr>
                   );
                 })}
@@ -1264,16 +1264,16 @@ function ReceiptModal({ order, settings, cashier, onClose }) {
           </div>
           <div className="border-t border-dashed border-zinc-400 pt-2 space-y-1 text-[10px]">
             <div className="flex justify-between">
-              <span>{t("page.subtotal")}</span><span>{formatMoney(itemsTotal, sym)}</span>
+              <span>{t("page.subtotal")}</span><span>{formatMoney(itemsSubtotal, sym)}</span>
             </div>
-            {order.discount_amount > 0 && (
-              <div className="flex justify-between">
-                <span>{t("page.discount")} ({order.discount_percent}%)</span><span>-{formatMoney(order.discount_amount, sym)}</span>
-              </div>
-            )}
             {order.tax_total > 0 && (
               <div className="flex justify-between">
                 <span>{t("page.tax")}</span><span>+{formatMoney(order.tax_total, sym)}</span>
+              </div>
+            )}
+            {order.discount_amount > 0 && (
+              <div className="flex justify-between">
+                <span>{t("page.discount")} ({order.discount_percent}%)</span><span>-{formatMoney(order.discount_amount, sym)}</span>
               </div>
             )}
             <div className="flex justify-between font-black text-sm border-t border-zinc-900 pt-1 mt-1">
