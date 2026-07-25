@@ -103,7 +103,18 @@ router.get('/cash-flow', async (req: Request, res: Response) => {
       net: dateMap[date].sales - dateMap[date].expenses - dateMap[date].purchases,
     }));
 
-    res.json(result);
+    const totalSales = result.reduce((s: number, r: any) => s + (r.sales || 0), 0);
+    const totalExpenses = result.reduce((s: number, r: any) => s + (r.expenses || 0), 0);
+    const totalPurchases = result.reduce((s: number, r: any) => s + (r.purchases || 0), 0);
+    res.json({
+      summary: {
+        total_sales: totalSales,
+        total_expenses: totalExpenses,
+        total_purchases: totalPurchases,
+        net_cash_flow: totalSales - totalExpenses - totalPurchases,
+      },
+      details: result,
+    });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

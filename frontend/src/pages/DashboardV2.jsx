@@ -12,11 +12,15 @@ export default function DashboardV2() {
     setLoading(true);
     try { const r = await api.get("/dashboard/stats"); setStats(r.data); } finally { setLoading(false); }
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    const id = setInterval(load, 30000);
+    return () => clearInterval(id);
+  }, []);
 
   const cards = [
-    { key: "today_revenue", label: "Today Revenue", icon: DollarSign, color: "green", format: true },
-    { key: "today_orders", label: "Today Orders", icon: ShoppingCart, color: "blue", format: false },
+    { key: "revenue_today", label: "Today Revenue", icon: DollarSign, color: "green", format: true },
+    { key: "orders_today", label: "Today Orders", icon: ShoppingCart, color: "blue", format: false },
     { key: "total_customers", label: "Total Customers", icon: Users, color: "purple", format: false },
     { key: "low_stock_count", label: "Low Stock Items", icon: Package, color: "red", format: false },
   ];
@@ -75,7 +79,7 @@ export default function DashboardV2() {
                   <div className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest">#{i + 1}</div>
                   <div className="font-bold text-sm mt-1">{p.name || p.product_name}</div>
                   <div className="text-xs text-zinc-500 mt-0.5">{p.total_qty || p.quantity} sold</div>
-                  <div className="text-sm font-black text-[#E60000] mt-1">{formatMoney(p.total_sales || p.revenue)}</div>
+                  <div className="text-sm font-black text-[#E60000] mt-1">{formatMoney(p.total_revenue || p.total_qty * p.price || 0)}</div>
                 </div>
               ))}
             </div>

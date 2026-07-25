@@ -86,7 +86,7 @@ router.get('/top-products', async (req: Request, res: Response) => {
     const topProducts = await Order.aggregate([
       { $match: match },
       { $unwind: '$items' },
-      { $group: { _id: '$items.product_name', total_quantity: { $sum: '$items.quantity' }, total_revenue: { $sum: '$items.line_total' } } },
+      { $group: { _id: '$items.product_name', total_quantity: { $sum: '$items.quantity' }, total_revenue: { $sum: { $ifNull: ['$items.line_total', '$items.total'] } } } },
       { $sort: { total_quantity: -1 } },
       { $limit: limit },
     ]);
@@ -197,7 +197,7 @@ router.get('/cash-flow', async (req: Request, res: Response) => {
     const dateFilter: any = {};
     if (dateFrom) dateFilter.$gte = dateFrom;
     if (dateTo) dateFilter.$lte = dateTo;
-    const match: any = { account: { $in: ['cash', 'bank', 'upi'] } };
+    const match: any = { $or: [{ account: { $regex: 'cash', $options: 'i' } }, { account: { $regex: 'bank', $options: 'i' } }, { account: { $regex: 'upi', $options: 'i' } }] };
     if (Object.keys(dateFilter).length) match.date = dateFilter;
     const sf4 = scopeFilter(req);
     Object.assign(match, sf4);

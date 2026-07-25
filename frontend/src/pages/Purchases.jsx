@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { Plus, X, Search, Loader2, CheckCircle, Trash2 } from "lucide-react";
+import { Plus, X, Search, Loader2, CheckCircle, Trash2, ChevronDown, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import api from "@/lib/api";
@@ -47,6 +47,8 @@ export default function Purchases() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
+  const [expanded, setExpanded] = useState({});
+  const toggleGroup = (id) => setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
   const [modal, setModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [busyReceive, setBusyReceive] = useState(null);
@@ -73,13 +75,25 @@ export default function Purchases() {
   };
   useEffect(() => { load(); }, []);
 
-  const filtered = purchases.filter((x) => {
-    if (!q) return true;
+  const grouped = {};
+  for (const p of purchases) {
+    const key = p.supplier_id;
+    if (!grouped[key]) grouped[key] = { supplier_id: key, supplier_name: p.supplier_name, purchases: [] };
+    grouped[key].purchases.push(p);
+  }
+  let groups = Object.values(grouped).sort((a, b) => a.supplier_name.localeCompare(b.supplier_name));
+
+  if (q) {
     const s = q.toLowerCase();
-    return (x.supplier_name || "").toLowerCase().includes(s) || (x.items || []).some((i) =>
-      (i.name || "").toLowerCase().includes(s)
-    );
-  });
+    groups = groups.filter((g) => g.supplier_name.toLowerCase().includes(s));
+    for (const g of groups) {
+      g.purchases = g.purchases.filter((p) =>
+        (p.reference || "").toLowerCase().includes(s) ||
+        (p.note || "").toLowerCase().includes(s) ||
+        (p.items || []).some((i) => (i.name || "").toLowerCase().includes(s))
+      );
+    }
+  }
 
   const resetForm = () => setForm({
     supplier_id: "", items: [{ product_id: "", quantity: "", cost: "", tax_rate: "" }],
@@ -173,57 +187,81 @@ export default function Purchases() {
           <table className="w-full text-sm">
             <thead className="bg-zinc-100 text-zinc-900 uppercase text-[10px] tracking-widest">
               <tr>
-                <th className="p-3 text-left">{t("page.date")}</th>
-                <th className="p-3 text-left">{t("page.invoice")}</th>
-                <th className="p-3 text-left">{t("page.supplier_name")}</th>
-                <th className="p-3 text-left">{t("page.items")}</th>
+                <th className="p-3 text-left">{t("page.supplier")}</th>
+                <th className="p-3 text-right">{t("page.purchases")}</th>
                 <th className="p-3 text-right">{t("page.total")}</th>
                 <th className="p-3 text-left">{t("page.status")}</th>
-                <th className="p-3"></th>
+                <th className="p-3 text-center">{t("page.action")}</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} className="text-center py-8"><Loader2 className="w-5 h-5 animate-spin inline" /></td></tr>
-              ) : filtered.length === 0 ? (
-                <tr><td colSpan={7} className="text-center py-8 text-zinc-400">{t("page.no_purchases_found")}</td></tr>
-              ) : filtered.map((p) => (
-                <tr key={p.id} className="border-t border-zinc-200 hover:bg-zinc-50">
-                  <td className="p-3 text-xs whitespace-nowrap">{formatDate(p.created_at)}</td>
-                  <td className="p-3 font-mono text-xs font-semibold">{p.reference || "-"}</td>
-                  <td className="p-3">
-                    <button onClick={() => setDetailPurchase(p)} className="font-semibold hover:text-[#E60000] text-left">{p.supplier_name}</button>
-                  </td>
-                  <td className="p-3 text-xs">
-                    {(p.items || []).map((it, idx) => (
-                      <div key={idx} className="flex gap-2">
-                        <span className="font-medium truncate max-w-[200px]">{it.name}</span>
-                        <span className="text-zinc-500 shrink-0">x{it.quantity} {getProductUnit(it.product_id)}</span>
-                        <span className="text-zinc-400 shrink-0">@{formatMoney(it.cost)}</span>
-                      </div>
+                <tr><td colSpan={5} className="text-center py-8"><Loader2 className="w-5 h-5 animate-spin inline" /></td></tr>
+              ) : groups.length === 0 ? (
+                <tr><td colSpan={5} className="text-center py-8 text-zinc-400">{t("page.no_purchases_found")}</td></tr>
+              ) : groups.map((g) => {
+                const totalForGroup = g.purchases.reduce((s, p) => s + (p.total || 0), 0);
+                const isOpen = expanded[g.supplier_id];
+                const statuses = [...new Set(g.purchases.map((p) => p.status))];
+                const groupStatus = statuses.length === 1 ? statuses[0] : "mixed";
+                return (
+                  <React.Fragment key={g.supplier_id}>
+                    <tr className="border-t border-zinc-200 bg-zinc-50 hover:bg-zinc-100 cursor-pointer" onClick={() => toggleGroup(g.supplier_id)}>
+                      <td className="p-3 font-semibold flex items-center gap-2">
+                        {isOpen ? <ChevronDown className="w-4 h-4 text-zinc-400" /> : <ChevronRight className="w-4 h-4 text-zinc-400" />}
+                        {g.supplier_name}
+                        <span className="text-[10px] font-mono text-zinc-400 ml-1">({g.purchases.length})</span>
+                      </td>
+                      <td className="p-3 font-mono text-right text-xs text-zinc-500">{g.purchases.length}x</td>
+                      <td className="p-3 font-mono text-right font-bold">{formatMoney(totalForGroup)}</td>
+                      <td className="p-3">
+                        {groupStatus === "mixed" ? (
+                          <span className="px-2 py-0.5 text-[10px] font-bold uppercase bg-zinc-200 text-zinc-600">{t("page.mixed")}</span>
+                        ) : (
+                          <span className={`px-2 py-0.5 text-[10px] font-bold uppercase ${groupStatus === "received" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}`}>{groupStatus}</span>
+                        )}
+                      </td>
+                      <td className="p-3 text-center"></td>
+                    </tr>
+                    {isOpen && g.purchases.map((p) => (
+                      <tr key={p.id} className="border-t border-zinc-100 hover:bg-zinc-50">
+                        <td className="p-2 pl-10 text-xs font-mono text-zinc-500">
+                          <div>{formatDate(p.created_at)}</div>
+                          <div className="font-semibold text-zinc-700">{p.reference || "-"}</div>
+                        </td>
+                        <td className="p-2 text-xs">
+                          {(p.items || []).map((it, idx) => (
+                            <div key={idx} className="flex gap-2 whitespace-nowrap">
+                              <span className="font-medium truncate max-w-[140px]">{it.name}</span>
+                              <span className="text-zinc-500 shrink-0">x{it.quantity} {getProductUnit(it.product_id)}</span>
+                              <span className="text-zinc-400 shrink-0">@{formatMoney(it.cost)}</span>
+                            </div>
+                          ))}
+                          {(!p.items || p.items.length === 0) && <span className="text-zinc-400">-</span>}
+                        </td>
+                        <td className="p-2 text-right font-mono font-bold">{formatMoney(p.total)}</td>
+                        <td className="p-2">
+                          <span className={`px-2 py-0.5 text-[10px] font-bold uppercase ${p.status === "received" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}`}>{p.status}</span>
+                        </td>
+                        <td className="p-2 text-center whitespace-nowrap">
+                          {p.status !== "received" && (
+                            <button onClick={() => onReceive(p)} disabled={busyReceive === p.id}
+                              className="p-1.5 hover:bg-green-100 text-green-700 mr-1" title={t("page.receive")}>
+                              {busyReceive === p.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                            </button>
+                          )}
+                          {p.status === "draft" && (
+                            <button onClick={() => onDelete(p)} disabled={busyDelete === p.id}
+                              className="p-1.5 hover:bg-red-100 text-[#E60000]" title={t("common.delete")}>
+                              {busyDelete === p.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
                     ))}
-                    {(!p.items || p.items.length === 0) && <span className="text-zinc-400">-</span>}
-                  </td>
-                  <td className="p-3 text-right font-mono font-bold">{formatMoney(p.total)}</td>
-                  <td className="p-3">
-                    <span className={`px-2 py-0.5 text-[10px] font-bold uppercase ${p.status === "received" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}`}>{p.status}</span>
-                  </td>
-                  <td className="p-3 text-right whitespace-nowrap">
-                    {p.status !== "received" && (
-                      <button onClick={() => onReceive(p)} disabled={busyReceive === p.id}
-                        className="p-1.5 hover:bg-green-100 text-green-700 mr-1" title={t("page.receive")}>
-                        {busyReceive === p.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-                      </button>
-                    )}
-                    {p.status === "draft" && (
-                      <button onClick={() => onDelete(p)} disabled={busyDelete === p.id}
-                        className="p-1.5 hover:bg-red-100 text-[#E60000]" title={t("common.delete")}>
-                        {busyDelete === p.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
+                  </React.Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>

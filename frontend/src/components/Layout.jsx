@@ -433,7 +433,7 @@ export default function Layout() {
         })}
       </nav>
 
-      <Toaster position="bottom-right" theme="light" richColors duration={1500} />
+      <Toaster position="bottom-right" theme="light" richColors duration={1000} />
       {shiftOpen && <ShiftModal onClose={() => setShiftOpen(false)} />}
     </div>
   );

@@ -270,4 +270,22 @@ router.post('/', validate(CreateOrderSchema), async (req: Request, res: Response
   res.status(201).json(data);
 });
 
+router.post('/backfill-line-total', verifyJWT, requireRoles('admin', 'super_admin'), async (_req: Request, res: Response) => {
+  try {
+    const orders = await Order.find({ 'items.line_total': { $in: [0, null, undefined] } }).lean();
+    let count = 0;
+    for (const order of orders) {
+      const updatedItems = (order as any).items.map((item: any) => ({
+        ...item,
+        line_total: item.line_total || item.total || 0,
+      }));
+      await Order.updateOne({ _id: order._id }, { $set: { items: updatedItems } });
+      count++;
+    }
+    res.json({ ok: true, backfilled_orders: count });
+  } catch (err: any) {
+    res.status(500).json({ detail: err.message });
+  }
+});
+
 export default router;

@@ -2,9 +2,25 @@
 
 ## Code Word to Resume: "start no bargaining"
 
-## Complete Status (up to Fix WhatsApp + AdvancedReports + Toast)
+## Complete Status (up to Full Data Flow Fix + Reports Fix)
 
-### ✅ COMPLETED — This Session (WhatsApp fix + AdvancedReports + Toast)
+### ✅ COMPLETED — This Session (Full Data Flow Fix + Reports Fix)
+- **BIDashboard.jsx** — `profit.margin` → `profit.gross_margin_percent` (wrong field name, always showed `-`)
+- **BIDashboard.jsx** — Added 30s auto-refresh + loading state + error display + date filter (last 30 days)
+- **biDashboard.routes.ts** — Cash flow account matching: `$in: ['cash','bank','upi']` → `$regex` case-insensitive
+- **biDashboard.routes.ts** — Top products revenue: `{ $sum: '$items.line_total' }` → `{ $sum: { $ifNull: ['$items.line_total', '$items.total'] } }` (fallback for old orders)
+- **orders.routes.ts** — New `POST /api/orders/backfill-line-total` endpoint
+- **DashboardV2.jsx** — KPI card keys `today_revenue`→`revenue_today`, `today_orders`→`orders_today` (field name mismatch → ₹0.00)
+- **DashboardV2.jsx** — Top products revenue: `p.total_sales || p.revenue` → `p.total_revenue || p.total_qty * p.price || 0`
+- **DashboardV2.jsx** — Added 30s auto-refresh
+- **extraReports.routes.ts** — Cash flow: flat array response → `{ summary: { total_sales, total_expenses, total_purchases, net_cash_flow }, details: [...] }`
+- **Reports.jsx** — Balance Statement: `data.equity` → `data.total_equity || data.equity`
+- **Reports.jsx** — Register Report: `data.reports` added to rows fallback chain, `total_reports` added to KPI fallback, `row.created_at` date fallback
+- **reports.routes.ts** — Sales report top_items: added `total` field (was only sending `name` + `quantity`, no revenue)
+- **Full end-to-end test**: Created supplier, purchase, customer, sales, expense, income — all APIs verified with real data
+- **Build**: frontend `npm run build` ✅, backend `tsc --noEmit` ✅
+
+### ✅ COMPLETED — Previous Session (WhatsApp fix + AdvancedReports + Toast)
 - **AdvancedReports.jsx** — Fixed double `/api` prefix in `api.get()` calls. axios `baseURL` already adds `/api`, so paths like `/api/advanced-reports/z-report` became `/api/api/advanced-reports/z-report` (404). Fixed to `/advanced-reports/z-report`.
 - **Toast duration** — `<Toaster>` in Layout.jsx now has `duration={1500}` (was default 4000ms)
 - **Unused import** — Removed `toast` import from AdvancedReports.jsx (was only used in removed error toast)

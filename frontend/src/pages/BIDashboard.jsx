@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 
 import { useTranslation } from "react-i18next";
 
@@ -18,6 +18,10 @@ import { PageShell } from "./Dashboard";
 
 const BAR_COLORS = ["#E60000", "#09090B", "#FDE047", "#0284C7", "#16A34A"];
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const datePast = (d: number) => new Date(Date.now() - d * DAY_MS).toISOString().split("T")[0];
+
 
 
 export default function BIDashboard() {
@@ -34,51 +38,83 @@ export default function BIDashboard() {
 
   const [cashFlow, setCashFlow] = useState([]);
 
-  const [sym, setSym] = useState("뿯₽");
+  const [sym, setSym] = useState("₹");
+
+  const [error, setError] = useState("");
+
+  const [loading, setLoading] = useState(true);
+
+
+
+  const fetchData = useCallback(() => {
+
+    const p = datePast(30);
+
+    const now = new Date().toISOString().split("T")[0];
+
+    const dateQ = `date_from=${p}&date_to=${now}`;
+
+    Promise.all([
+
+      api.get(`/bi/comparison?${dateQ}`).then((r) => {
+
+        const d = r.data;
+
+        if (d && typeof d === "object" && !Array.isArray(d)) {
+
+          setComparison([
+
+            { label: "Purchases", value: d.total_purchases || 0 },
+
+            { label: "Sales", value: d.total_sales || 0 },
+
+            { label: "Damages", value: d.total_damages || 0 },
+
+            { label: "Expenses", value: d.total_expenses || 0 },
+
+            { label: "Income", value: d.total_income || 0 },
+
+          ]);
+
+        } else {
+
+          setComparison(d || []);
+
+        }
+
+      }),
+
+      api.get(`/bi/top-products?${dateQ}`).then((r) => setTopProducts(r.data)),
+
+      api.get("/bi/top-customers").then((r) => setTopCustomers(r.data)),
+
+      api.get(`/bi/profit-margin?${dateQ}`).then((r) => setProfit(r.data)),
+
+      api.get(`/bi/cash-flow?${dateQ}`).then((r) => setCashFlow(r.data)),
+
+      api.get("/settings").then((r) => setSym(r.data.currency_symbol || "₹")),
+
+    ]).catch((err) => {
+
+      setError(err?.response?.data?.detail || err?.message || "Failed to load data");
+
+    }).finally(() => setLoading(false));
+
+  }, []);
 
 
 
   useEffect(() => {
 
-    api.get("/bi/comparison").then((r) => {
+    setLoading(true);
 
-      const d = r.data;
+    fetchData();
 
-      if (d && typeof d === "object" && !Array.isArray(d)) {
+    const id = setInterval(fetchData, 30000);
 
-        setComparison([
+    return () => clearInterval(id);
 
-          { label: "Purchases", value: d.total_purchases || 0 },
-
-          { label: "Sales", value: d.total_sales || 0 },
-
-          { label: "Damages", value: d.total_damages || 0 },
-
-          { label: "Expenses", value: d.total_expenses || 0 },
-
-          { label: "Income", value: d.total_income || 0 },
-
-        ]);
-
-      } else {
-
-        setComparison(d || []);
-
-      }
-
-    }).catch(() => setComparison([]));
-
-    api.get("/bi/top-products").then((r) => setTopProducts(r.data)).catch(() => setTopProducts([]));
-
-    api.get("/bi/top-customers").then((r) => setTopCustomers(r.data)).catch(() => setTopCustomers([]));
-
-    api.get("/bi/profit-margin").then((r) => setProfit(r.data)).catch(() => setProfit(null));
-
-    api.get("/bi/cash-flow").then((r) => setCashFlow(r.data)).catch(() => setCashFlow([]));
-
-    api.get("/settings").then((r) => setSym(r.data.currency_symbol || "뿯₽"));
-
-  }, []);
+  }, [fetchData]);
 
 
 
@@ -93,6 +129,10 @@ export default function BIDashboard() {
     <PageShell title={t("page.bi_dashboard")} subtitle={t("page.flow_comparison")}>
 
       <div className="p-6 space-y-6 overflow-y-auto h-full">
+
+        {loading && <div className="text-center py-8 text-zinc-500 font-mono text-sm">Loading...</div>}
+
+        {error && <div className="bg-red-50 border-2 border-red-200 text-red-700 p-3 font-mono text-xs">{error}</div>}
 
         <div className="bg-white border-2 border-zinc-200 p-5">
 
@@ -168,7 +208,7 @@ export default function BIDashboard() {
 
             <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-400">{t("page.profit_margin")}</div>
 
-            <div className="font-display font-black text-3xl uppercase mt-1">{profit ? `${profit.margin?.toFixed(1)}%` : "-"}</div>
+            <div className="font-display font-black text-3xl uppercase mt-1">{profit ? `${profit.gross_margin_percent?.toFixed(1)}%` : "-"}</div>
 
           </div>
 

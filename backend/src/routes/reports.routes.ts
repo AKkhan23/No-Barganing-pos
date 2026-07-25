@@ -88,7 +88,7 @@ router.get('/sales', async (req: Request, res: Response) => {
     total_tax: totalTax,
     by_payment_mode: Object.entries(byPaymentMode).map(([mode, v]) => ({ mode, total: v.total })),
     by_cashier: Object.entries(byCashier).map(([cashier, v]) => ({ cashier, total: v.total })),
-    top_items: topItemsSorted.map((t) => ({ name: t.name, quantity: t.total_qty })),
+    top_items: topItemsSorted.map((t) => ({ name: t.name, quantity: t.total_qty, total: t.total_revenue })),
     orders: orders.map((o: any) => {
       const { _id, __v, ...rest } = o;
       return rest;

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { LogIn, LogOut, Search, Clock, Users } from "lucide-react";
+import { LogIn, LogOut, Search, Clock, Users, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import api from "../lib/api";
 import { PageShell } from "./Dashboard";
@@ -30,12 +30,13 @@ export default function CheckInOut() {
   useEffect(() => { loadToday(); }, []);
 
   const handleCheckIn = async () => {
+    if (!note.trim()) { toast.error("Please enter a note before check-in"); return; }
     setLoading(true);
     try {
       await api.post("/check-in-out/check-in", {
         user_id: user.id,
         user_name: user.name,
-        note: note || undefined,
+        note: note.trim(),
       });
       toast.success("Checked in");
       setNote("");
@@ -48,11 +49,12 @@ export default function CheckInOut() {
   };
 
   const handleCheckOut = async () => {
+    if (!note.trim()) { toast.error("Please enter a note before check-out"); return; }
     setLoading(true);
     try {
       await api.post("/check-in-out/check-out", {
         user_id: user.id,
-        note: note || undefined,
+        note: note.trim(),
       });
       toast.success("Checked out");
       setNote("");
@@ -61,6 +63,16 @@ export default function CheckInOut() {
       toast.error(err?.response?.data?.detail || "Check-out failed");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await api.delete(`/check-in-out/${id}`);
+      toast.success("Record deleted");
+      loadToday();
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Delete failed");
     }
   };
 
@@ -101,11 +113,13 @@ export default function CheckInOut() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <button
               onClick={isCheckedIn ? handleCheckOut : handleCheckIn}
-              disabled={loading}
+              disabled={loading || !note.trim()}
               className={`h-14 px-8 rounded-xl text-sm font-bold uppercase tracking-widest flex items-center gap-3 transition-all shadow-lg ${
-                isCheckedIn
-                  ? "bg-[#E60000] text-white hover:bg-[#cc0000] shadow-red-500/30"
-                  : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-500/30"
+                !note.trim()
+                  ? "bg-zinc-300 text-zinc-500 cursor-not-allowed shadow-none"
+                  : isCheckedIn
+                    ? "bg-[#E60000] text-white hover:bg-[#cc0000] shadow-red-500/30"
+                    : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-500/30"
               }`}
             >
               {isCheckedIn ? <LogOut className="w-5 h-5" strokeWidth={2.5} /> : <LogIn className="w-5 h-5" strokeWidth={2.5} />}
@@ -115,8 +129,9 @@ export default function CheckInOut() {
               <input
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="Add a note (optional)..."
+                placeholder="Note is required - describe your shift..."
                 className="w-full h-11 border border-zinc-300 rounded-lg px-4 focus:outline-none focus:ring-2 focus:ring-[#E60000]/30 focus:border-[#E60000] text-sm"
+                required
               />
             </div>
           </div>
@@ -159,6 +174,7 @@ export default function CheckInOut() {
                 <th className="p-4 text-left font-mono text-[10px] uppercase tracking-widest text-zinc-500">Action</th>
                 <th className="p-4 text-left font-mono text-[10px] uppercase tracking-widest text-zinc-500">Timestamp</th>
                 <th className="p-4 text-left font-mono text-[10px] uppercase tracking-widest text-zinc-500">Note</th>
+                <th className="p-4 text-center font-mono text-[10px] uppercase tracking-widest text-zinc-500">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -167,7 +183,8 @@ export default function CheckInOut() {
                   <td className="p-4 font-medium">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-zinc-400" />
-                      {r.user_name || r.user_id}
+                      <span>{r.user_name || "Unknown"}</span>
+                      <span className="text-[10px] font-mono text-zinc-400 ml-1">({r.user_id?.slice(-6)})</span>
                     </div>
                   </td>
                   <td className="p-4">
@@ -181,12 +198,21 @@ export default function CheckInOut() {
                     </span>
                   </td>
                   <td className="p-4 text-sm text-zinc-500 font-mono">{formatDate(r.timestamp)}</td>
-                  <td className="p-4 text-sm text-zinc-500">{r.note || "-"}</td>
+                  <td className="p-4 text-sm text-zinc-500 max-w-[200px] truncate">{r.note || "-"}</td>
+                  <td className="p-4 text-center">
+                    <button
+                      onClick={() => handleDelete(r.id)}
+                      className="p-1.5 rounded-lg hover:bg-red-50 text-zinc-400 hover:text-red-600 transition-colors"
+                      title="Delete record"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </td>
                 </tr>
               ))}
               {displayRecords.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="p-12 text-center">
+                  <td colSpan={5} className="p-12 text-center">
                     <div className="text-zinc-300 mb-2">
                       <Clock className="w-12 h-12 mx-auto" strokeWidth={1} />
                     </div>

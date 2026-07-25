@@ -518,7 +518,7 @@ function BalanceStatementTab() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <KpiCard label="Total Assets" value={formatMoney(data.total_assets || 0)} />
         <KpiCard label="Total Liabilities" value={formatMoney(data.total_liabilities || 0)} />
-        <KpiCard label="Equity" value={formatMoney(data.equity || 0)} />
+        <KpiCard label="Equity" value={formatMoney(data.total_equity || data.equity || 0)} />
       </div>
 
       {Array.isArray(details) && details.length > 0 && (
@@ -634,12 +634,12 @@ function RegisterReportTab({ from, to }) {
   }
 
   const summary = data.summary || data;
-  const rows = data.shifts || data.registers || data.records || data.entries || (Array.isArray(data) ? data : []);
+  const rows = data.reports || data.shifts || data.registers || data.records || data.entries || (Array.isArray(data) ? data : []);
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <KpiCard label="Total Shifts" value={summary.total_shifts || summary.count || 0} />
+        <KpiCard label="Total Shifts" value={summary.total_reports || summary.total_shifts || summary.count || 0} />
         <KpiCard label="Total Opening Cash" value={formatMoney(summary.total_opening_cash || summary.total_opening || 0)} />
         <KpiCard label="Total Closing Cash" value={formatMoney(summary.total_closing_cash || summary.total_closing || 0)} />
         <KpiCard label="Total Variance" value={formatMoney(summary.total_variance || summary.variance || 0)} />
@@ -662,7 +662,7 @@ function RegisterReportTab({ from, to }) {
             <td className="p-3 text-right font-mono">{formatMoney(row.closing_cash || row.closing || 0)}</td>
             <td className="p-3 text-right font-mono">{formatMoney(row.expected_cash || row.expected || 0)}</td>
             <td className="p-3 text-right font-mono">{formatMoney(row.variance || 0)}</td>
-            <td className="p-3 text-xs">{row.date ? new Date(row.date).toLocaleDateString() : "-"}</td>
+            <td className="p-3 text-xs">{new Date(row.date || row.created_at).toLocaleDateString()}</td>
           </>
         )}
       />
