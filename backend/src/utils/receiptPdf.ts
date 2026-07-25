@@ -272,19 +272,17 @@ export function generateReceiptPdf(data: ReceiptData): string {
   doc.rect(0, y, PAGE_W, stripH).fill("#1a1a2e");
   const brandStr = "AIMFORTECH SOLUTIONS";
   const byStr = "Powered by ";
-  doc.font(FONT).fontSize(7);
+  doc.font(FONT).fontSize(8);
   const pw = doc.widthOfString(byStr);
-  doc.font(FONT_BOLD).fontSize(12);
+  doc.font(FONT_BOLD).fontSize(11);
   const bw = doc.widthOfString(brandStr);
   const totalW = pw + bw;
   const startX = MARGIN + (CONTENT_W - totalW) / 2;
-  doc.font(FONT).fontSize(7).fillColor("#8899aa");
+  const remW = PAGE_W - MARGIN - (startX + pw);
+  doc.font(FONT).fontSize(8).fillColor("#8899aa");
   doc.text(byStr, startX, y + 10, { width: pw });
-  doc.font(FONT_BOLD).fontSize(12).fillColor("#e0f7fa");
-  doc.text(brandStr, startX + pw, y + 7, {
-    width: bw,
-    characterSpacing: 1.5,
-  });
+  doc.font(FONT_BOLD).fontSize(11).fillColor("#e0f7fa");
+  doc.text(brandStr, startX + pw, y + 8, { width: remW });
 
   y += stripH;
 
