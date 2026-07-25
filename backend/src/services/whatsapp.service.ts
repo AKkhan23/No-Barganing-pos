@@ -94,3 +94,25 @@ export async function sendWhatsAppDocument(phone: string, documentUrl: string, f
     return { ok: false, error: detail };
   }
 }
+
+export async function checkConnection(): Promise<{ connected: boolean; number?: string; method?: string; error?: string }> {
+  try {
+    const cfg = await getConfig();
+    if (cfg.apiUrl && cfg.sessionId) {
+      const url = `${cfg.apiUrl.replace(/\/+$/, '')}/api/sessions/${cfg.sessionId}`;
+      const headers: Record<string, string> = {};
+      if (cfg.apiKey) headers['X-API-Key'] = cfg.apiKey;
+      const resp = await httpClient.get(url, { headers });
+      const data = resp.data;
+      const number = data?.me?.id || data?.me?.pushname || data?.id || data?.number || '';
+      return { connected: true, number: String(number).replace('@c.us', ''), method: 'Open WA' };
+    }
+    if (cfg.phoneNumberId) {
+      return { connected: true, number: cfg.phoneNumberId, method: 'Cloud API' };
+    }
+    return { connected: false, error: 'No WhatsApp configuration found' };
+  } catch (err: any) {
+    const detail = err?.response?.data?.error?.message || err?.response?.data?.detail || err.message || 'Connection failed';
+    return { connected: false, error: detail };
+  }
+}

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Save, Database, Trash2, RefreshCw } from "lucide-react";
+import { Save, Database, Trash2, RefreshCw, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import api from "../lib/api";
 import { PageShell } from "./Dashboard";
 
@@ -34,6 +34,8 @@ export default function Settings() {
   const [data, setData] = useState(null);
   const [tab, setTab] = useState("general");
   const [dataBusy, setDataBusy] = useState(null);
+  const [waStatus, setWaStatus] = useState(null);
+  const [waChecking, setWaChecking] = useState(false);
 
   useEffect(() => {
     api.get("/settings").then((r) => setData(r.data)).catch(() => {});
@@ -276,28 +278,51 @@ export default function Settings() {
     );
   };
 
+  const checkWA = async () => {
+    setWaChecking(true); setWaStatus(null);
+    try {
+      const r = await api.get("/whatsapp/status");
+      setWaStatus(r.data);
+    } catch { setWaStatus({ connected: false, error: 'Failed to check' });
+    } finally { setWaChecking(false); }
+  };
+
   const renderWhatsApp = () => {
     const wc = data.whatsapp_config || {};
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div>
+          <label className={labelClass}>API URL (Open WA / Custom)</label>
+          <input className={inputClass} value={wc.api_url ?? ""} onChange={(e) => handleChange("whatsapp_config.api_url", e.target.value)} placeholder="https://openwa.eskillsweb.online" />
+        </div>
+        <div>
+          <label className={labelClass}>Session ID</label>
+          <input className={inputClass} value={wc.session_id ?? ""} onChange={(e) => handleChange("whatsapp_config.session_id", e.target.value)} placeholder="Session UUID" />
+        </div>
+        <div>
           <label className={labelClass}>API Key</label>
           <input className={inputClass} value={wc.api_key ?? ""} onChange={(e) => handleChange("whatsapp_config.api_key", e.target.value)} />
         </div>
         <div>
-          <label className={labelClass}>Phone Number ID</label>
+          <label className={labelClass}>Phone Number ID (Cloud API fallback)</label>
           <input className={inputClass} value={wc.phone_number_id ?? ""} onChange={(e) => handleChange("whatsapp_config.phone_number_id", e.target.value)} />
         </div>
         <div>
           <label className={labelClass}>Business Account ID</label>
           <input className={inputClass} value={wc.business_account_id ?? ""} onChange={(e) => handleChange("whatsapp_config.business_account_id", e.target.value)} />
         </div>
-        <div>
-          <label className={labelClass}>API URL (optional, for custom provider)</label>
-          <input className={inputClass} value={wc.api_url ?? ""} onChange={(e) => handleChange("whatsapp_config.api_url", e.target.value)} placeholder="https://your-api.com/send" />
-        </div>
-        <div className="md:col-span-2 pt-2">
-          <button className={btnClass} onClick={() => saveGroup("whatsapp_config", data.whatsapp_config)}><Save className="w-4 h-4" /> {t("common.save")}</button>
+        <div className="md:col-span-2 flex items-center gap-3 pt-2">
+          <button className={btnClass} onClick={() => saveGroup("whatsapp_config", data.whatsapp_config)}><Save className="w-4 h-4" /> Save</button>
+          <button onClick={checkWA} disabled={waChecking}
+            className="h-11 px-4 border-2 border-zinc-300 text-xs font-bold uppercase tracking-widest flex items-center gap-2 hover:bg-zinc-50">
+            {waChecking ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />} Check Connection
+          </button>
+          {waStatus && (
+            <div className={`flex items-center gap-2 text-xs font-mono ${waStatus.connected ? 'text-emerald-600' : 'text-red-600'}`}>
+              {waStatus.connected ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+              {waStatus.connected ? `Connected — ${waStatus.number || waStatus.method}` : waStatus.error}
+            </div>
+          )}
         </div>
       </div>
     );

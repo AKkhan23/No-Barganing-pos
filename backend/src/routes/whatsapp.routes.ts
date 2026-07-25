@@ -4,12 +4,21 @@ import { WhatsAppLog } from '../models/WhatsAppLog';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
 import { validate } from '../middleware/validate';
-import { sendWhatsApp, sendWhatsAppDocument } from '../services/whatsapp.service';
+import { sendWhatsApp, sendWhatsAppDocument, checkConnection } from '../services/whatsapp.service';
 import { generateReceiptPdf } from '../utils/receiptPdf';
 import logger from '../utils/logger';
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager', 'cashier'));
+
+router.get('/status', async (_req: Request, res: Response) => {
+  try {
+    const result = await checkConnection();
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ connected: false, error: err.message });
+  }
+});
 
 const SendSchema = z.object({
   phone: z.string().min(1),
