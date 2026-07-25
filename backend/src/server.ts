@@ -21,6 +21,8 @@ async function start() {
     await connectDB();
     await seedData();
     const server = app.listen(env.PORT, '0.0.0.0', () => {
+      server.keepAliveTimeout = 30000;
+      server.headersTimeout = 31000;
       initSocket(server);
       showStartupBanner(env.PORT);
       logger.info(`Server running on http://0.0.0.0:${env.PORT}`);

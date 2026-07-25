@@ -1,6 +1,12 @@
 import axios from 'axios';
+import https from 'https';
 import { Settings } from '../models/Settings';
 import logger from '../utils/logger';
+
+const httpClient = axios.create({
+  timeout: 15000,
+  httpsAgent: new https.Agent({ keepAlive: true, keepAliveMsecs: 5000 }),
+});
 
 async function getConfig() {
   const settings = await Settings.findOne({}).lean();
@@ -24,7 +30,7 @@ export async function sendWhatsApp(phone: string, message: string, invoiceNo?: s
       const url = `${cfg.apiUrl.replace(/\/+$/, '')}/api/sessions/${cfg.sessionId}/messages/send-text`;
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (cfg.apiKey) headers['X-API-Key'] = cfg.apiKey;
-      await axios.post(url, { chatId: `${cleanPhone}@c.us`, text: message }, { headers });
+      await httpClient.post(url, { chatId: `${cleanPhone}@c.us`, text: message }, { headers });
       logger.info(`WhatsApp sent to ${phone}${invoiceNo ? ' (invoice: ' + invoiceNo + ')' : ''} via Open WA`);
       return { ok: true };
     }
@@ -32,7 +38,7 @@ export async function sendWhatsApp(phone: string, message: string, invoiceNo?: s
     if (cfg.apiUrl) {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (cfg.apiKey) headers['Authorization'] = `Bearer ${cfg.apiKey}`;
-      await axios.post(cfg.apiUrl, { phone, message, invoice_no: invoiceNo }, { headers });
+      await httpClient.post(cfg.apiUrl, { phone, message, invoice_no: invoiceNo }, { headers });
       logger.info(`WhatsApp sent to ${phone}${invoiceNo ? ' (invoice: ' + invoiceNo + ')' : ''} via custom API`);
       return { ok: true };
     }
@@ -48,7 +54,7 @@ export async function sendWhatsApp(phone: string, message: string, invoiceNo?: s
         type: 'text',
         text: { body: message },
       };
-      await axios.post(url, payload, {
+      await httpClient.post(url, payload, {
         headers: {
           Authorization: `Bearer ${cfg.apiKey}`,
           'Content-Type': 'application/json',
@@ -79,7 +85,7 @@ export async function sendWhatsAppDocument(phone: string, documentUrl: string, f
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (cfg.apiKey) headers['X-API-Key'] = cfg.apiKey;
 
-    await axios.post(url, { chatId: `${cleanPhone}@c.us`, url: documentUrl, filename, caption: caption || '' }, { headers });
+    await httpClient.post(url, { chatId: `${cleanPhone}@c.us`, url: documentUrl, filename, caption: caption || '' }, { headers });
     logger.info(`WhatsApp document sent to ${phone}: ${filename}`);
     return { ok: true };
   } catch (err: any) {

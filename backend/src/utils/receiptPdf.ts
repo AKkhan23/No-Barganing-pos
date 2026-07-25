@@ -112,12 +112,7 @@ export function generateReceiptPdf(data: ReceiptData): string {
 
   let y = 0;
 
-  doc.rect(0, 0, PAGE_W, 40).fill(COLORS.headerBg);
-  doc.fillColor(COLORS.headerText).font(FONT_BOLD).fontSize(11);
-  doc.text("RECEIPT", MARGIN, 14);
-  doc.fontSize(14).text("×", PAGE_W - MARGIN - 10, 10);
-
-  y = 55;
+  y = 20;
 
   doc.fillColor(COLORS.title).font(FONT_BOLD).fontSize(18);
   cen(outletName, y);
