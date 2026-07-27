@@ -422,7 +422,9 @@ router.patch('/:id', verifyJWT, requireRoles('admin', 'manager'), validate(Updat
  *         description: Product deleted
  */
 router.delete('/:id', verifyJWT, requireRoles('admin', 'manager'), async (req: Request, res: Response) => {
-  await Product.deleteOne({ ...scopeFilter(req), id: req.params.id });
+  const parentId = req.params.id;
+  await Product.deleteOne({ ...scopeFilter(req), id: parentId });
+  await Product.deleteMany({ ...scopeFilter(req), variant_group_id: parentId });
   res.json({ ok: true });
 });
 
