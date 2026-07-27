@@ -145,19 +145,21 @@ export default function POS() {
   }, [t]);
 
   // Polling fallback for cross-device sync (when socket.io fails)
-  const lastPollRef = useRef(Date.now());
+  const lastPollRef = useRef(new Date().toISOString());
   useEffect(() => {
     const iv = setInterval(async () => {
       try {
-        const { data } = await api.get(`/scan-events?since=${lastPollRef.current}`);
+        const { data } = await api.get(`/scan-events?since=${encodeURIComponent(lastPollRef.current)}`);
         if (data?.length) {
-          lastPollRef.current = Date.now();
+          lastPollRef.current = new Date().toISOString();
           for (const ev of data) {
             const list = productsRef.current;
             const product = list.find((p) => p.barcode === ev.barcode || p.id === ev.product_id);
             if (product) {
               addToCartRef.current(product, null);
               toast.success(t("page.scanned_from_device", { name: product.name }));
+            } else {
+              handleScanRef.current(ev.barcode);
             }
           }
         }
