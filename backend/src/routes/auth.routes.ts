@@ -10,8 +10,8 @@ import { verifyJWT } from '../middleware/auth';
 const router = Router();
 
 const LoginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1),
+  email: z.string().email('Invalid email format'),
+  password: z.string().min(1, 'Password is required'),
 });
 
 /**
@@ -86,8 +86,11 @@ router.post('/login', validate(LoginSchema), async (req: Request, res: Response)
  *                 name: { type: string }
  *                 role: { type: string }
  */
-router.get('/me', verifyJWT, (req: Request, res: Response) => {
-  res.json({ id: req.user!.id, email: req.user!.email, name: req.user!.name, role: req.user!.role });
+router.get('/me', verifyJWT, async (req: Request, res: Response) => {
+  const user = await User.findOne({ id: req.user!.id }, { password_hash: 0 }).lean();
+  if (!user) { res.status(401).json({ detail: 'User no longer exists' }); return; }
+  if (!user.active) { res.status(403).json({ detail: 'Account is inactive' }); return; }
+  res.json({ id: user.id, email: user.email, name: user.name, role: user.role });
 });
 
 export default router;

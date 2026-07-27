@@ -2,7 +2,18 @@ import { Router, Request, Response } from 'express';
 import { Unit } from '../models/Unit';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
+import { z } from 'zod';
+import { validate } from '../middleware/validate';
 
+const CreateUnitSchema = z.object({
+  unit_name: z.string().min(1, 'Unit name is required'),
+  short_name: z.string().optional(),
+});
+
+const UpdateUnitSchema = z.object({
+  unit_name: z.string().min(1, 'Unit name is required').optional(),
+  short_name: z.string().optional(),
+});
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -43,7 +54,7 @@ router.get('/', async (req: Request, res: Response) => {
  *       201:
  *         description: Unit created
  */
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', validate(CreateUnitSchema), async (req: Request, res: Response) => {
   const now = new Date().toISOString();
   const item = new Unit({ id: generateId(), ...req.body, created_at: now, created_by: req.user?.id });
   await item.save();
@@ -76,7 +87,7 @@ router.post('/', async (req: Request, res: Response) => {
  *       404:
  *         description: Unit not found
  */
-router.patch('/:id', async (req: Request, res: Response) => {
+router.patch('/:id', validate(UpdateUnitSchema), async (req: Request, res: Response) => {
   const item = await Unit.findOneAndUpdate({ id: req.params.id }, { $set: req.body }, { new: true }).lean();
   if (!item) { res.status(404).json({ detail: 'Unit not found' }); return; }
   res.json(item);

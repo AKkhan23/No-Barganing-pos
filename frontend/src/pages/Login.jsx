@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, Navigate } from "react-router-dom";
-import { Store, LogIn, Eye, EyeOff } from "lucide-react";
+import { Store, LogIn, Eye, EyeOff, CloudOff } from "lucide-react";
 import { useAuth } from "../lib/auth";
-import api, { formatApiErrorDetail } from "../lib/api";
+import api, { formatApiErrorDetail, BACKEND_URL } from "../lib/api";
 
 export default function Login() {
   const { t } = useTranslation();
@@ -14,9 +14,24 @@ export default function Login() {
   const [showPw, setShowPw] = useState(false);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+  const [waking, setWaking] = useState(false);
+  const wakeRef = useRef(null);
 
   useEffect(() => {
-    api.get("/health").catch(() => {});
+    if (!BACKEND_URL) return;
+    let cancelled = false;
+    let retries = 0;
+    setWaking(true);
+    const ping = () => {
+      if (cancelled) return;
+      retries++;
+      api.get("/health").then(() => { if (!cancelled) setWaking(false); }).catch(() => {
+        if (!cancelled && retries < 8) setTimeout(ping, Math.min(retries * 2000, 8000));
+        else if (!cancelled) setWaking(false);
+      });
+    };
+    ping();
+    return () => { cancelled = true; if (wakeRef.current) clearTimeout(wakeRef.current); };
   }, []);
 
   if (!loading && user) return <Navigate to="/pos" replace />;
@@ -141,6 +156,12 @@ export default function Login() {
                 </div>
               </div>
 
+              {waking && (
+                <div className="border-2 border-amber-400 bg-amber-50 text-amber-700 text-sm p-3 font-medium flex items-center gap-2">
+                  <CloudOff className="w-4 h-4 shrink-0" />
+                  Server is waking up… this may take 30-60 seconds on first visit
+                </div>
+              )}
               {err && (
                 <div
                   className="border-2 border-[#E60000] bg-red-50 text-[#E60000] text-sm p-3 font-medium"
@@ -161,22 +182,13 @@ export default function Login() {
               </button>
             </form>
 
-            <div className="mt-6 pt-6 border-t border-zinc-200">
-              <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-500 mb-2">
-                {t("page.demo_accounts")}
-              </div>
-              <div className="grid grid-cols-2 gap-3 text-xs font-mono">
-                <div className="border border-zinc-200 p-2">
-                  <div className="text-zinc-500">{t("page.admin")}</div>
-                  <div className="text-zinc-900">admin@nobargaining.com</div>
-                  <div className="text-zinc-900">admin123</div>
-                </div>
-                <div className="border border-zinc-200 p-2">
-                  <div className="text-zinc-500">{t("page.cashier")}</div>
-                  <div className="text-zinc-900">cashier@nobargaining.com</div>
-                  <div className="text-zinc-900">cashier123</div>
-                </div>
-              </div>
+            <div className="mt-6 pt-6 border-t border-zinc-200 text-center">
+              <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-400">
+                Fixed prices · Fast checkout · No bargaining
+              </p>
+              <p className="text-[10px] font-mono text-zinc-300 mt-1">
+                Industrial-grade POS for retail stores
+              </p>
             </div>
           </div>
         </div>

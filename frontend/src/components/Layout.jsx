@@ -17,7 +17,7 @@ import { useAuth } from "../lib/auth";
 import { Toaster } from "sonner";
 import { toast } from "sonner";
 import api from "../lib/api";
-import { ConnectionBadge, InstallAppButton } from "./PWAInstall";
+import PWAInstall, { ConnectionBadge, InstallAppButton } from "./PWAInstall";
 
 const GROUPS = [
   { label: "Home", items: [
@@ -178,6 +178,17 @@ export default function Layout() {
     window.addEventListener("outlets-changed", onOutletsChanged);
     const onClickOutside = () => setOutletOpen(false);
     window.addEventListener("click", onClickOutside);
+
+    // Show mobile menu hint once
+    if (window.innerWidth < 1024 && !localStorage.getItem("menu_hint_shown")) {
+      const el = document.getElementById("mobile-swipe-hint");
+      if (el) {
+        setTimeout(() => { el.classList.remove("opacity-0"); el.classList.add("opacity-100"); }, 1000);
+        setTimeout(() => { el.classList.remove("opacity-100"); el.classList.add("opacity-0"); }, 5000);
+        localStorage.setItem("menu_hint_shown", "1");
+      }
+    }
+
     return () => {
       window.removeEventListener("outlets-changed", onOutletsChanged);
       window.removeEventListener("click", onClickOutside);
@@ -349,6 +360,11 @@ export default function Layout() {
             </select>
           </div>
         </div>
+        {/* Install App — always visible above user section */}
+        <div className="px-4 py-2 border-t border-zinc-800">
+          <InstallAppButton />
+        </div>
+
         <div className="border-t-2 border-zinc-800 bg-zinc-900">
           <button onClick={() => setBottomOpen((v) => !v)} data-testid="nav-bottom-toggle"
             className="w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-800 transition-colors">
@@ -368,7 +384,6 @@ export default function Layout() {
                 <Calculator className="w-4 h-4" strokeWidth={2.5} /> Shift Report
               </button>
 
-              <InstallAppButton />
               <ConnectionBadge />
               <button onClick={() => window.open('/api/docs', '_blank')} data-testid="nav-swagger"
                 className="w-full flex items-center justify-center gap-2 h-10 bg-zinc-800 hover:bg-blue-600 text-white text-xs font-bold uppercase tracking-widest transition-colors">
@@ -405,12 +420,17 @@ export default function Layout() {
       </main>
 
       {/* Mobile Bottom Tab Bar */}
+      {/* Mobile swipe hint — shows briefly on first mobile visit */}
+      <div id="mobile-swipe-hint" className="lg:hidden fixed bottom-20 left-1/2 -translate-x-1/2 z-30 bg-zinc-900 text-white text-[10px] font-mono px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 opacity-0 transition-opacity pointer-events-none">
+        <Menu className="w-3 h-3" /> Tap "More" for full menu
+      </div>
+
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-zinc-950 border-t-2 border-zinc-800 flex items-center justify-around h-14 safe-area-bottom">
         {[
           { to: "/dashboard", icon: LayoutDashboard, label: "Home" },
           { to: "/pos", icon: ScanBarcode, label: "POS" },
           { to: "/pos?cart=1", icon: ShoppingCart, label: "Cart" },
-          { to: "#more", icon: Menu, label: "More" },
+          { to: "#more", icon: Menu, label: "Menu" },
         ].map((tab) => {
           const isActive = tab.to === "#more"
             ? false
@@ -435,6 +455,7 @@ export default function Layout() {
 
       <Toaster position="bottom-right" theme="light" richColors duration={1000} />
       {shiftOpen && <ShiftModal onClose={() => setShiftOpen(false)} />}
+      <PWAInstall />
     </div>
   );
 }

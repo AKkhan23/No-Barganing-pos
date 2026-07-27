@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useRef } from "react";
 import api from "./api";
 
 const AuthContext = createContext(null);
@@ -6,8 +6,10 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null); // null = checking, false = anonymous
   const [loading, setLoading] = useState(true);
+  const cancelled = useRef(false);
 
   useEffect(() => {
+    cancelled.current = false;
     const token = localStorage.getItem("pos_token");
     const cached = localStorage.getItem("pos_user");
     if (!token) {
@@ -18,24 +20,29 @@ export function AuthProvider({ children }) {
     if (cached) {
       try { setUser(JSON.parse(cached)); } catch { localStorage.removeItem('pos_user'); }
     }
-    let cancelled = false;
-    api
-      .get("/auth/me")
-      .then((r) => {
-        if (cancelled) return;
+    let retries = 0;
+    const check = () => {
+      if (cancelled.current) return;
+      api.get("/auth/me").then((r) => {
+        if (cancelled.current) return;
         setUser(r.data);
         localStorage.setItem("pos_user", JSON.stringify(r.data));
-      })
-      .catch(() => {
-        if (cancelled) return;
-        localStorage.removeItem("pos_token");
-        localStorage.removeItem("pos_user");
-        setUser(false);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+        setLoading(false);
+      }).catch(() => {
+        if (cancelled.current) return;
+        if (retries < 3) {
+          retries++;
+          setTimeout(check, retries * 3000);
+        } else {
+          localStorage.removeItem("pos_token");
+          localStorage.removeItem("pos_user");
+          setUser(false);
+          setLoading(false);
+        }
       });
-    return () => { cancelled = true; };
+    };
+    check();
+    return () => { cancelled.current = true; };
   }, []);
 
   const login = async (email, password) => {

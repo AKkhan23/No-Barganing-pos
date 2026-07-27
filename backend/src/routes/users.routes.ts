@@ -8,18 +8,26 @@ import { validate } from '../middleware/validate';
 
 const router = Router();
 
+const ROLES = ['admin', 'manager', 'cashier'] as const;
+
+const phoneRegex = /^[6-9]\d{9}$/;
+
 const CreateUserSchema = z.object({
-  email: z.string().email(),
-  name: z.string().min(1),
-  role: z.string().default('cashier'),
-  password: z.string().min(6),
+  email: z.string().email('Invalid email format'),
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  role: z.enum(ROLES).default('cashier'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  phone: z.string().regex(phoneRegex, 'Invalid phone number (10 digits, starts with 6-9)').optional().or(z.literal('')),
+  active: z.boolean().optional(),
 });
 
 const UpdateUserSchema = z.object({
-  name: z.string().optional(),
-  role: z.string().optional(),
+  name: z.string().min(2, 'Name must be at least 2 characters').optional(),
+  email: z.string().email('Invalid email format').optional(),
+  role: z.enum(ROLES).optional(),
   active: z.boolean().optional(),
-  password: z.string().min(6).optional(),
+  password: z.string().min(6, 'Password must be at least 6 characters').optional(),
+  phone: z.string().regex(phoneRegex, 'Invalid phone number (10 digits, starts with 6-9)').optional().or(z.literal('')),
 });
 
 /**
@@ -150,7 +158,7 @@ router.post('/change-password', verifyJWT, async (req: Request, res: Response) =
   res.json({ ok: true });
 });
 
-router.use(verifyJWT, requireRoles('super_admin'));
+router.use(verifyJWT, requireRoles('super_admin', 'admin'));
 
 /**
  * @openapi
@@ -165,7 +173,7 @@ router.use(verifyJWT, requireRoles('super_admin'));
  */
 router.get('/', async (req: Request, res: Response) => {
   const users = await User.find({}, { password_hash: 0 }).lean();
-  res.json(users.map((u: any) => ({ id: u.id, email: u.email, name: u.name, role: u.role, active: u.active, created_at: u.created_at })));
+  res.json(users.map((u: any) => ({ id: u.id, email: u.email, name: u.name, role: u.role, phone: u.phone || '', active: u.active, created_at: u.created_at })));
 });
 
 /**
@@ -199,12 +207,14 @@ router.post('/', validate(CreateUserSchema), async (req: Request, res: Response)
   const now = new Date().toISOString();
   const user = new User({
     id: generateId(), email: req.body.email.toLowerCase(), name: req.body.name,
-    role: req.body.role || 'cashier', active: true,
+    role: req.body.role || 'cashier',
+    phone: req.body.phone || '',
+    active: req.body.active != null ? req.body.active : true,
     password_hash: hashPassword(req.body.password),
     created_at: now, updated_at: now,
   });
   await user.save();
-  res.status(201).json({ id: user.id, email: user.email, name: user.name, role: user.role, active: user.active, created_at: user.created_at });
+  res.status(201).json({ id: user.id, email: user.email, name: user.name, role: user.role, phone: user.phone, active: user.active, created_at: user.created_at });
 });
 
 /**
@@ -241,7 +251,7 @@ router.patch('/:id', validate(UpdateUserSchema), async (req: Request, res: Respo
   if (update.password) { update.password_hash = hashPassword(update.password); delete update.password; }
   const user = await User.findOneAndUpdate({ id: req.params.id }, { $set: update }, { new: true }).lean();
   if (!user) { res.status(404).json({ detail: 'User not found' }); return; }
-  res.json({ id: user.id, email: user.email, name: user.name, role: user.role, active: user.active });
+  res.json({ id: user.id, email: user.email, name: user.name, role: user.role, phone: (user as any).phone || '', active: user.active });
 });
 
 /**

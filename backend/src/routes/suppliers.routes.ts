@@ -12,18 +12,18 @@ const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
 
 const CreateSupplierSchema = z.object({
-  name: z.string().min(1),
-  phone: z.string().optional(),
-  email: z.string().optional(),
+  name: z.string().min(1, 'Name is required'),
+  phone: z.string().min(1, 'Phone is required').regex(/^[6-9]\d{9}$/, 'Invalid Indian mobile number'),
+  email: z.string().email().optional().or(z.literal('')),
   address: z.string().optional(),
   gstin: z.string().optional(),
   opening_balance: z.number().default(0),
 });
 
 const UpdateSupplierSchema = z.object({
-  name: z.string().optional(),
-  phone: z.string().optional(),
-  email: z.string().optional(),
+  name: z.string().min(1, 'Name is required').optional(),
+  phone: z.string().regex(/^[6-9]\d{9}$/, 'Invalid Indian mobile number').optional().or(z.literal('')),
+  email: z.string().email().optional().or(z.literal('')),
   address: z.string().optional(),
   gstin: z.string().optional(),
   opening_balance: z.number().optional(),

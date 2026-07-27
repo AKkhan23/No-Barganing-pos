@@ -2,7 +2,18 @@ import { Router, Request, Response } from 'express';
 import { Brand } from '../models/Brand';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
+import { z } from 'zod';
+import { validate } from '../middleware/validate';
 
+const CreateBrandSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  description: z.string().optional(),
+});
+
+const UpdateBrandSchema = z.object({
+  name: z.string().min(1, 'Name is required').optional(),
+  description: z.string().optional(),
+});
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -43,7 +54,7 @@ router.get('/', async (_req: Request, res: Response) => {
  *       201:
  *         description: Brand created
  */
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', validate(CreateBrandSchema), async (req: Request, res: Response) => {
   const now = new Date().toISOString();
   const item = new Brand({ id: generateId(), ...req.body, created_at: now, created_by: req.user!.id });
   await item.save();
@@ -76,7 +87,7 @@ router.post('/', async (req: Request, res: Response) => {
  *       404:
  *         description: Brand not found
  */
-router.patch('/:id', async (req: Request, res: Response) => {
+router.patch('/:id', validate(UpdateBrandSchema), async (req: Request, res: Response) => {
   const item = await Brand.findOneAndUpdate({ id: req.params.id }, { $set: req.body }, { new: true }).lean();
   if (!item) { res.status(404).json({ detail: 'Brand not found' }); return; }
   res.json(item);

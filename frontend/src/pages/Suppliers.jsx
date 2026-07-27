@@ -193,7 +193,7 @@ function SupplierModal({ initial, edit, onClose, onSave }) {
   const validate = () => {
     const e = {};
     if (!form.phone) e.phone = t("page.phone_required");
-    else if (!/^\d{10}$/.test(form.phone)) e.phone = t("page.phone_invalid");
+    else if (!/^[6-9]\d{9}$/.test(form.phone)) e.phone = t("page.phone_invalid");
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = t("page.email_invalid");
     if (form.gstin && !/^[0-9A-Z]{15}$/.test(form.gstin)) e.gstin = t("page.gst_invalid");
     setErrors(e);

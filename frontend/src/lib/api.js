@@ -5,7 +5,7 @@ export const API = BACKEND_URL ? `${BACKEND_URL}/api` : "/api";
 
 console.log(`🌐 API base URL: ${API}`);
 
-const api = axios.create({ baseURL: API });
+const api = axios.create({ baseURL: API, timeout: 25000 });
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("pos_token");
@@ -19,7 +19,8 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (r) => r,
   (err) => {
-    if (err?.response?.status === 401) {
+    const status = err?.response?.status;
+    if (status === 401 || status === 403) {
       const path = window.location.pathname;
       if (path !== "/login") {
         localStorage.removeItem("pos_token");

@@ -23,11 +23,26 @@ root.render(
   </React.StrictMode>,
 );
 
-// Register service worker for PWA (offline + installable)
+// Register SW for offline asset caching (no HTML/API caching — no stale content)
 if ("serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register("/service-worker.js")
-      .catch((err) => console.warn("SW registration failed", err));
+    navigator.serviceWorker.register("/service-worker.js")
+      .then((reg) => {
+        // On SW update, immediately take over
+        reg.addEventListener("updatefound", () => {
+          const installing = reg.installing;
+          installing?.addEventListener("statechange", () => {
+            if (installing.state === "installed" && navigator.serviceWorker.controller) {
+              installing.postMessage({ type: "SKIP_WAITING" });
+            }
+          });
+        });
+      })
+      .catch(() => {});
+  });
+  // Listen for controller change to reload (new SW activated)
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!refreshing) { refreshing = true; window.location.reload(); }
   });
 }

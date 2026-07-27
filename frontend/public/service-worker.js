@@ -1,6 +1,5 @@
-/* No Bargaining POS — Service Worker */
-const CACHE_NAME = "nb-pos-v1";
-const RUNTIME = "nb-pos-runtime-v1";
+/* No Bargaining POS — Service Worker v2 */
+const CACHE = "nb-pos-static-v2";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
@@ -9,37 +8,40 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((k) => k !== CACHE_NAME && k !== RUNTIME)
-          .map((k) => caches.delete(k))
-      )
+      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
     )
   );
   self.clients.claim();
 });
 
-// Network-first for API, cache-first for static assets
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
 
-  // Never cache API or auth calls
+  // Never cache API calls or auth
   if (url.pathname.startsWith("/api/")) return;
+  if (url.pathname === "/service-worker.js") return;
 
-  event.respondWith(
-    caches.match(req).then((cached) => {
-      const network = fetch(req)
-        .then((res) => {
-          if (res && res.status === 200 && res.type === "basic") {
+  // Only cache static assets (JS, CSS, images, fonts)
+  const isAsset = /\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|eot)$/i.test(url.pathname);
+
+  if (isAsset) {
+    event.respondWith(
+      caches.match(req).then((cached) => {
+        const fetched = fetch(req).then((res) => {
+          if (res.ok) {
             const copy = res.clone();
-            caches.open(RUNTIME).then((c) => c.put(req, copy));
+            caches.open(CACHE).then((c) => c.put(req, copy));
           }
           return res;
-        })
-        .catch(() => cached);
-      return cached || network;
-    })
-  );
+        });
+        return cached || fetched;
+      })
+    );
+    return;
+  }
+
+  // Navigation / HTML — always network, no cache
+  event.respondWith(fetch(req).catch(() => caches.match(req)));
 });

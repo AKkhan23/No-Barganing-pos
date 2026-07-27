@@ -7,6 +7,17 @@ import { useConfirm } from "@/lib/confirm";
 import { PageShell } from "@/pages/Dashboard";
 
 const EMPTY = { name: "", phone: "", email: "", address: "", vehicle_no: "", commission_type: "fixed", commission_value: 0, active: true };
+const ERR = { name: "", phone: "", email: "" };
+
+function validate(f) {
+  const e = { ...ERR };
+  if (!f.name || !f.name.trim()) e.name = "Name is required";
+  if (f.phone && !/^[6-9]\d{9}$/.test(f.phone)) e.phone = "Enter a valid 10-digit mobile (starts with 6-9)";
+  if (f.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) e.email = "Enter a valid email address";
+  return e;
+}
+
+function hasErrors(e) { return Object.values(e).some(Boolean); }
 
 export default function DeliveryPartners() {
   const { t } = useTranslation();
@@ -15,6 +26,7 @@ export default function DeliveryPartners() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(null);
   const [modal, setModal] = useState(null);
+  const [errors, setErrors] = useState({ ...ERR });
   const confirm = useConfirm();
 
   const load = async () => {
@@ -23,19 +35,16 @@ export default function DeliveryPartners() {
   };
   useEffect(() => { load(); }, []);
 
-  const validate = (f) => {
-    if (!f.name.trim()) { toast.error(t("page.name_required")); return false; }
-    return true;
-  };
-
   const handleSave = async () => {
-    if (!validate(modal.form)) return;
+    const v = validate(modal.form);
+    setErrors(v);
+    if (hasErrors(v)) return;
     setSaving(true);
     try {
       const payload = { ...modal.form, commission_value: Number(modal.form.commission_value || 0) };
       if (modal.edit) { await api.patch(`/delivery-partners/${modal.edit.id}`, payload); toast.success(t("page.partner_updated")); }
       else { await api.post("/delivery-partners", payload); toast.success(t("page.partner_created")); }
-      setModal(null); load();
+      setModal(null); setErrors({ ...ERR }); load();
     } catch (e) { toast.error(e?.response?.data?.detail || t("page.save_failed")); } finally { setSaving(false); }
   };
 
@@ -85,9 +94,9 @@ export default function DeliveryPartners() {
               </div>
               <div className="p-5 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <label className="col-span-2"><span className="label">{t("common.name")} *</span><input className="input" value={modal.form.name} onChange={e => setModal({ ...modal, form: { ...modal.form, name: e.target.value }})} /></label>
-                  <label><span className="label">{t("page.phone")}</span><input className="input" value={modal.form.phone} onChange={e => setModal({ ...modal, form: { ...modal.form, phone: e.target.value }})} /></label>
-                  <label><span className="label">{t("page.email")}</span><input className="input" value={modal.form.email} onChange={e => setModal({ ...modal, form: { ...modal.form, email: e.target.value }})} /></label>
+                  <label className="col-span-2"><span className="label">{t("common.name")} *</span><input className={`input ${errors.name ? "border-red-500" : ""}`} value={modal.form.name} onChange={e => { setModal({ ...modal, form: { ...modal.form, name: e.target.value }}); if (errors.name) setErrors({...errors, name: ""}); }} />{errors.name && <p className="text-red-500 text-[10px] mt-1">{errors.name}</p>}</label>
+                  <label><span className="label">{t("page.phone")}</span><input className={`input ${errors.phone ? "border-red-500" : ""}`} value={modal.form.phone} onChange={e => { setModal({ ...modal, form: { ...modal.form, phone: e.target.value }}); if (errors.phone) setErrors({...errors, phone: ""}); }} />{errors.phone && <p className="text-red-500 text-[10px] mt-1">{errors.phone}</p>}</label>
+                  <label><span className="label">{t("page.email")}</span><input className={`input ${errors.email ? "border-red-500" : ""}`} value={modal.form.email} onChange={e => { setModal({ ...modal, form: { ...modal.form, email: e.target.value }}); if (errors.email) setErrors({...errors, email: ""}); }} />{errors.email && <p className="text-red-500 text-[10px] mt-1">{errors.email}</p>}</label>
                   <label className="col-span-2"><span className="label">{t("page.address")}</span><textarea className="input" rows={2} value={modal.form.address} onChange={e => setModal({ ...modal, form: { ...modal.form, address: e.target.value }})} /></label>
                   <label><span className="label">{t("page.vehicle_no")}</span><input className="input" value={modal.form.vehicle_no} onChange={e => setModal({ ...modal, form: { ...modal.form, vehicle_no: e.target.value }})} /></label>
                   <label><span className="label">{t("page.commission_type")}</span><select className="input" value={modal.form.commission_type} onChange={e => setModal({ ...modal, form: { ...modal.form, commission_type: e.target.value }})}><option value="fixed">{t("page.fixed")}</option><option value="percentage">{t("page.percentage")}</option></select></label>

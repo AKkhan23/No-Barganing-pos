@@ -3,6 +3,32 @@ import { Servicing } from '../models/Servicing';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
 import { scopeFilter } from '../middleware/scope';
+import { z } from 'zod';
+import { validate } from '../middleware/validate';
+
+const CreateServicingSchema = z.object({
+  customer_name: z.string().min(1, 'Customer name is required'),
+  customer_phone: z.string().regex(/^[6-9]\d{9}$/, 'Invalid Indian mobile number').optional().or(z.literal('')),
+  product_name: z.string().min(1, 'Product name is required'),
+  issue: z.string().min(1, 'Issue description is required'),
+  status: z.string().optional(),
+  received_date: z.string().min(1, 'Received date is required'),
+  expected_date: z.string().optional(),
+  cost: z.number().optional(),
+  notes: z.string().optional(),
+});
+
+const UpdateServicingSchema = z.object({
+  customer_name: z.string().min(1, 'Customer name is required').optional(),
+  customer_phone: z.string().regex(/^[6-9]\d{9}$/, 'Invalid Indian mobile number').optional().or(z.literal('')),
+  product_name: z.string().min(1, 'Product name is required').optional(),
+  issue: z.string().min(1, 'Issue description is required').optional(),
+  status: z.string().optional(),
+  received_date: z.string().min(1, 'Received date is required').optional(),
+  expected_date: z.string().optional(),
+  cost: z.number().optional(),
+  notes: z.string().optional(),
+});
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -40,7 +66,7 @@ router.get('/', async (_req: Request, res: Response) => {
  *       201:
  *         description: Created servicing record
  */
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', validate(CreateServicingSchema), async (req: Request, res: Response) => {
   const now = new Date().toISOString();
   const item = new Servicing({ id: generateId(), ...req.body, created_by: req.user?.id, created_at: now });
   await item.save();
@@ -72,7 +98,7 @@ router.post('/', async (req: Request, res: Response) => {
  *       404:
  *         description: Servicing not found
  */
-router.patch('/:id', async (req: Request, res: Response) => {
+router.patch('/:id', validate(UpdateServicingSchema), async (req: Request, res: Response) => {
   const item = await Servicing.findOneAndUpdate(
     { ...scopeFilter(req), id: req.params.id },
     { $set: { ...req.body, updated_at: new Date().toISOString() } },

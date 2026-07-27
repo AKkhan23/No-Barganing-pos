@@ -8,12 +8,26 @@ import { PageShell } from "./Dashboard";
 import { useConfirm } from "../lib/confirm";
 import { useAuth } from "../lib/auth";
 
+const EMPTY = { name: "", phone: "", email: "" };
+const ERR = { name: "", phone: "", email: "" };
+
+function validate(f) {
+  const e = { ...ERR };
+  if (!f.name || !f.name.trim()) e.name = "Name is required";
+  if (f.phone && !/^[6-9]\d{9}$/.test(f.phone)) e.phone = "Enter a valid 10-digit mobile (starts with 6-9)";
+  if (f.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) e.email = "Enter a valid email address";
+  return e;
+}
+
+function hasErrors(e) { return Object.values(e).some(Boolean); }
+
 export default function Customers() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [items, setItems] = useState([]);
   const [modal, setModal] = useState(null);
-  const [form, setForm] = useState({ name: "", phone: "", email: "" });
+  const [form, setForm] = useState({ ...EMPTY });
+  const [errors, setErrors] = useState({ ...ERR });
   const confirm = useConfirm();
 
   const load = async () => setItems((await api.get("/customers")).data);
@@ -21,10 +35,13 @@ export default function Customers() {
 
   const save = async (e) => {
     e.preventDefault();
+    const v = validate(form);
+    setErrors(v);
+    if (hasErrors(v)) return;
     try {
       await api.post("/customers", form);
       toast.success(t("page.customer_added"));
-      setModal(null); setForm({ name: "", phone: "", email: "" });
+      setModal(null); setForm({ ...EMPTY }); setErrors({ ...ERR });
       load();
     } catch (e2) {
       toast.error(e2?.response?.data?.detail || t("page.save_failed"));
@@ -100,15 +117,15 @@ export default function Customers() {
                 <div key={k}>
                   <label className="block text-[10px] font-mono uppercase tracking-widest text-zinc-500 mb-1">{k === "name" ? t("common.name") : k === "phone" ? t("page.phone") : t("page.email")}</label>
                   <input
-                    required={k === "name"}
                     value={form[k]}
-                    onChange={(e) => setForm({ ...form, [k]: e.target.value })}
+                    onChange={(e) => { setForm({ ...form, [k]: e.target.value }); if (errors[k]) setErrors({ ...errors, [k]: "" }); }}
                     data-testid={`cf-${k}`}
-                    className="w-full h-11 border-2 border-zinc-300 px-3 focus:outline-none focus:border-[#E60000] font-mono text-sm"
+                    className={`w-full h-11 border-2 px-3 focus:outline-none focus:border-[#E60000] font-mono text-sm ${errors[k] ? "border-red-500" : "border-zinc-300"}`}
                   />
+                  {errors[k] && <p className="text-red-500 text-[10px] mt-1">{errors[k]}</p>}
                 </div>
               ))}
-              <button type="submit" data-testid="cf-save" className="w-full h-11 bg-[#E60000] text-white text-xs font-bold uppercase tracking-widest">{t("common.save")}</button>
+              <button type="submit" data-testid="cf-save" className="w-full h-11 bg-[#E60000] text-white text-xs font-bold uppercase tracking-widest disabled:opacity-40">{t("common.save")}</button>
             </form>
           </div>
         </div>

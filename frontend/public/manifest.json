@@ -4,23 +4,45 @@
   "description": "Industrial-grade retail point of sale system with barcode scanning, inventory & analytics.",
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "/icon-192.png",
       "type": "image/png",
       "sizes": "192x192",
       "purpose": "any maskable"
     },
     {
-      "src": "icon-512.png",
+      "src": "/icon-512.png",
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "any maskable"
     }
   ],
-  "start_url": "/pos",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
   "orientation": "any",
   "theme_color": "#E60000",
   "background_color": "#F9FAFB",
-  "categories": ["business", "productivity", "shopping"]
+  "categories": ["business", "productivity", "shopping"],
+  "shortcuts": [
+    { "name": "New Sale", "short_name": "POS", "url": "/pos", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Dashboard", "short_name": "Dashboard", "url": "/dashboard", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Orders", "short_name": "Orders", "url": "/orders", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
+  ],
+  "screenshots": [
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "No Bargaining POS Dashboard"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "No Bargaining POS Mobile"
+    }
+  ]
 }

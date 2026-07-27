@@ -68,9 +68,17 @@ const AdvancedReports = lazy(() => import("@/pages/AdvancedReports"));
 const FixedAssetStock = lazy(() => import("@/pages/FixedAssetStock"));
 
 const Loading = () => (
-  <div className="min-h-screen flex items-center justify-center bg-zinc-50">
-    <div className="font-mono text-xs uppercase tracking-widest text-zinc-500">
-      Loading…
+  <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-50">
+    <div className="text-2xl font-bold tracking-tight text-red-600 mb-2">
+      No Bargaining
+    </div>
+    <div className="flex gap-1 my-4">
+      {[0,1,2].map((i) => (
+        <span key={i} className="w-2 h-2 rounded-full bg-red-600 animate-bounce" style={{ animationDelay: `${i*0.2}s` }} />
+      ))}
+    </div>
+    <div className="text-[0.65rem] uppercase tracking-[0.15em] text-zinc-400">
+      Connecting to server…
     </div>
   </div>
 );

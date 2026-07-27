@@ -2,7 +2,16 @@ import { Router, Request, Response } from 'express';
 import { Rack } from '../models/Rack';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
+import { z } from 'zod';
+import { validate } from '../middleware/validate';
 
+const CreateRackSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+});
+
+const UpdateRackSchema = z.object({
+  name: z.string().min(1, 'Name is required').optional(),
+});
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -43,7 +52,7 @@ router.get('/', async (_req: Request, res: Response) => {
  *       201:
  *         description: Created rack
  */
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', validate(CreateRackSchema), async (req: Request, res: Response) => {
   const now = new Date().toISOString();
   const item = new Rack({ id: generateId(), ...req.body, created_by: req.user?.id, created_at: now });
   await item.save();
@@ -78,7 +87,7 @@ router.post('/', async (req: Request, res: Response) => {
  *       404:
  *         description: Rack not found
  */
-router.patch('/:id', async (req: Request, res: Response) => {
+router.patch('/:id', validate(UpdateRackSchema), async (req: Request, res: Response) => {
   const item = await Rack.findOneAndUpdate({ id: req.params.id }, { $set: req.body }, { new: true }).lean();
   if (!item) { res.status(404).json({ detail: 'Rack not found' }); return; }
   res.json(item);

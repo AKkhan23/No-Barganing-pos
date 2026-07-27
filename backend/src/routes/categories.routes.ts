@@ -2,7 +2,18 @@ import { Router, Request, Response } from 'express';
 import { Category } from '../models/Category';
 import { generateId } from '../utils/invoice';
 import { verifyJWT, requireRoles } from '../middleware/auth';
+import { z } from 'zod';
+import { validate } from '../middleware/validate';
 
+const CreateCategorySchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  description: z.string().optional(),
+});
+
+const UpdateCategorySchema = z.object({
+  name: z.string().min(1, 'Name is required').optional(),
+  description: z.string().optional(),
+});
 
 const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
@@ -44,7 +55,7 @@ router.get('/', async (_req: Request, res: Response) => {
  *       201:
  *         description: Category created
  */
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', validate(CreateCategorySchema), async (req: Request, res: Response) => {
   const now = new Date().toISOString();
   const cat = new Category({ id: generateId(), name: req.body.name, description: req.body.description || '', created_at: now, created_by: req.user!.id });
   await cat.save();
@@ -78,7 +89,7 @@ router.post('/', async (req: Request, res: Response) => {
  *       404:
  *         description: Category not found
  */
-router.patch('/:id', async (req: Request, res: Response) => {
+router.patch('/:id', validate(UpdateCategorySchema), async (req: Request, res: Response) => {
   const cat = await Category.findOneAndUpdate({ id: req.params.id }, { $set: req.body }, { new: true }).lean();
   if (!cat) { res.status(404).json({ detail: 'Category not found' }); return; }
   res.json({ id: cat.id, name: cat.name, description: cat.description, created_at: cat.created_at });

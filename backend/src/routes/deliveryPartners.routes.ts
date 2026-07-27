@@ -10,9 +10,9 @@ const router = Router();
 router.use(verifyJWT, requireRoles('admin', 'manager'));
 
 const CreatePartnerSchema = z.object({
-  name: z.string().min(1),
-  phone: z.string().optional(),
-  email: z.string().optional(),
+  name: z.string().min(1, 'Name is required'),
+  phone: z.string().regex(/^[6-9]\d{9}$/, 'Invalid Indian mobile number').optional().or(z.literal('')),
+  email: z.string().email().optional().or(z.literal('')),
   address: z.string().optional(),
   vehicle_no: z.string().optional(),
   commission_type: z.string().default('fixed'),
@@ -21,9 +21,9 @@ const CreatePartnerSchema = z.object({
 });
 
 const UpdatePartnerSchema = z.object({
-  name: z.string().optional(),
-  phone: z.string().optional(),
-  email: z.string().optional(),
+  name: z.string().min(1, 'Name is required').optional(),
+  phone: z.string().regex(/^[6-9]\d{9}$/, 'Invalid Indian mobile number').optional().or(z.literal('')),
+  email: z.string().email().optional().or(z.literal('')),
   address: z.string().optional(),
   vehicle_no: z.string().optional(),
   commission_type: z.string().optional(),
