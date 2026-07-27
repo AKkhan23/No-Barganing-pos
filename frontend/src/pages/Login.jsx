@@ -9,8 +9,8 @@ export default function Login() {
   const { t } = useTranslation();
   const { login, user, loading } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("admin@nobargaining.com");
-  const [password, setPassword] = useState("admin123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
@@ -116,7 +116,7 @@ export default function Login() {
             </h1>
             <p className="text-sm text-zinc-500 mt-2">{t("page.enter_credentials")}</p>
 
-            <form onSubmit={submit} className="mt-8 space-y-4">
+            <form onSubmit={submit} className="mt-8 space-y-4" autoComplete="off">
               <div>
                 <label className="block text-[10px] font-mono uppercase tracking-widest text-zinc-600 mb-2">
                   {t("page.email")}
@@ -126,9 +126,10 @@ export default function Login() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  autoComplete="off"
                   data-testid="login-email"
                   className="w-full h-12 border-2 border-zinc-300 px-4 focus:outline-none focus:border-[#E60000] font-mono text-sm"
-                  placeholder="admin@nobargaining.com"
+                  placeholder={"Enter your email"}
                 />
               </div>
               <div>
@@ -141,6 +142,7 @@ export default function Login() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    autoComplete="new-password"
                     data-testid="login-password"
                     className="w-full h-12 border-2 border-zinc-300 px-4 pr-12 focus:outline-none focus:border-[#E60000] font-mono text-sm"
                   />
