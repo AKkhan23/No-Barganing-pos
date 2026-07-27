@@ -590,7 +590,7 @@ function ProductModal({ initial, edit, cats, units, brands, racks, variations, a
       }
     }
     let finalName = form.name.trim();
-    if (form.size && !isWeightUnit(form.sell_by)) {
+    if (form.size) {
       finalName = finalName + " " + form.size.trim() + form.unit;
     }
     const payload = {
@@ -759,7 +759,7 @@ function ProductModal({ initial, edit, cats, units, brands, racks, variations, a
               <label className="block text-xs font-semibold text-zinc-600 mb-1.5">{t("page.select_pack_size")}</label>
               <div className="flex flex-wrap gap-1.5">
                 {PACK_SIZES.map((ps) => (
-                  <button key={ps.label} type="button" onClick={() => { upd("size", ps.size); upd("unit", ps.unit); }}
+                  <button key={ps.label} type="button" onClick={() => { upd("size", ps.size); upd("unit", ps.unit); upd("sell_by", "pcs"); }}
                     className={`px-3 py-1.5 text-xs font-bold rounded border transition-all ${form.size === ps.size && form.unit === ps.unit ? "bg-[#E60000] text-white border-[#E60000]" : "bg-white text-zinc-700 border-zinc-300 hover:border-[#E60000] hover:text-[#E60000]"}`}>
                     {ps.label}
                   </button>
