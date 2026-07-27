@@ -57,9 +57,17 @@ export default function POS() {
   const resizing = React.useRef(false);
   useEffect(() => {
     if (!isDesktop && searchParams.get("cart") === "1") setMobileView("cart");
+    const barcode = searchParams.get("barcode");
+    if (barcode) {
+      // Remove the query param to prevent re-processing
+      window.history.replaceState({}, '', '/pos');
+      // Small delay to let products load, then scan
+      setTimeout(() => handleScan(barcode), 500);
+    }
     const onResize = () => setIsDesktop(window.innerWidth >= 1024);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // USB barcode gun listener — treats fast keyboard bursts as scans.

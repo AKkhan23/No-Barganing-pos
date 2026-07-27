@@ -195,6 +195,30 @@ export default function Layout() {
     };
   }, []);
 
+  // Global USB barcode gun listener — works from ANY page
+  useEffect(() => {
+    const isPos = location.pathname === '/pos';
+    let buffer = '';
+    let lastTs = 0;
+    const onKey = (e) => {
+      const t = e.target;
+      const inField = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
+      if (isPos || inField) return;
+      const now = Date.now();
+      if (now - lastTs > 100) buffer = '';
+      lastTs = now;
+      if (e.key === 'Enter' && buffer.length >= 4) {
+        const code = buffer;
+        buffer = '';
+        navigate(`/pos?barcode=${encodeURIComponent(code)}`);
+      } else if (e.key.length === 1) {
+        buffer += e.key;
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [location.pathname, navigate]);
+
   const onOutletChange = (e) => {
     localStorage.setItem("pos_outlet", e.target.value);
     const selected = outlets.find((o) => String(o.id) === e.target.value);
