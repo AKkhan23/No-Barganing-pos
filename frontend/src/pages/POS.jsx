@@ -124,7 +124,8 @@ export default function POS() {
   useEffect(() => {
     const onVisible = () => { if (document.visibilityState === "visible") reload(); };
     document.addEventListener("visibilitychange", onVisible);
-    return () => document.removeEventListener("visibilitychange", onVisible);
+    const interval = setInterval(() => reload(), 60000);
+    return () => { document.removeEventListener("visibilitychange", onVisible); clearInterval(interval); };
   }, [reload]);
 
   const expiredCacheRef = useRef({});
