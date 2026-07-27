@@ -152,30 +152,6 @@ export default function POS() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [t]);
 
-  // Polling fallback for cross-device sync (when socket.io fails)
-  const lastPollRef = useRef(new Date().toISOString());
-  useEffect(() => {
-    const iv = setInterval(async () => {
-      try {
-        const { data } = await api.get(`/scan-events?since=${encodeURIComponent(lastPollRef.current)}`);
-        if (data?.length) {
-          lastPollRef.current = new Date().toISOString();
-          for (const ev of data) {
-            const list = productsRef.current;
-            const product = list.find((p) => p.barcode === ev.barcode || p.id === ev.product_id);
-            if (product) {
-              addToCartRef.current(product, null);
-              toast.success(t("page.scanned_from_device", { name: product.name }));
-            } else {
-              handleScanRef.current(ev.barcode);
-            }
-          }
-        }
-      } catch {}
-    }, 3000);
-    return () => clearInterval(iv);
-  }, [t]);
-
   const filtered = useMemo(() => {
     let list = products;
     if (activeCategory !== "All") list = list.filter((p) => p.category === activeCategory);

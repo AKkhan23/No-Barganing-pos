@@ -35,8 +35,7 @@ router.post('/', async (req: Request, res: Response) => {
 router.get('/', async (req: Request, res: Response) => {
   try {
     const since = req.query.since as string;
-    const userId = (req as any).user.id;
-    const filter: any = { scanned_by: { $ne: userId } };
+    const filter: any = {};
     if (since) {
       filter.created_at = { $gt: since };
     }

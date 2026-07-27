@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, ScanBarcode, Package, Users, UserCog,
@@ -217,6 +217,24 @@ export default function Layout() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
+  }, [location.pathname, navigate]);
+
+  // Global polling for cross-device scan sync — works from ANY page
+  const globalPollRef = useRef(new Date().toISOString());
+  useEffect(() => {
+    const iv = setInterval(async () => {
+      try {
+        const { data } = await api.get(`/scan-events?since=${encodeURIComponent(globalPollRef.current)}`);
+        if (data?.length) {
+          globalPollRef.current = new Date().toISOString();
+          const barcode = data[0].barcode;
+          if (location.pathname !== '/pos') {
+            navigate(`/pos?barcode=${encodeURIComponent(barcode)}`);
+          }
+        }
+      } catch {}
+    }, 3000);
+    return () => clearInterval(iv);
   }, [location.pathname, navigate]);
 
   const onOutletChange = (e) => {
