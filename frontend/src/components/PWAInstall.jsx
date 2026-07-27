@@ -115,8 +115,12 @@ export default function PWAInstall() {
 export function InstallAppButton() {
   const [open, setOpen] = useState(false);
   const [installing, setInstalling] = useState(false);
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   const doInstall = async () => {
+    // On PC — always show QR modal for mobile install
+    if (!isMobile) { setOpen(true); return; }
+    // On mobile — try direct install
     const p = getPrompt();
     if (p) {
       setInstalling(true);

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { X, Camera, ScanLine, Upload, RefreshCw } from "lucide-react";
+import { X, Camera, Upload, RefreshCw } from "lucide-react";
 
 export default function BarcodeScanner({ onDetect, onClose }) {
   const fileRef = useRef(null);
@@ -60,7 +60,7 @@ export default function BarcodeScanner({ onDetect, onClose }) {
       qrRef.current = qr;
       await qr.start(
         { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 280, height: 120 } },
+        { fps: 10, qrbox: { width: 300, height: 200 } },
         (code) => handleDetect(code),
         () => {}
       );
@@ -120,7 +120,7 @@ export default function BarcodeScanner({ onDetect, onClose }) {
 
           {mode === "live" && (
             <>
-              <div className="absolute inset-x-0 z-10 pointer-events-none animate-[scan_2s_ease-in-out_infinite]">
+              <div className="absolute inset-0 z-10 pointer-events-none scan-line">
                 <div className="h-0.5 bg-red-500 shadow-[0_0_15px_#ff0000]" />
               </div>
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 bg-black/60 px-4 py-1 rounded-full">
