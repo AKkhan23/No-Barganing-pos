@@ -2,16 +2,18 @@ import React, { useEffect, useState } from "react";
 import { Download, Smartphone, X, Wifi, WifiOff, Share2, Copy, Check } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 
-let deferredPrompt = null;
+function getPrompt() { return window.__deferredPrompt || null; }
 
 export function useInstallPrompt() {
-  const [prompt, setPrompt] = useState(null);
+  const [prompt, setPrompt] = useState(() => getPrompt());
   useEffect(() => {
     const handler = (e) => {
       e.preventDefault();
-      deferredPrompt = e;
+      window.__deferredPrompt = e;
       setPrompt(e);
     };
+    // If already captured in HTML script, set it
+    if (window.__deferredPrompt) setPrompt(window.__deferredPrompt);
     window.addEventListener("beforeinstallprompt", handler);
     return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
@@ -25,10 +27,11 @@ export default function PWAInstall() {
   const fromQR = window.location.search.includes("install=1");
 
   const install = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
-    deferredPrompt = null;
+    const p = getPrompt();
+    if (!p) return;
+    p.prompt();
+    await p.userChoice;
+    window.__deferredPrompt = null;
     setHidden(true);
     localStorage.setItem("pwa_dismissed", "1");
   };
@@ -66,7 +69,7 @@ export default function PWAInstall() {
               <p className="font-bold text-lg text-zinc-900">No Bargaining POS</p>
               <p className="text-sm text-zinc-600">Install on your phone for fast, offline access.</p>
 
-              {deferredPrompt ? (
+              {getPrompt() ? (
                 <button onClick={install}
                   className="w-full h-12 bg-[#E60000] hover:bg-red-700 text-white text-sm font-bold uppercase tracking-widest">
                   Install App
@@ -114,11 +117,12 @@ export function InstallAppButton() {
   const [installing, setInstalling] = useState(false);
 
   const doInstall = async () => {
-    if (deferredPrompt) {
+    const p = getPrompt();
+    if (p) {
       setInstalling(true);
-      deferredPrompt.prompt();
-      const result = await deferredPrompt.userChoice;
-      deferredPrompt = null;
+      p.prompt();
+      const result = await p.userChoice;
+      window.__deferredPrompt = null;
       setInstalling(false);
       if (result.outcome === "accepted") {
         localStorage.setItem("pwa_dismissed", "1");

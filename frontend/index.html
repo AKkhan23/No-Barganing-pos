@@ -21,6 +21,44 @@
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600&display=swap" rel="stylesheet" />
         <title>No Bargaining POS — Retail Point of Sale</title>
         <script>window.addEventListener("error",function(e){if(e.error instanceof DOMException&&e.error.name==="DataCloneError"&&e.message&&e.message.includes("PerformanceServerTiming")){e.stopImmediatePropagation();e.preventDefault()}},true);</script>
+        <script>
+          // Capture beforeinstallprompt IMMEDIATELY (before React loads)
+          window.__deferredPrompt = null;
+          window.addEventListener("beforeinstallprompt", function(e) {
+            e.preventDefault();
+            window.__deferredPrompt = e;
+            // If URL has ?install=1, show install popup immediately with vanilla JS
+            if (window.location.search.includes("install=1")) {
+              var d = document.createElement("div");
+              d.id = "qr-install-popup";
+              d.innerHTML = '<div style="position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;padding:16px">' +
+                '<div style="background:#fff;border:2px solid #18181b;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.3)">' +
+                '<div style="background:#09090b;color:#fff;padding:16px;display:flex;justify-content:space-between;align-items:center">' +
+                '<span style="font-weight:700;font-size:13px;letter-spacing:0.1em;text-transform:uppercase">📲 Install App</span>' +
+                '<button id="qr-close-btn" style="background:none;border:none;color:#fff;cursor:pointer;font-size:18px;padding:4px">✕</button></div>' +
+                '<div style="padding:24px;text-align:center">' +
+                '<div style="width:64px;height:64px;background:#E60000;border-radius:8px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">' +
+                '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>' +
+                '<p style="font-weight:700;font-size:18px;color:#18181b;margin:0 0 8px">No Bargaining POS</p>' +
+                '<p style="font-size:14px;color:#71717a;margin:0 0 20px">Install on your phone for fast, offline access.</p>' +
+                '<button id="qr-install-btn" style="width:100%;height:48px;background:#E60000;color:white;border:none;font-size:13px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer">Install App</button>' +
+                '<p style="margin-top:12px"><button id="qr-later-btn" style="background:none;border:none;color:#a1a1aa;cursor:pointer;font-size:11px;font-family:monospace">Maybe later</button></p></div></div></div>';
+              document.body.appendChild(d);
+              document.getElementById("qr-install-btn").onclick = function() {
+                if (window.__deferredPrompt) {
+                  window.__deferredPrompt.prompt();
+                  window.__deferredPrompt.userChoice.then(function() { window.__deferredPrompt = null; });
+                }
+                var popup = document.getElementById("qr-install-popup");
+                if (popup) popup.remove();
+              };
+              document.getElementById("qr-close-btn").onclick = document.getElementById("qr-later-btn").onclick = function() {
+                var popup = document.getElementById("qr-install-popup");
+                if (popup) popup.remove();
+              };
+            }
+          });
+        </script>
         <style>
             /* Splash screen — visible instantly before React mounts */
             #splash {
