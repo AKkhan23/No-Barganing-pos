@@ -378,7 +378,7 @@ export default function Layout() {
             <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform ${bottomOpen ? "rotate-180" : ""}`} strokeWidth={2.5} />
           </button>
           {bottomOpen && (
-            <div className="px-4 pb-4 space-y-2 border-t border-zinc-800 pt-3">
+            <div className="px-4 pb-2 space-y-2 border-t border-zinc-800 pt-3">
               <button onClick={() => setShiftOpen(true)} data-testid="nav-shift"
                 className="w-full flex items-center justify-center gap-2 h-10 bg-[#FDE047] text-zinc-900 text-xs font-bold uppercase tracking-widest hover:bg-yellow-300 transition-colors">
                 <Calculator className="w-4 h-4" strokeWidth={2.5} /> Shift Report
@@ -389,12 +389,14 @@ export default function Layout() {
                 className="w-full flex items-center justify-center gap-2 h-10 bg-zinc-800 hover:bg-blue-600 text-white text-xs font-bold uppercase tracking-widest transition-colors">
                 <BookOpen className="w-4 h-4" strokeWidth={2.5} /> API Docs
               </button>
-              <button onClick={logout} data-testid="logout-btn"
-                className="w-full flex items-center justify-center gap-2 h-10 bg-zinc-800 hover:bg-[#E60000] text-white text-xs font-bold uppercase tracking-widest transition-colors">
-                <LogOut className="w-4 h-4" strokeWidth={2.5} /> {t("common.logout")}
-              </button>
             </div>
           )}
+          <div className="px-4 pb-4 pt-2">
+            <button onClick={logout} data-testid="logout-btn"
+              className="w-full flex items-center justify-center gap-2 h-10 bg-zinc-800 hover:bg-[#E60000] text-white text-xs font-bold uppercase tracking-widest transition-colors">
+              <LogOut className="w-4 h-4" strokeWidth={2.5} /> {t("common.logout")}
+            </button>
+          </div>
         </div>
       </aside>
 
