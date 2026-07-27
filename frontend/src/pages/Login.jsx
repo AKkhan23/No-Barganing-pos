@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate, Navigate } from "react-router-dom";
-import { Store, LogIn, Eye, EyeOff, CloudOff } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Store, LogIn, Eye, EyeOff, CloudOff, LogOut, ArrowRight } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import api, { formatApiErrorDetail, BACKEND_URL } from "../lib/api";
 
 export default function Login() {
   const { t } = useTranslation();
-  const { login, user, loading } = useAuth();
+  const { login, user, loading, logout } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,7 +34,31 @@ export default function Login() {
     return () => { cancelled = true; if (wakeRef.current) clearTimeout(wakeRef.current); };
   }, []);
 
-  if (!loading && user) return <Navigate to="/pos" replace />;
+  if (!loading && user) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-zinc-50 p-6">
+        <div className="w-full max-w-sm border-2 border-zinc-900 bg-white p-8 text-center">
+          <div className="w-14 h-14 bg-[#E60000] flex items-center justify-center mx-auto">
+            <Store className="w-8 h-8 text-white" strokeWidth={2.5} />
+          </div>
+          <h1 className="font-display font-black text-2xl uppercase mt-4">No Bargaining</h1>
+          <p className="text-sm text-zinc-500 mt-2">Signed in as</p>
+          <p className="text-lg font-bold text-zinc-900 mt-1">{user.name}</p>
+          <p className="text-xs font-mono text-zinc-400 uppercase">{user.role}</p>
+          <div className="mt-6 space-y-3">
+            <button onClick={() => navigate("/pos")}
+              className="w-full h-12 bg-[#E60000] hover:bg-red-700 text-white font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-2 transition-colors">
+              <ArrowRight className="w-4 h-4" strokeWidth={2.5} /> Continue to POS
+            </button>
+            <button onClick={logout}
+              className="w-full h-12 border-2 border-zinc-300 hover:border-[#E60000] text-zinc-700 font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-2 transition-colors">
+              <LogOut className="w-4 h-4" strokeWidth={2.5} /> Switch User
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const submit = async (e) => {
     e.preventDefault();
