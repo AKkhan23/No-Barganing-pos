@@ -1,5 +1,5 @@
-/* No Bargaining POS — Service Worker v2 */
-const CACHE = "nb-pos-static-v2";
+/* No Bargaining POS — Service Worker v3 */
+const CACHE = "nb-pos-static-v3";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
