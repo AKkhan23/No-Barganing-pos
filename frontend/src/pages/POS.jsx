@@ -144,6 +144,28 @@ export default function POS() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [t]);
 
+  // Polling fallback for cross-device sync (when socket.io fails)
+  const lastPollRef = useRef(Date.now());
+  useEffect(() => {
+    const iv = setInterval(async () => {
+      try {
+        const { data } = await api.get(`/scan-events?since=${lastPollRef.current}`);
+        if (data?.length) {
+          lastPollRef.current = Date.now();
+          for (const ev of data) {
+            const list = productsRef.current;
+            const product = list.find((p) => p.barcode === ev.barcode || p.id === ev.product_id);
+            if (product) {
+              addToCartRef.current(product, null);
+              toast.success(t("page.scanned_from_device", { name: product.name }));
+            }
+          }
+        }
+      } catch {}
+    }, 3000);
+    return () => clearInterval(iv);
+  }, [t]);
+
   const filtered = useMemo(() => {
     let list = products;
     if (activeCategory !== "All") list = list.filter((p) => p.category === activeCategory);
@@ -307,6 +329,7 @@ export default function POS() {
       addToCart(p);
       toast.success(t("page.added_item", { name: p.name }));
       try { getSocket().emit('product:scanned', { barcode: code, product_id: p.id }); } catch {}
+      try { api.post('/scan-events', { barcode: code, product_id: p.id }); } catch {}
     };
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(code);
     if (isUUID) {
@@ -401,7 +424,7 @@ export default function POS() {
   const sym = settings.currency_symbol || "₹";
 
   return (
-    <div className="flex flex-col lg:flex-row h-full overflow-hidden">
+    <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
       {/* Mobile: Products View */}
       {(!isDesktop && mobileView === "products") || isDesktop ? (
         <div className={`flex-1 flex flex-col min-w-0 border-r border-zinc-200 ${!isDesktop && mobileView !== "products" ? "hidden" : ""}`}>
@@ -457,7 +480,7 @@ export default function POS() {
           </div>
 
           {/* Product grid */}
-          <div className="flex-1 overflow-y-auto p-2 sm:p-4 bg-zinc-50">
+          <div className="flex-1 overflow-y-auto p-2 sm:p-4 bg-zinc-50 min-h-0">
             {filtered.length === 0 ? (
               <div className="text-center text-zinc-500 py-16 font-mono text-sm">{t("page.no_products")}</div>
             ) : (
@@ -530,7 +553,7 @@ export default function POS() {
             </select>
           </div>
 
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto min-h-0">
             {cart.length === 0 ? (
               <div className="p-8 text-center text-zinc-400 font-mono text-sm">
                 <Receipt className="w-10 h-10 mx-auto mb-3 text-zinc-300" strokeWidth={1.5} />
@@ -618,7 +641,7 @@ export default function POS() {
               <X className="w-5 h-5" />
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto p-4 min-h-0">
             <div className="bg-zinc-50 border-2 border-zinc-900 p-4 text-center">
               <div className="text-[10px] font-mono uppercase tracking-widest text-zinc-500">{t("page.amount_due")}</div>
               <div className="font-mono font-black text-4xl mt-1">{formatMoney(total, sym)}</div>
@@ -721,7 +744,7 @@ export default function POS() {
               {customers.map((c) => (<option key={c.id} value={c.id}>{c.name}{c.phone ? ` · ${c.phone}` : ""}</option>))}
             </select>
           </div>
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto min-h-0">
             {cart.length === 0 ? (
               <div className="p-8 text-center text-zinc-400 font-mono text-sm">
                 <Receipt className="w-10 h-10 mx-auto mb-3 text-zinc-300" strokeWidth={1.5} />

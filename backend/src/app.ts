@@ -67,6 +67,7 @@ import checkInOutRoutes from './routes/checkInOut.routes';
 import extraReportsRoutes from './routes/extraReports.routes';
 import advancedReportsRoutes from './routes/advancedReports.routes';
 import fixedAssetStockRoutes from './routes/fixedAssetStock.routes';
+import scanEventsRoutes from './routes/scanEvents.routes';
 
 const app = express();
 
@@ -176,6 +177,7 @@ app.use('/api/check-in-out', checkInOutRoutes);
 app.use('/api/extra-reports', extraReportsRoutes);
 app.use('/api/advanced-reports', advancedReportsRoutes);
 app.use('/api/fixed-asset-stock', fixedAssetStockRoutes);
+app.use('/api/scan-events', scanEventsRoutes);
 
 app.use(globalErrorHandler);
 
