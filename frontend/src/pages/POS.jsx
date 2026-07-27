@@ -121,6 +121,12 @@ export default function POS() {
 
   useEffect(() => { reload(); }, [reload]);
 
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === "visible") reload(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [reload]);
+
   const expiredCacheRef = useRef({});
 
   // Refs for socket handler to avoid stale closures
