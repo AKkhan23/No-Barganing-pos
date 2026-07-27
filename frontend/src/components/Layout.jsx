@@ -226,7 +226,7 @@ export default function Layout() {
       <aside className={`
         fixed lg:static inset-y-0 left-0 z-40
         w-64 bg-zinc-950 text-zinc-100 flex flex-col border-r-2 border-zinc-900
-        h-screen overflow-y-auto transition-transform duration-300
+        h-screen overflow-hidden transition-transform duration-300
         ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
       `}>
         <div className="p-5 border-b-2 border-zinc-800">
@@ -277,7 +277,7 @@ export default function Layout() {
             <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-2.5 top-1/2 -translate-y-1/2" strokeWidth={2.5} />
           </div>
         </div>
-        <nav className="flex-1 py-1 min-h-0">
+        <nav className="flex-1 overflow-y-auto py-1 min-h-0">
           {navSearch ? (
             allNavItems.filter((n) => {
               const label = t(`nav.${n.key}`, n.label).toLowerCase();
@@ -366,19 +366,25 @@ export default function Layout() {
         </div>
 
         <div className="border-t-2 border-zinc-800 bg-zinc-900">
-          <button onClick={() => setBottomOpen((v) => !v)} data-testid="nav-bottom-toggle"
-            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-zinc-800 transition-colors">
-            <div className="w-9 h-9 bg-[#FDE047] text-zinc-900 flex items-center justify-center font-display font-bold flex-shrink-0">
-              {user?.name?.[0]?.toUpperCase() || "U"}
-            </div>
+          <div className="flex items-center">
+            <button onClick={() => setBottomOpen((v) => !v)} data-testid="nav-bottom-toggle"
+              className="flex-1 flex items-center gap-3 px-4 py-3 hover:bg-zinc-800 transition-colors min-w-0">
+              <div className="w-9 h-9 bg-[#FDE047] text-zinc-900 flex items-center justify-center font-display font-bold flex-shrink-0">
+                {user?.name?.[0]?.toUpperCase() || "U"}
+              </div>
               <div className="min-w-0 flex-1 text-left">
                 <div className="text-base font-semibold truncate text-white" data-testid="current-user-name">{user?.name}</div>
                 <div className="text-xs font-mono uppercase text-zinc-500 tracking-widest">{user?.role}</div>
               </div>
-            <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform ${bottomOpen ? "rotate-180" : ""}`} strokeWidth={2.5} />
-          </button>
+              <ChevronDown className={`w-4 h-4 text-zinc-400 flex-shrink-0 transition-transform ${bottomOpen ? "rotate-180" : ""}`} strokeWidth={2.5} />
+            </button>
+            <button onClick={logout} data-testid="logout-btn"
+              className="flex-shrink-0 mr-2 w-9 h-9 bg-zinc-800 hover:bg-[#E60000] text-white flex items-center justify-center transition-colors">
+              <LogOut className="w-4 h-4" strokeWidth={2.5} />
+            </button>
+          </div>
           {bottomOpen && (
-            <div className="px-4 pb-2 space-y-2 border-t border-zinc-800 pt-3">
+            <div className="px-4 pb-4 space-y-2 border-t border-zinc-800 pt-3">
               <button onClick={() => setShiftOpen(true)} data-testid="nav-shift"
                 className="w-full flex items-center justify-center gap-2 h-10 bg-[#FDE047] text-zinc-900 text-xs font-bold uppercase tracking-widest hover:bg-yellow-300 transition-colors">
                 <Calculator className="w-4 h-4" strokeWidth={2.5} /> Shift Report
@@ -391,12 +397,6 @@ export default function Layout() {
               </button>
             </div>
           )}
-          <div className="px-4 pb-4 pt-2">
-            <button onClick={logout} data-testid="logout-btn"
-              className="w-full flex items-center justify-center gap-2 h-10 bg-zinc-800 hover:bg-[#E60000] text-white text-xs font-bold uppercase tracking-widest transition-colors">
-              <LogOut className="w-4 h-4" strokeWidth={2.5} /> {t("common.logout")}
-            </button>
-          </div>
         </div>
       </aside>
 
