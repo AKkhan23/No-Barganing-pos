@@ -1,5 +1,5 @@
-/* No Bargaining POS — Service Worker v3 */
-const CACHE = "nb-pos-static-v3";
+/* No Bargaining POS — Service Worker v4 (auto-update) */
+const CACHE = "nb-pos-static-v4";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
@@ -27,21 +27,19 @@ self.addEventListener("fetch", (event) => {
   const isAsset = /\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|eot)$/i.test(url.pathname);
 
   if (isAsset) {
+    // Network-first: always get latest, cache for offline fallback
     event.respondWith(
-      caches.match(req).then((cached) => {
-        const fetched = fetch(req).then((res) => {
-          if (res.ok) {
-            const copy = res.clone();
-            caches.open(CACHE).then((c) => c.put(req, copy));
-          }
-          return res;
-        });
-        return cached || fetched;
-      })
+      fetch(req).then((res) => {
+        if (res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(req, copy));
+        }
+        return res;
+      }).catch(() => caches.match(req))
     );
     return;
   }
 
-  // Navigation / HTML — always network, no cache
+  // Navigation / HTML — network-first, cache fallback
   event.respondWith(fetch(req).catch(() => caches.match(req)));
 });

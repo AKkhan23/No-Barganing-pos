@@ -113,21 +113,36 @@ export default function POS() {
 
   useEffect(() => { reload(); }, [reload]);
 
+  const expiredCacheRef = useRef({});
+
+  // Refs for socket handler to avoid stale closures
+  const addToCartRef = useRef(null);
+  const handleScanRef = useRef(null);
+  const productsRef = useRef([]);
+
+  // Keep refs fresh every render (must run BEFORE socket effect below)
+  useEffect(() => {
+    addToCartRef.current = addToCart;
+    handleScanRef.current = handleScan;
+    productsRef.current = products;
+  });
+
   useEffect(() => {
     const socket = getSocket();
     const handler = (data) => {
-      const product = products.find((p) => p.barcode === data.barcode || p.sku === data.barcode || p.id === data.product_id);
+      const list = productsRef.current;
+      const product = list.find((p) => p.barcode === data.barcode || p.sku === data.barcode || p.id === data.product_id);
       if (product) {
-        addToCart(product, data.weight || null);
+        addToCartRef.current(product, data.weight || null);
         toast.success(t("page.scanned_from_device", { name: product.name }));
       } else {
-        handleScan(data.barcode || data.code);
+        handleScanRef.current(data.barcode || data.code);
       }
     };
     socket.on('product:scanned', handler);
     return () => { socket.off('product:scanned', handler); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [products, t]);
+  }, [t]);
 
   const filtered = useMemo(() => {
     let list = products;
