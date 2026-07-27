@@ -226,7 +226,7 @@ export default function Layout() {
       <aside className={`
         fixed lg:static inset-y-0 left-0 z-40
         w-64 bg-zinc-950 text-zinc-100 flex flex-col border-r-2 border-zinc-900
-        h-screen overflow-hidden transition-transform duration-300
+        h-screen overflow-y-auto transition-transform duration-300
         ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
       `}>
         <div className="p-5 border-b-2 border-zinc-800">
@@ -277,7 +277,7 @@ export default function Layout() {
             <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-2.5 top-1/2 -translate-y-1/2" strokeWidth={2.5} />
           </div>
         </div>
-        <nav className="flex-1 overflow-y-auto py-1 min-h-0">
+        <nav className="flex-1 py-1 min-h-0">
           {navSearch ? (
             allNavItems.filter((n) => {
               const label = t(`nav.${n.key}`, n.label).toLowerCase();
