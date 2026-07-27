@@ -1,100 +1,183 @@
 <!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="theme-color" content="#E60000" />
-        <meta name="description" content="No Bargaining POS — Industrial-grade retail point of sale. Cloud-based POS system for retail stores with billing, inventory, accounting, and reporting." />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="No Bargaining" />
-        <meta name="robots" content="index, follow" />
-        <meta property="og:title" content="No Bargaining POS" />
-        <meta property="og:description" content="Cloud-based retail POS with billing, inventory, accounting & reporting." />
-        <meta property="og:type" content="website" />
-        <meta name="twitter:card" content="summary" />
-        <meta name="twitter:title" content="No Bargaining POS" />
-        <link rel="manifest" href="/manifest.json" />
-        <link rel="apple-touch-icon" href="/icon-192.png" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600&display=swap" rel="stylesheet" />
-        <title>No Bargaining POS — Retail Point of Sale</title>
-        <script>window.addEventListener("error",function(e){if(e.error instanceof DOMException&&e.error.name==="DataCloneError"&&e.message&&e.message.includes("PerformanceServerTiming")){e.stopImmediatePropagation();e.preventDefault()}},true);</script>
-        <script>
-          // Capture beforeinstallprompt IMMEDIATELY (before React loads)
-          window.__deferredPrompt = null;
-          window.addEventListener("beforeinstallprompt", function(e) {
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#E60000" />
+    <meta
+      name="description"
+      content="No Bargaining POS — Industrial-grade retail point of sale. Cloud-based POS system for retail stores with billing, inventory, accounting, and reporting."
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="No Bargaining" />
+    <meta name="robots" content="index, follow" />
+    <meta property="og:title" content="No Bargaining POS" />
+    <meta
+      property="og:description"
+      content="Cloud-based retail POS with billing, inventory, accounting & reporting."
+    />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="No Bargaining POS" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@600&display=swap"
+      rel="stylesheet"
+    />
+    <title>No Bargaining POS — Retail Point of Sale</title>
+    <script>
+      window.addEventListener(
+        "error",
+        function (e) {
+          if (
+            e.error instanceof DOMException &&
+            e.error.name === "DataCloneError" &&
+            e.message &&
+            e.message.includes("PerformanceServerTiming")
+          ) {
+            e.stopImmediatePropagation();
             e.preventDefault();
-            window.__deferredPrompt = e;
-            // If URL has ?install=1, show install popup immediately with vanilla JS
-            if (window.location.search.includes("install=1")) {
-              var d = document.createElement("div");
-              d.id = "qr-install-popup";
-              d.innerHTML = '<div style="position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;padding:16px">' +
-                '<div style="background:#fff;border:2px solid #18181b;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.3)">' +
-                '<div style="background:#09090b;color:#fff;padding:16px;display:flex;justify-content:space-between;align-items:center">' +
-                '<span style="font-weight:700;font-size:13px;letter-spacing:0.1em;text-transform:uppercase">📲 Install App</span>' +
-                '<button id="qr-close-btn" style="background:none;border:none;color:#fff;cursor:pointer;font-size:18px;padding:4px">✕</button></div>' +
-                '<div style="padding:24px;text-align:center">' +
-                '<div style="width:64px;height:64px;background:#E60000;border-radius:8px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">' +
-                '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>' +
-                '<p style="font-weight:700;font-size:18px;color:#18181b;margin:0 0 8px">No Bargaining POS</p>' +
-                '<p style="font-size:14px;color:#71717a;margin:0 0 20px">Install on your phone for fast, offline access.</p>' +
-                '<button id="qr-install-btn" style="width:100%;height:48px;background:#E60000;color:white;border:none;font-size:13px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer">Install App</button>' +
-                '<p style="margin-top:12px"><button id="qr-later-btn" style="background:none;border:none;color:#a1a1aa;cursor:pointer;font-size:11px;font-family:monospace">Maybe later</button></p></div></div></div>';
-              document.body.appendChild(d);
-              document.getElementById("qr-install-btn").onclick = function() {
-                if (window.__deferredPrompt) {
-                  window.__deferredPrompt.prompt();
-                  window.__deferredPrompt.userChoice.then(function() { window.__deferredPrompt = null; });
-                }
-                var popup = document.getElementById("qr-install-popup");
-                if (popup) popup.remove();
-              };
-              document.getElementById("qr-close-btn").onclick = document.getElementById("qr-later-btn").onclick = function() {
-                var popup = document.getElementById("qr-install-popup");
-                if (popup) popup.remove();
-              };
+          }
+        },
+        true,
+      );
+    </script>
+    <script>
+      // Capture beforeinstallprompt IMMEDIATELY (before React loads)
+      window.__deferredPrompt = null;
+      window.addEventListener("beforeinstallprompt", function (e) {
+        e.preventDefault();
+        window.__deferredPrompt = e;
+        // If URL has ?install=1, show install popup immediately with vanilla JS
+        if (window.location.search.includes("install=1")) {
+          var d = document.createElement("div");
+          d.id = "qr-install-popup";
+          d.innerHTML =
+            '<div style="position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;padding:16px">' +
+            '<div style="background:#fff;border:2px solid #18181b;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.3)">' +
+            '<div style="background:#09090b;color:#fff;padding:16px;display:flex;justify-content:space-between;align-items:center">' +
+            '<span style="font-weight:700;font-size:13px;letter-spacing:0.1em;text-transform:uppercase">📲 Install App</span>' +
+            '<button id="qr-close-btn" style="background:none;border:none;color:#fff;cursor:pointer;font-size:18px;padding:4px">✕</button></div>' +
+            '<div style="padding:24px;text-align:center">' +
+            '<div style="width:64px;height:64px;background:#E60000;border-radius:8px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">' +
+            '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>' +
+            '<p style="font-weight:700;font-size:18px;color:#18181b;margin:0 0 8px">No Bargaining POS</p>' +
+            '<p style="font-size:14px;color:#71717a;margin:0 0 20px">Install on your phone for fast, offline access.</p>' +
+            '<button id="qr-install-btn" style="width:100%;height:48px;background:#E60000;color:white;border:none;font-size:13px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer">Install App</button>' +
+            '<p style="margin-top:12px"><button id="qr-later-btn" style="background:none;border:none;color:#a1a1aa;cursor:pointer;font-size:11px;font-family:monospace">Maybe later</button></p></div></div></div>';
+          document.body.appendChild(d);
+          document.getElementById("qr-install-btn").onclick = function () {
+            if (window.__deferredPrompt) {
+              window.__deferredPrompt.prompt();
+              window.__deferredPrompt.userChoice.then(function () {
+                window.__deferredPrompt = null;
+              });
             }
-          });
-        </script>
-        <style>
-            /* Splash screen — visible instantly before React mounts */
-            #splash {
-                position: fixed; inset: 0; z-index: 99999;
-                display: flex; flex-direction: column; align-items: center; justify-content: center;
-                background: #fafafa; color: #18181b;
-                font-family: 'Inter', system-ui, -apple-system, sans-serif;
-                transition: opacity 0.4s ease;
-            }
-            #splash.hide { opacity: 0; pointer-events: none; }
-            #splash .logo { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em; color: #dc2626; margin-bottom: 0.5rem; }
-            #splash .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #dc2626; margin: 1.25rem 3px; animation: pulse 1.2s ease-in-out infinite; }
-            #splash .dot:nth-child(2) { animation-delay: 0.2s; }
-            #splash .dot:nth-child(3) { animation-delay: 0.4s; }
-            #splash .sub { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.15em; color: #a1a1aa; margin-top: 0.25rem; }
-            @keyframes pulse { 0%,80%,100% { opacity: 0.3; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1); } }
-        </style>
-    </head>
-    <body>
-        <noscript>You need to enable JavaScript to run this app.</noscript>
-        <div id="splash">
-            <div class="logo">No Bargaining</div>
-            <div><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
-            <div class="sub">Loading POS Terminal…</div>
-        </div>
-        <div id="root"></div>
-        <script>
-            // Hide splash once React mounts (#root has content)
-            new MutationObserver((_, obs) => {
-                if (document.getElementById('root')?.children?.length > 0) {
-                    document.getElementById('splash')?.classList.add('hide');
-                    setTimeout(() => document.getElementById('splash')?.remove(), 500);
-                    obs.disconnect();
-                }
-            }).observe(document.getElementById('root'), { childList: true });
-        </script>
-        <script type="module" src="/src/index.jsx"></script>
-    </body>
+            var popup = document.getElementById("qr-install-popup");
+            if (popup) popup.remove();
+          };
+          document.getElementById("qr-close-btn").onclick =
+            document.getElementById("qr-later-btn").onclick = function () {
+              var popup = document.getElementById("qr-install-popup");
+              if (popup) popup.remove();
+            };
+        }
+      });
+    </script>
+    <style>
+      /* Splash screen — visible instantly before React mounts */
+      #splash {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #fafafa;
+        color: #18181b;
+        font-family:
+          "Inter",
+          system-ui,
+          -apple-system,
+          sans-serif;
+        transition: opacity 0.4s ease;
+      }
+      #splash.hide {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #splash .logo {
+        font-size: 1.75rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: #dc2626;
+        margin-bottom: 0.5rem;
+      }
+      #splash .dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #dc2626;
+        margin: 1.25rem 3px;
+        animation: pulse 1.2s ease-in-out infinite;
+      }
+      #splash .dot:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+      #splash .dot:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+      #splash .sub {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: #a1a1aa;
+        margin-top: 0.25rem;
+      }
+      @keyframes pulse {
+        0%,
+        80%,
+        100% {
+          opacity: 0.3;
+          transform: scale(0.8);
+        }
+        40% {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="splash">
+      <div class="logo">No Bargaining</div>
+      <div>
+        <span class="dot"></span><span class="dot"></span
+        ><span class="dot"></span>
+      </div>
+      <div class="sub">Loading POS Terminal…</div>
+    </div>
+    <div id="root"></div>
+    <script>
+      // Hide splash once React mounts (#root has content)
+      new MutationObserver((_, obs) => {
+        if (document.getElementById("root")?.children?.length > 0) {
+          document.getElementById("splash")?.classList.add("hide");
+          setTimeout(() => document.getElementById("splash")?.remove(), 500);
+          obs.disconnect();
+        }
+      }).observe(document.getElementById("root"), { childList: true });
+    </script>
+    <script type="module" src="/src/index.jsx"></script>
+  </body>
 </html>

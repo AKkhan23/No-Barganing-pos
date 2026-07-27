@@ -1,7 +1,14 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { Printer, Search, Loader2, FileText, Receipt, ArrowLeft } from "lucide-react";
+import {
+  Printer,
+  Search,
+  Loader2,
+  FileText,
+  Receipt,
+  ArrowLeft,
+} from "lucide-react";
 import JsBarcode from "jsbarcode";
 import ReactDOMServer from "react-dom/server";
 import { QRCodeSVG } from "qrcode.react";
@@ -9,7 +16,11 @@ import { toast } from "sonner";
 import api from "@/lib/api";
 import { PageShell } from "@/pages/Dashboard";
 
-const ESC = (s) => (s || "").replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" })[c]);
+const ESC = (s) =>
+  (s || "").replace(
+    /[<>&]/g,
+    (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" })[c],
+  );
 
 function computeEan13(seed) {
   if (!seed) return null;
@@ -30,9 +41,11 @@ function barcode12(seed) {
 function qrSvg(value, size = 52) {
   try {
     return ReactDOMServer.renderToStaticMarkup(
-      <QRCodeSVG value={String(value)} size={size} level="M" />
+      <QRCodeSVG value={String(value)} size={size} level="M" />,
     );
-  } catch { return ""; }
+  } catch {
+    return "";
+  }
 }
 
 const MODES = {
@@ -70,9 +83,15 @@ export default function BarcodeLabels() {
     const load = async () => {
       setLoading(true);
       try {
-        const r = await api.get(q ? `/products?q=${encodeURIComponent(q)}` : "/products?limit=200");
+        const r = await api.get(
+          q ? `/products?q=${encodeURIComponent(q)}` : "/products?limit=200",
+        );
         setProducts(r.data);
-      } catch (e) { toast.error(t("page.failed_to_load_products")); } finally { setLoading(false); }
+      } catch (e) {
+        toast.error(t("page.failed_to_load_products"));
+      } finally {
+        setLoading(false);
+      }
     };
     load();
   }, [q]);
@@ -81,18 +100,23 @@ export default function BarcodeLabels() {
     setSelected((prev) =>
       prev.find((s) => s.id === id)
         ? prev.filter((s) => s.id !== id)
-        : [...prev, { id, copies: 1 }]
+        : [...prev, { id, copies: 1 }],
     );
   };
 
   const updateCopies = (id, val) => {
     setSelected((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, copies: Math.max(1, val || 1) } : s))
+      prev.map((s) =>
+        s.id === id ? { ...s, copies: Math.max(1, val || 1) } : s,
+      ),
     );
   };
 
   const handlePrint = (printMode) => {
-    if (!selected.length) { toast.error(t("page.select_least_one")); return; }
+    if (!selected.length) {
+      toast.error(t("page.select_least_one"));
+      return;
+    }
     const cfg = MODES[printMode];
 
     let idx = 0;
@@ -230,75 +254,129 @@ body.mode-a4 .label-qr-wrap svg { width: 8mm; display: block; }
       }
     });
 
-    setTimeout(() => { try { printWindow.print(); } catch (e) {} }, 300);
+    setTimeout(() => {
+      try {
+        printWindow.print();
+      } catch (e) {}
+    }, 300);
   };
 
   return (
-    <PageShell title={t("page.barcode_labels")} subtitle={`${selected.length} ${t("page.products_selected")}`} right={
-      <div className="flex items-center gap-2">
-        <button onClick={() => navigate(-1)}
-          className="h-10 px-3 border border-zinc-300 rounded-lg text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 hover:bg-zinc-50 transition-colors">
-          <ArrowLeft className="w-4 h-4" /> {t("common.back")}
-        </button>
-        <div className="flex bg-zinc-100 rounded-lg p-0.5">
-          {Object.entries(MODES).map(([key, cfg]) => {
-            const Icon = cfg.icon;
-            const active = mode === key;
-            return (
-              <button key={key} onClick={() => setMode(key)}
-                className={`h-9 px-3 rounded-md text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 transition-colors ${active ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
-                <Icon className="w-3.5 h-3.5" /> {cfg.label}
-              </button>
-            );
-          })}
+    <PageShell
+      title={t("page.barcode_labels")}
+      subtitle={`${selected.length} ${t("page.products_selected")}`}
+      right={
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate(-1)}
+            className="h-10 px-3 border border-zinc-300 rounded-lg text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 hover:bg-zinc-50 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" /> {t("common.back")}
+          </button>
+          <div className="flex bg-zinc-100 rounded-lg p-0.5">
+            {Object.entries(MODES).map(([key, cfg]) => {
+              const Icon = cfg.icon;
+              const active = mode === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setMode(key)}
+                  className={`h-9 px-3 rounded-md text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 transition-colors ${active ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}
+                >
+                  <Icon className="w-3.5 h-3.5" /> {cfg.label}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            onClick={() => handlePrint(mode)}
+            disabled={!selected.length}
+            className="h-10 px-5 bg-[#E60000] text-white rounded-lg text-xs font-bold uppercase tracking-widest flex items-center gap-2 disabled:opacity-40 hover:bg-[#cc0000] transition-colors"
+          >
+            <Printer className="w-4 h-4" /> {t("page.print_labels")}
+          </button>
         </div>
-        <button onClick={() => handlePrint(mode)} disabled={!selected.length}
-          className="h-10 px-5 bg-[#E60000] text-white rounded-lg text-xs font-bold uppercase tracking-widest flex items-center gap-2 disabled:opacity-40 hover:bg-[#cc0000] transition-colors">
-          <Printer className="w-4 h-4" /> {t("page.print_labels")}
-        </button>
-      </div>
-    }>
+      }
+    >
       <div className="p-6 overflow-y-auto h-full">
         <div className="flex gap-3 mb-4 items-center flex-wrap">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-            <input className="w-full h-11 border-2 border-zinc-300 rounded-lg pl-10 pr-4 text-sm focus:outline-none focus:border-[#E60000]"
-              placeholder={t("page.search_products")} value={q} onChange={(e) => setQ(e.target.value)} />
+            <input
+              className="w-full h-11 border-2 border-zinc-300 rounded-lg pl-10 pr-4 text-sm focus:outline-none focus:border-[#E60000]"
+              placeholder={t("page.search_products")}
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+            />
           </div>
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-16 text-zinc-500"><Loader2 className="w-6 h-6 animate-spin mr-2" /> {t("page.loading_products")}</div>
+          <div className="flex items-center justify-center py-16 text-zinc-500">
+            <Loader2 className="w-6 h-6 animate-spin mr-2" />{" "}
+            {t("page.loading_products")}
+          </div>
         ) : (
           <div className="bg-white rounded-xl border border-zinc-200 overflow-hidden shadow-sm">
             <table className="w-full">
               <thead>
                 <tr className="bg-zinc-50 border-b border-zinc-200">
                   <th className="p-3 w-10"></th>
-                  <th className="p-3 text-left font-mono text-[10px] uppercase tracking-widest text-zinc-500">{t("page.product_cap")}</th>
-                  <th className="p-3 text-left font-mono text-[10px] uppercase tracking-widest text-zinc-500">{t("page.barcode")}</th>
-                  <th className="p-3 text-right font-mono text-[10px] uppercase tracking-widest text-zinc-500">{t("page.price")}</th>
-                  <th className="p-3 text-center font-mono text-[10px] uppercase tracking-widest text-zinc-500 w-28">{t("page.copies")}</th>
+                  <th className="p-3 text-left font-mono text-[10px] uppercase tracking-widest text-zinc-500">
+                    {t("page.product_cap")}
+                  </th>
+                  <th className="p-3 text-left font-mono text-[10px] uppercase tracking-widest text-zinc-500">
+                    {t("page.barcode")}
+                  </th>
+                  <th className="p-3 text-right font-mono text-[10px] uppercase tracking-widest text-zinc-500">
+                    {t("page.price")}
+                  </th>
+                  <th className="p-3 text-center font-mono text-[10px] uppercase tracking-widest text-zinc-500 w-28">
+                    {t("page.copies")}
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {products.map((p) => {
                   const sel = selected.find((s) => s.id === p.id);
                   return (
-                    <tr key={p.id} className={`border-t border-zinc-100 hover:bg-zinc-50 transition-colors cursor-pointer ${sel ? "bg-red-50" : ""}`}
-                      onClick={() => toggleProduct(p.id)}>
+                    <tr
+                      key={p.id}
+                      className={`border-t border-zinc-100 hover:bg-zinc-50 transition-colors cursor-pointer ${sel ? "bg-red-50" : ""}`}
+                      onClick={() => toggleProduct(p.id)}
+                    >
                       <td className="p-3 text-center">
-                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${sel ? "border-[#E60000] bg-[#E60000]" : "border-zinc-300"}`}>
-                          {sel && <span className="text-white text-xs font-bold">✓</span>}
+                        <div
+                          className={`w-5 h-5 rounded border-2 flex items-center justify-center ${sel ? "border-[#E60000] bg-[#E60000]" : "border-zinc-300"}`}
+                        >
+                          {sel && (
+                            <span className="text-white text-xs font-bold">
+                              ✓
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="p-3 font-medium text-sm">{p.name}</td>
-                      <td className="p-3 font-mono text-xs text-zinc-500">{p.barcode || p.sku}</td>
-                      <td className="p-3 font-mono text-right font-bold">₹{Number(p.price).toFixed(2)}</td>
-                      <td className="p-3 text-center" onClick={(e) => e.stopPropagation()}>
-                        <input type="number" min={1} max={999} value={sel ? sel.copies : 1}
-                          onChange={(e) => updateCopies(p.id, parseInt(e.target.value) || 1)}
-                          className="w-16 h-8 border border-zinc-300 rounded text-center text-sm font-mono focus:outline-none focus:border-[#E60000]" />
+                      <td className="p-3 font-mono text-xs text-zinc-500">
+                        {p.barcode || p.sku}
+                      </td>
+                      <td className="p-3 font-mono text-right font-bold">
+                        ₹{Number(p.price).toFixed(2)}
+                      </td>
+                      <td
+                        className="p-3 text-center"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <input
+                          type="number"
+                          min={1}
+                          max={999}
+                          value={sel ? sel.copies : 1}
+                          onChange={(e) =>
+                            updateCopies(p.id, parseInt(e.target.value) || 1)
+                          }
+                          className="w-16 h-8 border border-zinc-300 rounded text-center text-sm font-mono focus:outline-none focus:border-[#E60000]"
+                        />
                       </td>
                     </tr>
                   );

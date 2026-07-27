@@ -8,7 +8,8 @@ import {
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import api, { formatApiErrorDetail, BACKEND_URL } from "../lib/api";
-import { queuedPost } from "../lib/offlineQueue";
+import { queuedPost, pendingQueueCount } from "../lib/offlineQueue";
+import { saveToCache, loadFromCache } from "../lib/offlineCache";
 import { formatMoney } from "../lib/format";
 import { isWeightUnit, formatStock, formatQty, hasSubUnit, getSubUnit, getDisplayUnit, isKgUnit } from "../lib/sellBy";
 import BarcodeScanner from "../components/BarcodeScanner";
@@ -53,6 +54,8 @@ export default function POS() {
   const [selectedDeliveryPartner, setSelectedDeliveryPartner] = useState("");
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
   const [mobileView, setMobileView] = useState("products");
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [pendingCount, setPendingCount] = useState(pendingQueueCount());
   const [searchParams] = useSearchParams();
   const resizing = React.useRef(false);
   useEffect(() => {
@@ -100,7 +103,18 @@ export default function POS() {
   }, [scannerOpen, checkoutOpen, weightModal, products]);
 
   const reload = useCallback(async () => {
-    const safeGet = async (url, fallback = []) => { try { const r = await api.get(url); return r.data ?? fallback; } catch { return fallback; } };
+    const safeGet = async (url, fallback = []) => {
+      try {
+        const r = await api.get(url);
+        const data = r.data ?? fallback;
+        saveToCache(url, data);
+        return data;
+      } catch {
+        const cached = loadFromCache(url);
+        if (cached !== null) return cached;
+        return fallback;
+      }
+    };
     const [products, categories, customers, settings, promotions, counters, deliveryPartners] = await Promise.all([
       safeGet("/products"),
       safeGet("/categories"),
@@ -117,6 +131,7 @@ export default function POS() {
     setPromotions(promotions);
     setCounters(counters);
     setDeliveryPartners(deliveryPartners);
+    setIsOnline(navigator.onLine);
   }, []);
 
   useEffect(() => { reload(); }, [reload]);
@@ -127,6 +142,19 @@ export default function POS() {
     const interval = setInterval(() => reload(), 60000);
     return () => { document.removeEventListener("visibilitychange", onVisible); clearInterval(interval); };
   }, [reload]);
+
+  useEffect(() => {
+    const goOnline = () => setIsOnline(true);
+    const goOffline = () => setIsOnline(false);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    const pendingInterval = setInterval(() => setPendingCount(pendingQueueCount()), 5000);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+      clearInterval(pendingInterval);
+    };
+  }, []);
 
   const expiredCacheRef = useRef({});
 
@@ -423,6 +451,16 @@ export default function POS() {
         <div className={`flex-1 flex flex-col min-w-0 border-r border-zinc-200 ${!isDesktop && mobileView !== "products" ? "hidden" : ""}`}>
           {/* Top bar */}
           <div className="p-2 sm:p-4 bg-white border-b-2 border-zinc-200 flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            {pendingCount > 0 && (
+              <div className="text-[9px] font-mono font-bold uppercase tracking-widest text-amber-600 bg-amber-50 border border-amber-300 px-2 py-1 rounded whitespace-nowrap" title={t("page.pending_sync")}>
+                ⏳ {pendingCount}
+              </div>
+            )}
+            {!isOnline && (
+              <div className="text-[9px] font-mono font-bold uppercase tracking-widest text-[#E60000] bg-red-50 border border-red-300 px-2 py-1 rounded whitespace-nowrap">
+                ● OFFLINE
+              </div>
+            )}
             <div className="relative flex-1 min-w-0">
               <Search className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
               <input

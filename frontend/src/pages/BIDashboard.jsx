@@ -20,7 +20,7 @@ const BAR_COLORS = ["#E60000", "#09090B", "#FDE047", "#0284C7", "#16A34A"];
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-const datePast = (d: number) => new Date(Date.now() - d * DAY_MS).toISOString().split("T")[0];
+const datePast = (d:number) => new Date(Date.now() - d * DAY_MS).toISOString().split("T")[0];
 
 
 
@@ -299,4 +299,4 @@ export default function BIDashboard() {
   );
 
 }
-†
+

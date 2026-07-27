@@ -31,7 +31,9 @@ export default function BulkItemUpdate() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   const filtered = items.filter((p) => {
     if (!search) return true;
@@ -65,7 +67,10 @@ export default function BulkItemUpdate() {
     }
     try {
       const ids = Array.from(selected);
-      await api.post("/products/bulk-update", { ids, updates: { field, value: Number(value) } });
+      await api.post("/products/bulk-update", {
+        ids,
+        updates: { field, value: Number(value) },
+      });
       toast.success(`Updated ${ids.length} products`);
       setSelected(new Set());
       setModal(null);
@@ -76,7 +81,10 @@ export default function BulkItemUpdate() {
   };
 
   return (
-    <PageShell title="Bulk Item Update" subtitle="Update multiple products at once">
+    <PageShell
+      title="Bulk Item Update"
+      subtitle="Update multiple products at once"
+    >
       <div className="p-6 h-full overflow-y-auto flex flex-col">
         {/* Search */}
         <div className="relative mb-4">
@@ -95,27 +103,51 @@ export default function BulkItemUpdate() {
             <thead>
               <tr className="bg-zinc-50 border-b border-zinc-200">
                 <th className="p-4 w-12">
-                  <button onClick={toggleAll} className="p-1 hover:bg-zinc-200 rounded transition-colors">
-                    {selected.size === filtered.length && filtered.length > 0
-                      ? <CheckSquare className="w-4 h-4 text-[#E60000]" />
-                      : <Square className="w-4 h-4 text-zinc-400" />}
+                  <button
+                    onClick={toggleAll}
+                    className="p-1 hover:bg-zinc-200 rounded transition-colors"
+                  >
+                    {selected.size === filtered.length &&
+                    filtered.length > 0 ? (
+                      <CheckSquare className="w-4 h-4 text-[#E60000]" />
+                    ) : (
+                      <Square className="w-4 h-4 text-zinc-400" />
+                    )}
                   </button>
                 </th>
-                <th className="p-4 text-left font-mono text-[10px] uppercase tracking-widest text-zinc-500">Name</th>
-                <th className="p-4 text-left font-mono text-[10px] uppercase tracking-widest text-zinc-500">SKU</th>
-                <th className="p-4 text-right font-mono text-[10px] uppercase tracking-widest text-zinc-500">Price</th>
-                <th className="p-4 text-right font-mono text-[10px] uppercase tracking-widest text-zinc-500">Stock</th>
-                <th className="p-4 text-left font-mono text-[10px] uppercase tracking-widest text-zinc-500">Category</th>
+                <th className="p-4 text-left font-mono text-[10px] uppercase tracking-widest text-zinc-500">
+                  Name
+                </th>
+                <th className="p-4 text-left font-mono text-[10px] uppercase tracking-widest text-zinc-500">
+                  SKU
+                </th>
+                <th className="p-4 text-right font-mono text-[10px] uppercase tracking-widest text-zinc-500">
+                  Price
+                </th>
+                <th className="p-4 text-right font-mono text-[10px] uppercase tracking-widest text-zinc-500">
+                  Stock
+                </th>
+                <th className="p-4 text-left font-mono text-[10px] uppercase tracking-widest text-zinc-500">
+                  Category
+                </th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((p) => (
-                <tr key={p.id} className={`border-t border-zinc-100 hover:bg-zinc-50 transition-colors ${selected.has(p.id) ? "bg-[#E60000]/5" : ""}`}>
+                <tr
+                  key={p.id}
+                  className={`border-t border-zinc-100 hover:bg-zinc-50 transition-colors ${selected.has(p.id) ? "bg-[#E60000]/5" : ""}`}
+                >
                   <td className="p-4">
-                    <button onClick={() => toggleOne(p.id)} className="p-1 hover:bg-zinc-200 rounded transition-colors">
-                      {selected.has(p.id)
-                        ? <CheckSquare className="w-4 h-4 text-[#E60000]" />
-                        : <Square className="w-4 h-4 text-zinc-400" />}
+                    <button
+                      onClick={() => toggleOne(p.id)}
+                      className="p-1 hover:bg-zinc-200 rounded transition-colors"
+                    >
+                      {selected.has(p.id) ? (
+                        <CheckSquare className="w-4 h-4 text-[#E60000]" />
+                      ) : (
+                        <Square className="w-4 h-4 text-zinc-400" />
+                      )}
                     </button>
                   </td>
                   <td className="p-4 font-medium">
@@ -123,17 +155,28 @@ export default function BulkItemUpdate() {
                       <div className="w-8 h-8 rounded-lg bg-zinc-100 flex items-center justify-center">
                         <Package className="w-4 h-4 text-zinc-500" />
                       </div>
-                      {p.name?.replace(/\s+\d+(\.\d+)?\s*(kg|g|l|ml|pcs|pack)$/i, "") || p.name}
+                      {p.name?.replace(
+                        /\s+\d+(\.\d+)?\s*(kg|g|l|ml|pcs|pack)$/i,
+                        "",
+                      ) || p.name}
                     </div>
                   </td>
-                  <td className="p-4 text-sm font-mono text-zinc-500">{p.sku}</td>
-                  <td className="p-4 text-right font-mono font-bold">{formatMoney(p.price)}</td>
+                  <td className="p-4 text-sm font-mono text-zinc-500">
+                    {p.sku}
+                  </td>
+                  <td className="p-4 text-right font-mono font-bold">
+                    {formatMoney(p.price)}
+                  </td>
                   <td className="p-4 text-right font-mono text-sm">
-                    <span className={`font-bold ${Number(p.stock) <= Number(p.low_stock_threshold || 5) ? "text-[#E60000]" : "text-zinc-700"}`}>
+                    <span
+                      className={`font-bold ${Number(p.stock) <= Number(p.low_stock_threshold || 5) ? "text-[#E60000]" : "text-zinc-700"}`}
+                    >
                       {formatStock(p.stock, p.sell_by)}
                     </span>
                   </td>
-                  <td className="p-4 text-sm text-zinc-500">{p.category || "-"}</td>
+                  <td className="p-4 text-sm text-zinc-500">
+                    {p.category || "-"}
+                  </td>
                 </tr>
               ))}
               {filtered.length === 0 && (
@@ -142,8 +185,14 @@ export default function BulkItemUpdate() {
                     <div className="text-zinc-300 mb-2">
                       <Package className="w-12 h-12 mx-auto" strokeWidth={1} />
                     </div>
-                    <div className="text-zinc-400 font-medium mb-1">{search ? "No matching products" : "No products found"}</div>
-                    <div className="text-zinc-400 text-sm">{search ? "Try a different search term" : "Add products first"}</div>
+                    <div className="text-zinc-400 font-medium mb-1">
+                      {search ? "No matching products" : "No products found"}
+                    </div>
+                    <div className="text-zinc-400 text-sm">
+                      {search
+                        ? "Try a different search term"
+                        : "Add products first"}
+                    </div>
                   </td>
                 </tr>
               )}
@@ -159,8 +208,12 @@ export default function BulkItemUpdate() {
                 <CheckSquare className="w-5 h-5 text-[#E60000]" />
               </div>
               <div>
-                <div className="font-display font-black text-lg">{selected.size} selected</div>
-                <div className="text-xs text-zinc-500">Items ready for bulk update</div>
+                <div className="font-display font-black text-lg">
+                  {selected.size} selected
+                </div>
+                <div className="text-xs text-zinc-500">
+                  Items ready for bulk update
+                </div>
               </div>
             </div>
             <button
@@ -174,49 +227,77 @@ export default function BulkItemUpdate() {
 
         {/* Update Modal */}
         {modal && (
-          <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setModal(null)}>
-            <div className="w-full max-w-md bg-white rounded-xl shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+            onClick={() => setModal(null)}
+          >
+            <div
+              className="w-full max-w-md bg-white rounded-xl shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="flex items-center justify-between p-5 border-b border-zinc-200">
                 <div>
-                  <div className="font-display font-black uppercase text-lg">Bulk Update</div>
-                  <div className="text-xs text-zinc-500 mt-0.5">Updating {selected.size} products</div>
+                  <div className="font-display font-black uppercase text-lg">
+                    Bulk Update
+                  </div>
+                  <div className="text-xs text-zinc-500 mt-0.5">
+                    Updating {selected.size} products
+                  </div>
                 </div>
-                <button onClick={() => setModal(null)} className="p-2 hover:bg-zinc-100 rounded-lg transition-colors">
+                <button
+                  onClick={() => setModal(null)}
+                  className="p-2 hover:bg-zinc-100 rounded-lg transition-colors"
+                >
                   <X className="w-5 h-5" />
                 </button>
               </div>
               <div className="p-5 space-y-5">
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-600 mb-1.5">Field to Update <span className="text-[#E60000]">*</span></label>
+                  <label className="block text-xs font-semibold text-zinc-600 mb-1.5">
+                    Field to Update <span className="text-[#E60000]">*</span>
+                  </label>
                   <select
                     value={modal.field}
-                    onChange={(e) => setModal({ ...modal, field: e.target.value })}
+                    onChange={(e) =>
+                      setModal({ ...modal, field: e.target.value })
+                    }
                     className="w-full h-11 border border-zinc-300 rounded-lg px-4 focus:outline-none focus:ring-2 focus:ring-[#E60000]/30 focus:border-[#E60000] text-sm bg-white"
                   >
                     <option value="">-- Select field --</option>
                     {UPDATE_FIELDS.map((f) => (
-                      <option key={f.value} value={f.value}>{f.label}</option>
+                      <option key={f.value} value={f.value}>
+                        {f.label}
+                      </option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-600 mb-1.5">New Value <span className="text-[#E60000]">*</span></label>
+                  <label className="block text-xs font-semibold text-zinc-600 mb-1.5">
+                    New Value <span className="text-[#E60000]">*</span>
+                  </label>
                   <input
-                    type="number" step="any"
+                    type="number"
+                    step="any"
                     value={modal.value}
-                    onChange={(e) => setModal({ ...modal, value: e.target.value })}
+                    onChange={(e) =>
+                      setModal({ ...modal, value: e.target.value })
+                    }
                     placeholder="Enter new value"
                     className="w-full h-11 border border-zinc-300 rounded-lg px-4 focus:outline-none focus:ring-2 focus:ring-[#E60000]/30 focus:border-[#E60000] text-sm"
                   />
                 </div>
                 <div className="flex justify-end gap-3 pt-2">
-                  <button type="button" onClick={() => setModal(null)}
-                    className="h-11 px-6 border border-zinc-300 rounded-lg text-xs font-bold uppercase tracking-widest text-zinc-600 hover:bg-zinc-50 transition-colors">
+                  <button
+                    type="button"
+                    onClick={() => setModal(null)}
+                    className="h-11 px-6 border border-zinc-300 rounded-lg text-xs font-bold uppercase tracking-widest text-zinc-600 hover:bg-zinc-50 transition-colors"
+                  >
                     Cancel
                   </button>
                   <button
                     onClick={() => handleBulkUpdate(modal.field, modal.value)}
-                    className="h-11 px-6 bg-zinc-900 text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-zinc-800 transition-colors flex items-center gap-2">
+                    className="h-11 px-6 bg-zinc-900 text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-zinc-800 transition-colors flex items-center gap-2"
+                  >
                     <Edit3 className="w-4 h-4" /> Apply to {selected.size} Items
                   </button>
                 </div>

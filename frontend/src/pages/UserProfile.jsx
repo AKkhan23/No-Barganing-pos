@@ -1,6 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { User, Lock, Shield, Save, CheckCircle, Eye, EyeOff } from "lucide-react";
+import {
+  User,
+  Lock,
+  Shield,
+  Save,
+  CheckCircle,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { toast } from "sonner";
 import api from "../lib/api";
 import { PageShell } from "./Dashboard";
@@ -21,14 +29,29 @@ export default function UserProfile() {
   const { user } = useAuth();
 
   const [profile, setProfile] = useState({ name: "", email: "", phone: "" });
-  const [pw, setPw] = useState({ current_password: "", new_password: "", confirm_password: "" });
-  const [sec, setSec] = useState({ security_question: "", security_answer: "" });
+  const [pw, setPw] = useState({
+    current_password: "",
+    new_password: "",
+    confirm_password: "",
+  });
+  const [sec, setSec] = useState({
+    security_question: "",
+    security_answer: "",
+  });
   const [saving, setSaving] = useState(false);
-  const [showPw, setShowPw] = useState({ current: false, new: false, confirm: false });
+  const [showPw, setShowPw] = useState({
+    current: false,
+    new: false,
+    confirm: false,
+  });
 
   useEffect(() => {
     if (user) {
-      setProfile({ name: user.name || "", email: user.email || "", phone: user.phone || "" });
+      setProfile({
+        name: user.name || "",
+        email: user.email || "",
+        phone: user.phone || "",
+      });
     }
   }, [user]);
 
@@ -53,7 +76,10 @@ export default function UserProfile() {
       return;
     }
     try {
-      await api.post("/users/change-password", { current_password: pw.current_password, new_password: pw.new_password });
+      await api.post("/users/change-password", {
+        current_password: pw.current_password,
+        new_password: pw.new_password,
+      });
       toast.success("Password changed");
       setPw({ current_password: "", new_password: "", confirm_password: "" });
     } catch (err) {
@@ -86,44 +112,69 @@ export default function UserProfile() {
                 <User className="w-5 h-5 text-[#E60000]" />
               </div>
               <div>
-                <div className="font-display font-black text-lg">Profile Information</div>
-                <div className="text-xs text-zinc-500">Update your personal details</div>
+                <div className="font-display font-black text-lg">
+                  Profile Information
+                </div>
+                <div className="text-xs text-zinc-500">
+                  Update your personal details
+                </div>
               </div>
             </div>
             <form onSubmit={handleProfileSubmit} className="p-6 space-y-5">
               <div>
-                <label className="block text-xs font-semibold text-zinc-600 mb-1.5">Name <span className="text-[#E60000]">*</span></label>
+                <label className="block text-xs font-semibold text-zinc-600 mb-1.5">
+                  Name <span className="text-[#E60000]">*</span>
+                </label>
                 <input
-                  value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                  value={profile.name}
+                  onChange={(e) =>
+                    setProfile({ ...profile, name: e.target.value })
+                  }
                   required
                   className="w-full h-11 border border-zinc-300 rounded-lg px-4 focus:outline-none focus:ring-2 focus:ring-[#E60000]/30 focus:border-[#E60000] text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-zinc-600 mb-1.5">Email <span className="text-[#E60000]">*</span></label>
+                <label className="block text-xs font-semibold text-zinc-600 mb-1.5">
+                  Email <span className="text-[#E60000]">*</span>
+                </label>
                 <input
-                  type="email" value={profile.email} onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                  type="email"
+                  value={profile.email}
+                  onChange={(e) =>
+                    setProfile({ ...profile, email: e.target.value })
+                  }
                   required
                   className="w-full h-11 border border-zinc-300 rounded-lg px-4 focus:outline-none focus:ring-2 focus:ring-[#E60000]/30 focus:border-[#E60000] text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-zinc-600 mb-1.5">Phone</label>
+                <label className="block text-xs font-semibold text-zinc-600 mb-1.5">
+                  Phone
+                </label>
                 <input
-                  value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                  value={profile.phone}
+                  onChange={(e) =>
+                    setProfile({ ...profile, phone: e.target.value })
+                  }
                   className="w-full h-11 border border-zinc-300 rounded-lg px-4 focus:outline-none focus:ring-2 focus:ring-[#E60000]/30 focus:border-[#E60000] text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-zinc-600 mb-1.5">Role</label>
+                <label className="block text-xs font-semibold text-zinc-600 mb-1.5">
+                  Role
+                </label>
                 <input
-                  value={user?.role || ""} disabled
+                  value={user?.role || ""}
+                  disabled
                   className="w-full h-11 border border-zinc-200 rounded-lg px-4 text-sm bg-zinc-50 text-zinc-500 cursor-not-allowed"
                 />
               </div>
               <div className="flex justify-end pt-2">
-                <button type="submit"
-                  className="h-11 px-6 bg-[#E60000] text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-[#cc0000] transition-colors flex items-center gap-2">
+                <button
+                  type="submit"
+                  className="h-11 px-6 bg-[#E60000] text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-[#cc0000] transition-colors flex items-center gap-2"
+                >
                   <Save className="w-4 h-4" /> Save Changes
                 </button>
               </div>
@@ -139,62 +190,105 @@ export default function UserProfile() {
                   <Lock className="w-5 h-5 text-zinc-900" />
                 </div>
                 <div>
-                  <div className="font-display font-black text-lg">Change Password</div>
-                  <div className="text-xs text-zinc-500">Update your login password</div>
+                  <div className="font-display font-black text-lg">
+                    Change Password
+                  </div>
+                  <div className="text-xs text-zinc-500">
+                    Update your login password
+                  </div>
                 </div>
               </div>
               <form onSubmit={handlePasswordSubmit} className="p-6 space-y-5">
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-600 mb-1.5">Current Password</label>
+                  <label className="block text-xs font-semibold text-zinc-600 mb-1.5">
+                    Current Password
+                  </label>
                   <div className="relative">
                     <input
                       type={showPw.current ? "text" : "password"}
                       value={pw.current_password}
-                      onChange={(e) => setPw({ ...pw, current_password: e.target.value })}
+                      onChange={(e) =>
+                        setPw({ ...pw, current_password: e.target.value })
+                      }
                       required
                       className="w-full h-11 border border-zinc-300 rounded-lg px-4 pr-10 focus:outline-none focus:ring-2 focus:ring-[#E60000]/30 focus:border-[#E60000] text-sm"
                     />
-                    <button type="button" onClick={() => setShowPw({ ...showPw, current: !showPw.current })}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600">
-                      {showPw.current ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowPw({ ...showPw, current: !showPw.current })
+                      }
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                    >
+                      {showPw.current ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
                     </button>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-600 mb-1.5">New Password</label>
+                  <label className="block text-xs font-semibold text-zinc-600 mb-1.5">
+                    New Password
+                  </label>
                   <div className="relative">
                     <input
                       type={showPw.new ? "text" : "password"}
                       value={pw.new_password}
-                      onChange={(e) => setPw({ ...pw, new_password: e.target.value })}
+                      onChange={(e) =>
+                        setPw({ ...pw, new_password: e.target.value })
+                      }
                       required
                       className="w-full h-11 border border-zinc-300 rounded-lg px-4 pr-10 focus:outline-none focus:ring-2 focus:ring-[#E60000]/30 focus:border-[#E60000] text-sm"
                     />
-                    <button type="button" onClick={() => setShowPw({ ...showPw, new: !showPw.new })}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600">
-                      {showPw.new ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    <button
+                      type="button"
+                      onClick={() => setShowPw({ ...showPw, new: !showPw.new })}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                    >
+                      {showPw.new ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
                     </button>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-600 mb-1.5">Confirm New Password</label>
+                  <label className="block text-xs font-semibold text-zinc-600 mb-1.5">
+                    Confirm New Password
+                  </label>
                   <div className="relative">
                     <input
                       type={showPw.confirm ? "text" : "password"}
                       value={pw.confirm_password}
-                      onChange={(e) => setPw({ ...pw, confirm_password: e.target.value })}
+                      onChange={(e) =>
+                        setPw({ ...pw, confirm_password: e.target.value })
+                      }
                       required
                       className="w-full h-11 border border-zinc-300 rounded-lg px-4 pr-10 focus:outline-none focus:ring-2 focus:ring-[#E60000]/30 focus:border-[#E60000] text-sm"
                     />
-                    <button type="button" onClick={() => setShowPw({ ...showPw, confirm: !showPw.confirm })}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600">
-                      {showPw.confirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowPw({ ...showPw, confirm: !showPw.confirm })
+                      }
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                    >
+                      {showPw.confirm ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
                     </button>
                   </div>
                 </div>
                 <div className="flex justify-end pt-2">
-                  <button type="submit"
-                    className="h-11 px-6 bg-zinc-900 text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-zinc-800 transition-colors flex items-center gap-2">
+                  <button
+                    type="submit"
+                    className="h-11 px-6 bg-zinc-900 text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-zinc-800 transition-colors flex items-center gap-2"
+                  >
                     <Lock className="w-4 h-4" /> Change Password
                   </button>
                 </div>
@@ -208,38 +302,54 @@ export default function UserProfile() {
                   <Shield className="w-5 h-5 text-emerald-600" />
                 </div>
                 <div>
-                  <div className="font-display font-black text-lg">Security Question</div>
-                  <div className="text-xs text-zinc-500">Set a security question for account recovery</div>
+                  <div className="font-display font-black text-lg">
+                    Security Question
+                  </div>
+                  <div className="text-xs text-zinc-500">
+                    Set a security question for account recovery
+                  </div>
                 </div>
               </div>
               <form onSubmit={handleSecuritySubmit} className="p-6 space-y-5">
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-600 mb-1.5">Security Question</label>
+                  <label className="block text-xs font-semibold text-zinc-600 mb-1.5">
+                    Security Question
+                  </label>
                   <select
                     value={sec.security_question}
-                    onChange={(e) => setSec({ ...sec, security_question: e.target.value })}
+                    onChange={(e) =>
+                      setSec({ ...sec, security_question: e.target.value })
+                    }
                     required
                     className="w-full h-11 border border-zinc-300 rounded-lg px-4 focus:outline-none focus:ring-2 focus:ring-[#E60000]/30 focus:border-[#E60000] text-sm bg-white"
                   >
                     <option value="">-- Select a question --</option>
                     {SECURITY_QUESTIONS.map((q, i) => (
-                      <option key={i} value={q}>{q}</option>
+                      <option key={i} value={q}>
+                        {q}
+                      </option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-600 mb-1.5">Your Answer</label>
+                  <label className="block text-xs font-semibold text-zinc-600 mb-1.5">
+                    Your Answer
+                  </label>
                   <input
                     value={sec.security_answer}
-                    onChange={(e) => setSec({ ...sec, security_answer: e.target.value })}
+                    onChange={(e) =>
+                      setSec({ ...sec, security_answer: e.target.value })
+                    }
                     required
                     placeholder="Enter your answer"
                     className="w-full h-11 border border-zinc-300 rounded-lg px-4 focus:outline-none focus:ring-2 focus:ring-[#E60000]/30 focus:border-[#E60000] text-sm"
                   />
                 </div>
                 <div className="flex justify-end pt-2">
-                  <button type="submit"
-                    className="h-11 px-6 bg-emerald-600 text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-emerald-700 transition-colors flex items-center gap-2">
+                  <button
+                    type="submit"
+                    className="h-11 px-6 bg-emerald-600 text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-emerald-700 transition-colors flex items-center gap-2"
+                  >
                     <CheckCircle className="w-4 h-4" /> Save Security Question
                   </button>
                 </div>

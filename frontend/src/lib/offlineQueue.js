@@ -15,15 +15,11 @@ function writeQueue(q) {
   localStorage.setItem(QUEUE_KEY, JSON.stringify(q));
 }
 
-function flush() {
+async function flush() {
   const q = readQueue();
   if (!q.length) return;
-  const remaining = [];
-  q.forEach((job) => {
-    api
-      .post(job.url, job.body)
-      .catch(() => remaining.push(job));
-  });
+  const results = await Promise.allSettled(q.map((job) => api.post(job.url, job.body)));
+  const remaining = q.filter((_, i) => results[i].status === "rejected");
   writeQueue(remaining);
 }
 
