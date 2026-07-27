@@ -11,6 +11,7 @@ export default function BarcodeScanner({ onDetect, onClose }) {
   const [mode, setMode] = useState("init");
   const [error, setError] = useState("");
   const [manual, setManual] = useState("");
+  const [detected, setDetected] = useState(false);
 
   const beep = () => {
     try {
@@ -46,6 +47,8 @@ export default function BarcodeScanner({ onDetect, onClose }) {
     if (code === lastCodeRef.current && now - lastTimeRef.current < 5000) return;
     lastCodeRef.current = code;
     lastTimeRef.current = now;
+    setDetected(true);
+    setTimeout(() => setDetected(false), 1500);
     beep();
     flashGreen();
     onDetect(code);
@@ -60,7 +63,7 @@ export default function BarcodeScanner({ onDetect, onClose }) {
       qrRef.current = qr;
       await qr.start(
         { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 300, height: 200 } },
+        { fps: 15, qrbox: { width: 360, height: 240 }, aspectRatio: 1.5 },
         (code) => handleDetect(code),
         () => {}
       );
@@ -120,8 +123,16 @@ export default function BarcodeScanner({ onDetect, onClose }) {
 
           {mode === "live" && (
             <>
-              <div className="absolute inset-0 z-10 pointer-events-none scan-line">
-                <div className="h-0.5 bg-red-500 shadow-[0_0_15px_#ff0000]" />
+              <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
+                <div className="relative" style={{ width: "360px", height: "240px" }}>
+                  <div className="absolute top-0 left-0 w-7 h-7 border-t-[3px] border-l-[3px] border-white/90 rounded-tl" />
+                  <div className="absolute top-0 right-0 w-7 h-7 border-t-[3px] border-r-[3px] border-white/90 rounded-tr" />
+                  <div className="absolute bottom-0 left-0 w-7 h-7 border-b-[3px] border-l-[3px] border-white/90 rounded-bl" />
+                  <div className="absolute bottom-0 right-0 w-7 h-7 border-b-[3px] border-r-[3px] border-white/90 rounded-br" />
+                  <div className={`absolute left-1 right-1 ${detected ? 'bg-green-500 shadow-[0_0_20px_#00ff00]' : ''} scan-line`}>
+                    <div className={`h-[3px] rounded-full ${detected ? 'bg-green-400 shadow-[0_0_20px_#00ff00]' : 'bg-red-500 shadow-[0_0_15px_#ff0000]'} transition-all duration-300`} />
+                  </div>
+                </div>
               </div>
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 bg-black/60 px-4 py-1 rounded-full">
                 <p className="text-[10px] text-zinc-400 font-mono tracking-widest">SCANNING</p>
