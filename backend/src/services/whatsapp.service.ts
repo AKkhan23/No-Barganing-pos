@@ -87,24 +87,15 @@ export async function sendWhatsAppDocument(phone: string, documentUrl: string, f
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (cfg.apiKey) headers['X-API-Key'] = cfg.apiKey;
 
-    // Send PDF as base64 directly — faster than URL fetch (no extra roundtrip to Render)
-    const pdfName = documentUrl.split('/api/receipts/file/')[1]?.split('?')[0] || filename;
-    const pdfPath = require('path').join(process.cwd(), 'uploads', 'receipts', pdfName);
-    const b64 = require('fs').readFileSync(pdfPath, { encoding: 'base64' });
-    // try base64 first (fast), fallback to URL if base64 not supported
-    try {
-      await httpClient.post(url, { chatId: `${cleanPhone}@c.us`, document: b64, filename, caption: caption || '', mimetype: 'application/pdf' }, { headers });
-    } catch (e: any) {
-      logger.warn(`WhatsApp doc base64 failed (${JSON.stringify(e?.response?.data).slice(0,300)}), trying URL fallback`);
-      await httpClient.post(url, { chatId: `${cleanPhone}@c.us`, url: documentUrl, filename, caption: caption || '' }, { headers });
-    }
+    await httpClient.post(url, { chatId: `${cleanPhone}@c.us`, url: documentUrl, filename, caption: caption || '' }, { headers });
     logger.info(`WhatsApp document sent to ${phone}: ${filename}`);
     return { ok: true };
   } catch (err: any) {
     const raw = err?.response?.data ? JSON.stringify(err.response.data) : '';
     const isTimeout = err.code === 'ECONNABORTED' || err.message?.includes('timeout');
-    const detail = isTimeout ? `WhatsApp server timeout (10s) - openwa.eskillsweb.online slow/down. ${raw}` : (err?.response?.data?.error?.message || err?.response?.data?.message || err?.response?.data?.detail || raw || err.message || 'Unknown error');
-    logger.error(`WhatsApp document send failed: ${detail} | status=${err?.response?.status} code=${err.code} | url=${documentUrl}`);
+    const raw2 = err?.response?.data ? JSON.stringify(err.response.data) : '';
+    const detail = err.code === 'ECONNABORTED' || err.message?.includes('timeout') ? `WhatsApp server timeout (10s) - ${raw2 || err.message}` : (err?.response?.data?.error?.message || err?.response?.data?.message || err?.response?.data?.detail || raw2 || err.message || 'Unknown error');
+    logger.error(`WhatsApp document send failed: ${detail} | status=${err?.response?.status} code=${err.code} | url=${documentUrl} | resp=${raw2.slice(0,500)}`);
     return { ok: false, error: detail.slice(0, 400) };
   }
 }
