@@ -4,7 +4,7 @@ import { Settings } from '../models/Settings';
 import logger from '../utils/logger';
 
 const httpClient = axios.create({
-  timeout: 15000,
+  timeout: 30000,
   httpsAgent: new https.Agent({ keepAlive: true, keepAliveMsecs: 5000 }),
 });
 
@@ -67,8 +67,9 @@ export async function sendWhatsApp(phone: string, message: string, invoiceNo?: s
     return { ok: false, error: 'WhatsApp not configured. Provide API URL (Settings > WhatsApp) or API Key + Phone Number ID.' };
   } catch (err: any) {
     const raw = err?.response?.data ? JSON.stringify(err.response.data) : '';
-    const detail = err?.response?.data?.error?.message || err?.response?.data?.message || err?.response?.data?.detail || raw || err.message || 'Unknown error';
-    logger.error(`WhatsApp send failed: ${detail} | status=${err?.response?.status}`);
+    const isTimeout = err.code === 'ECONNABORTED' || err.message?.includes('timeout');
+    const detail = isTimeout ? `WhatsApp server timeout (15s) - openwa.eskillsweb.online slow/down, try again. ${raw}` : (err?.response?.data?.error?.message || err?.response?.data?.message || err?.response?.data?.detail || raw || err.message || 'Unknown error');
+    logger.error(`WhatsApp send failed: ${detail} | status=${err?.response?.status} code=${err.code}`);
     return { ok: false, error: detail.slice(0,400) };
   }
 }
@@ -109,8 +110,9 @@ export async function sendWhatsAppDocument(phone: string, documentUrl: string, f
     return { ok: true };
   } catch (err: any) {
     const raw = err?.response?.data ? JSON.stringify(err.response.data) : '';
-    const detail = err?.response?.data?.error?.message || err?.response?.data?.message || err?.response?.data?.detail || raw || err.message || 'Unknown error';
-    logger.error(`WhatsApp document send failed: ${detail} | status=${err?.response?.status} | url=${documentUrl}`);
+    const isTimeout = err.code === 'ECONNABORTED' || err.message?.includes('timeout');
+    const detail = isTimeout ? `WhatsApp server timeout (30s) - openwa.eskillsweb.online slow/down. ${raw}` : (err?.response?.data?.error?.message || err?.response?.data?.message || err?.response?.data?.detail || raw || err.message || 'Unknown error');
+    logger.error(`WhatsApp document send failed: ${detail} | status=${err?.response?.status} code=${err.code} | url=${documentUrl}`);
     return { ok: false, error: detail.slice(0, 400) };
   }
 }
