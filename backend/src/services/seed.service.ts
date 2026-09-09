@@ -144,8 +144,8 @@ export async function seedData(): Promise<void> {
   await Settings.findOneAndUpdate({ id: 'default' }, {
     $set: {
       'whatsapp_config.api_url': 'https://openwa.eskillsweb.online',
-      'whatsapp_config.api_key': 'owa_k1_40e282732400d82c3c8e64b6a5fbf7f1dd2f1eaf04c394a090154560f5b4dd1e',
-      'whatsapp_config.session_id': 'ade73213-f6ce-418a-a07a-b33db3bb4c4b',
+      'whatsapp_config.api_key': 'owa_k1_d03a485852f743555327a4fd777557cb62aa9779b96badf473ec9daa953cfbf8',
+      'whatsapp_config.session_id': 'c8aad577-888b-43f9-8039-ff75f4aa207c',
       'whatsapp_config.phone_number_id': '',
       'whatsapp_config.business_account_id': '',
     },
