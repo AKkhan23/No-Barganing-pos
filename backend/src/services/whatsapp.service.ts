@@ -66,9 +66,10 @@ export async function sendWhatsApp(phone: string, message: string, invoiceNo?: s
 
     return { ok: false, error: 'WhatsApp not configured. Provide API URL (Settings > WhatsApp) or API Key + Phone Number ID.' };
   } catch (err: any) {
-    const detail = err?.response?.data?.error?.message || err?.response?.data?.detail || err.message || 'Unknown error';
-    logger.error(`WhatsApp send failed: ${detail}`);
-    return { ok: false, error: detail };
+    const raw = err?.response?.data ? JSON.stringify(err.response.data) : '';
+    const detail = err?.response?.data?.error?.message || err?.response?.data?.message || err?.response?.data?.detail || raw || err.message || 'Unknown error';
+    logger.error(`WhatsApp send failed: ${detail} | status=${err?.response?.status}`);
+    return { ok: false, error: detail.slice(0,400) };
   }
 }
 
@@ -85,13 +86,32 @@ export async function sendWhatsAppDocument(phone: string, documentUrl: string, f
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (cfg.apiKey) headers['X-API-Key'] = cfg.apiKey;
 
-    await httpClient.post(url, { chatId: `${cleanPhone}@c.us`, url: documentUrl, filename, caption: caption || '' }, { headers });
+    try {
+      await httpClient.post(url, { chatId: `${cleanPhone}@c.us`, url: documentUrl, filename, caption: caption || '' }, { headers });
+    } catch (e: any) {
+      const isUrlError = e?.response?.status === 400;
+      const respData = e?.response?.data ? JSON.stringify(e.response.data).slice(0, 500) : '';
+      if (isUrlError) logger.warn(`WhatsApp doc URL failed (${respData}), trying base64 fallback`);
+      if (!isUrlError) throw e;
+      // fallback: read PDF and send as base64
+      try {
+        const pdfPath = documentUrl.split('/api/receipts/file/')[1] ? require('path').join(process.cwd(), 'uploads', 'receipts', documentUrl.split('/api/receipts/file/')[1].split('?')[0]) : '';
+        const b64 = require('fs').readFileSync(pdfPath, { encoding: 'base64' });
+        await httpClient.post(url, { chatId: `${cleanPhone}@c.us`, document: b64, filename, caption: caption || '', mimetype: 'application/pdf' }, { headers });
+        // also try alternative field names if first fails
+      } catch (fallbackErr: any) {
+        const d2 = fallbackErr?.response?.data ? JSON.stringify(fallbackErr.response.data).slice(0, 500) : fallbackErr.message;
+        logger.error(`WhatsApp document base64 fallback failed: ${d2}`);
+        throw fallbackErr?.response?.data ? fallbackErr : e;
+      }
+    }
     logger.info(`WhatsApp document sent to ${phone}: ${filename}`);
     return { ok: true };
   } catch (err: any) {
-    const detail = err?.response?.data?.error?.message || err?.response?.data?.detail || err.message || 'Unknown error';
-    logger.error(`WhatsApp document send failed: ${detail}`);
-    return { ok: false, error: detail };
+    const raw = err?.response?.data ? JSON.stringify(err.response.data) : '';
+    const detail = err?.response?.data?.error?.message || err?.response?.data?.message || err?.response?.data?.detail || raw || err.message || 'Unknown error';
+    logger.error(`WhatsApp document send failed: ${detail} | status=${err?.response?.status} | url=${documentUrl}`);
+    return { ok: false, error: detail.slice(0, 400) };
   }
 }
 

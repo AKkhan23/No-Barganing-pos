@@ -1211,7 +1211,8 @@ function ReceiptModal({ order, settings, cashier, onClose }) {
       toast.success("Receipt sent on WhatsApp");
       setWaPhone("");
     } catch (e) {
-      const detail = e?.response?.data?.detail || "Failed to send";
+      const d = e?.response?.data;
+      const detail = d?.detail || d?.errors?.map(er=>`${er.field}: ${er.message}`).join(', ') || "Failed to send";
       toast.error(detail.includes("WhatsApp") ? `${detail} ⚙️` : detail);
     } finally { setWaSending(false); }
   };
@@ -1219,11 +1220,9 @@ function ReceiptModal({ order, settings, cashier, onClose }) {
     if (!waPhone.trim()) { toast.error("Enter customer phone"); return; }
     setWaPdfSending(true);
     try {
-      const baseUrl = BACKEND_URL || `${window.location.protocol}//${window.location.host}`;
       await api.post("/whatsapp/send-pdf", {
         phone: waPhone.trim(),
         invoice_no: order.invoice_no,
-        baseUrl,
         outletName,
         outletAddress,
         outletPhone,
@@ -1252,8 +1251,11 @@ function ReceiptModal({ order, settings, cashier, onClose }) {
       toast.success("Receipt PDF sent on WhatsApp");
       setWaPhone("");
     } catch (e) {
-      const detail = e?.response?.data?.detail || "Failed to send PDF";
-      toast.error(detail.includes("WhatsApp") ? `${detail} ⚙️` : detail);
+      const d = e?.response?.data;
+      const errs = d?.errors?.map(er=>`${er.field}: ${er.message}`).join(', ');
+      const detail = d?.detail ? (errs ? `${d.detail}: ${errs}` : d.detail) : (errs || "Failed to send PDF");
+      console.error('send-pdf failed', d);
+      toast.error(detail);
     } finally { setWaPdfSending(false); }
   };
   return (

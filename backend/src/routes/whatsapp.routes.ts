@@ -81,17 +81,19 @@ const SendPdfSchema = z.object({
   change: z.number(),
   footer: z.string().optional(),
   currencySymbol: z.string().default('₹'),
-  baseUrl: z.string(),
+  baseUrl: z.string().optional(),
 });
 
 router.post('/send-pdf', validate(SendPdfSchema), async (req: Request, res: Response) => {
   try {
     const now = new Date().toISOString();
-    const { phone, invoice_no, baseUrl, ...receiptData } = req.body;
+    const { phone, invoice_no, baseUrl: _ignoredBaseUrl, ...receiptData } = req.body;
     const pdfData = { ...receiptData, invoiceNo: receiptData.invoiceNo || invoice_no || '' };
 
     const filename = generateReceiptPdf(pdfData);
-    const documentUrl = `${baseUrl.replace(/\/+$/, '')}/api/receipts/file/${filename}`;
+    // Always use backend origin — frontend's window.location is Vercel, not Render, so ignore it
+    const backendOrigin = (process.env.BACKEND_URL || process.env.RENDER_EXTERNAL_URL || `${req.protocol}://${req.get('host')}`).replace(/\/+$/, '');
+    const documentUrl = `${backendOrigin}/api/receipts/file/${filename}`;
 
     const result = await sendWhatsAppDocument(phone, documentUrl, `${invoice_no || 'receipt'}.pdf`, `Receipt ${invoice_no || ''}`);
 
