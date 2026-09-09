@@ -103,7 +103,7 @@ export async function sendWhatsAppDocument(phone: string, documentUrl: string, f
   } catch (err: any) {
     const raw = err?.response?.data ? JSON.stringify(err.response.data) : '';
     const isTimeout = err.code === 'ECONNABORTED' || err.message?.includes('timeout');
-    const detail = isTimeout ? `WhatsApp server timeout (30s) - openwa.eskillsweb.online slow/down. ${raw}` : (err?.response?.data?.error?.message || err?.response?.data?.message || err?.response?.data?.detail || raw || err.message || 'Unknown error');
+    const detail = isTimeout ? `WhatsApp server timeout (10s) - openwa.eskillsweb.online slow/down. ${raw}` : (err?.response?.data?.error?.message || err?.response?.data?.message || err?.response?.data?.detail || raw || err.message || 'Unknown error');
     logger.error(`WhatsApp document send failed: ${detail} | status=${err?.response?.status} code=${err.code} | url=${documentUrl}`);
     return { ok: false, error: detail.slice(0, 400) };
   }
