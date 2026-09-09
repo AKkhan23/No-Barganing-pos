@@ -5,7 +5,7 @@ export const API = BACKEND_URL ? `${BACKEND_URL}/api` : "/api";
 
 console.log(`🌐 API base URL: ${API}`);
 
-const api = axios.create({ baseURL: API, timeout: 25000 });
+const api = axios.create({ baseURL: API, timeout: 15000 });
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("pos_token");

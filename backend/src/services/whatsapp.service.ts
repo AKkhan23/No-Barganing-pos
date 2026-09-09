@@ -4,7 +4,7 @@ import { Settings } from '../models/Settings';
 import logger from '../utils/logger';
 
 const httpClient = axios.create({
-  timeout: 30000,
+  timeout: 10000,
   httpsAgent: new https.Agent({ keepAlive: true, keepAliveMsecs: 5000 }),
 });
 
@@ -87,24 +87,16 @@ export async function sendWhatsAppDocument(phone: string, documentUrl: string, f
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (cfg.apiKey) headers['X-API-Key'] = cfg.apiKey;
 
+    // Send PDF as base64 directly — faster than URL fetch (no extra roundtrip to Render)
+    const pdfName = documentUrl.split('/api/receipts/file/')[1]?.split('?')[0] || filename;
+    const pdfPath = require('path').join(process.cwd(), 'uploads', 'receipts', pdfName);
+    const b64 = require('fs').readFileSync(pdfPath, { encoding: 'base64' });
+    // try base64 first (fast), fallback to URL if base64 not supported
     try {
-      await httpClient.post(url, { chatId: `${cleanPhone}@c.us`, url: documentUrl, filename, caption: caption || '' }, { headers });
+      await httpClient.post(url, { chatId: `${cleanPhone}@c.us`, document: b64, filename, caption: caption || '', mimetype: 'application/pdf' }, { headers });
     } catch (e: any) {
-      const isUrlError = e?.response?.status === 400;
-      const respData = e?.response?.data ? JSON.stringify(e.response.data).slice(0, 500) : '';
-      if (isUrlError) logger.warn(`WhatsApp doc URL failed (${respData}), trying base64 fallback`);
-      if (!isUrlError) throw e;
-      // fallback: read PDF and send as base64
-      try {
-        const pdfPath = documentUrl.split('/api/receipts/file/')[1] ? require('path').join(process.cwd(), 'uploads', 'receipts', documentUrl.split('/api/receipts/file/')[1].split('?')[0]) : '';
-        const b64 = require('fs').readFileSync(pdfPath, { encoding: 'base64' });
-        await httpClient.post(url, { chatId: `${cleanPhone}@c.us`, document: b64, filename, caption: caption || '', mimetype: 'application/pdf' }, { headers });
-        // also try alternative field names if first fails
-      } catch (fallbackErr: any) {
-        const d2 = fallbackErr?.response?.data ? JSON.stringify(fallbackErr.response.data).slice(0, 500) : fallbackErr.message;
-        logger.error(`WhatsApp document base64 fallback failed: ${d2}`);
-        throw fallbackErr?.response?.data ? fallbackErr : e;
-      }
+      logger.warn(`WhatsApp doc base64 failed (${JSON.stringify(e?.response?.data).slice(0,300)}), trying URL fallback`);
+      await httpClient.post(url, { chatId: `${cleanPhone}@c.us`, url: documentUrl, filename, caption: caption || '' }, { headers });
     }
     logger.info(`WhatsApp document sent to ${phone}: ${filename}`);
     return { ok: true };
