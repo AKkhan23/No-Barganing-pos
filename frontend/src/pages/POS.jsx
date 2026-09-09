@@ -1253,8 +1253,8 @@ function ReceiptModal({ order, settings, cashier, onClose }) {
     } catch (e) {
       const d = e?.response?.data;
       const errs = d?.errors?.map(er=>`${er.field}: ${er.message}`).join(', ');
-      const detail = d?.detail ? (errs ? `${d.detail}: ${errs}` : d.detail) : (errs || "Failed to send PDF");
-      console.error('send-pdf failed', d);
+      const detail = d?.detail ? (errs ? `${d.detail}: ${errs}` : d.detail) : (errs || e?.message || "Failed to send PDF");
+      console.error('send-pdf failed', d || e?.message, e);
       toast.error(detail);
     } finally { setWaPdfSending(false); }
   };
